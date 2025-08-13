@@ -39,7 +39,7 @@ export default function App({ Component, pageProps }: AppProps) {
       <header className="topbar">
         <div className="shell">
           <div className="brand-wrap">
-            <img src="https://sdmntprwestus2.oaiusercontent.com/files/00000000-ad4c-61f8-abc5-60eb97f8bbe6/raw?se=2025-08-13T22%3A07%3A48Z&sp=r&sv=2024-08-04&sr=b&scid=f162bcf4-d7b7-57b9-905c-fb668c920def&skoid=ea1de0bc-0467-43d6-873a-9a5cf0a9f835&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2025-08-13T20%3A18%3A15Z&ske=2025-08-14T20%3A18%3A15Z&sks=b&skv=2024-08-04&sig=pD2CU2t/KcUSFrrJ%2BwdD4fBp%2B%2BkS88pqcAnlWmk%2Bq7E%3D" alt="Logo" className="logo" />
+            <img src="https://cdn.prod.website-files.com/67c10208e6e94bb6c9fba39b/689d0fe09b90825b708049a1_ChatGPT%20Image%20Aug%2013%2C%202025%2C%2005_18_33%20PM.png" alt="Logo" className="logo" />
             <span className="brand">Timesheet</span>
           </div>
 
