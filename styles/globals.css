@@ -1,26 +1,161 @@
-@import "tailwindcss";
+/* ============ Base ============ */
+* { box-sizing: border-box; }
+html, body { margin: 0; padding: 0; }
+body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif; color: #0f172a; background: #f7f8fc; }
 
-:root {
-  --background: #ffffff;
-  --foreground: #171717;
+.page { max-width: 1100px; margin: 24px auto; padding: 0 16px; }
+.row { display: flex; align-items: center; }
+.link-right { margin-left: auto; text-decoration: none; color: #2563eb; font-weight: 600; }
+
+/* Simple table + chips (used in pages) */
+.table { width: 100%; border-collapse: collapse; background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; overflow: hidden; }
+.table th, .table td { padding: 12px; border-top: 1px solid #f1f5f9; }
+.table thead th { background: #f8fafc; border-top: 0; }
+.chip { padding: 8px 12px; background: #fff; border: 1px solid #e5e7eb; border-radius: 999px; }
+
+/* Status badges */
+.badge { display:inline-flex; align-items:center; padding:2px 8px; border-radius: 999px; font-size: 12px; font-weight: 700; }
+.badge-paid { background:#dcfce7; color:#065f46; border:1px solid #bbf7d0; }
+.badge-unpaid { background:#fee2e2; color:#7a1111; border:1px solid #fecaca; }
+
+/* ============ Top nav (namespaced) ============ */
+.topbar { position: sticky; top:0; z-index:20; background:#fff; border-bottom:1px solid #eaecef; }
+.shell { max-width: 1100px; margin: 0 auto; padding: 10px 16px; display: flex; align-items: center; gap: 12px; }
+.brand-wrap { display:inline-flex; align-items:center; gap:10px; margin-right:6px; }
+.logo { height:60px; width:auto; display:block; object-fit:contain; }
+.brand { font-weight:800; letter-spacing:.2px; color:#111827; }
+.nav { display:flex; gap:8px; flex-wrap:wrap; }
+.nav-link { padding:8px 12px; border-radius:10px; color:#1f2937; text-decoration:none; border:1px solid transparent; transition: background .15s, border-color .15s, color .15s; }
+.nav-link:hover { background:#f3f4f6; border-color:#e5e7eb; }
+.nav-link.active { background:#eef2ff; color:#3730a3; border-color:#c7d2fe; }
+
+/* Header sign-out button — scoped class to avoid collisions */
+.topbar-btn {
+  margin-left: auto;
+  padding: 8px 12px;
+  border-radius: 10px;
+  font-weight: 600;
+  border: 1px solid #e5e7eb;
+  background: #ffffff;
+  color: #111827;
+  cursor: pointer;
+  transition: background .15s, border-color .15s, transform .02s;
+}
+.topbar-btn:hover { background:#f9fafb; }
+.topbar-btn:active { transform: translateY(1px); }
+
+.banner-error { background:#fff1f2; color:#9f1239; border-bottom:1px solid #fecdd3; padding:10px 16px; text-align:center; }
+
+/* ============ Action buttons (Edit / Delete) ============ */
+/* Use ONLY these classes on row actions so they are not affected by header rules */
+.actions { display:flex; gap:12px; }
+.btn-edit, .btn-delete {
+  display: inline-flex; align-items: center; justify-content: center;
+  min-width: 96px; height: 44px; padding: 0 18px;
+  border-radius: 12px; font-weight: 800; text-decoration: none;
+  border: 0; cursor: pointer;
+  transition: transform .02s ease, filter .15s ease, background .15s ease, border-color .15s ease;
+  box-shadow: 0 4px 14px rgba(0,0,0,.06);
 }
 
-@theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+/* Blue — Edit / Save */
+.btn-edit { background:#2563eb; color:#fff; }
+.btn-edit:hover { filter: brightness(0.98); }
+.btn-edit:active { transform: translateY(1px); }
+
+/* Red — Delete (soft pill) */
+.btn-delete { background:#fee2e2; color:#7a1111; border:1px solid #fecaca; }
+.btn-delete:hover { background:#fecaca; }
+.btn-delete:active { transform: translateY(1px); }
+
+/* ============ Forms on edit/new ============ */
+label { display:block; margin: 8px 0 6px; color:#334155; font-size:14px; }
+input[type="text"], input[type="email"], input[type="time"], input[type="date"], select, textarea {
+  width: 100%; padding: 10px 12px; border-radius: 10px; border: 1px solid #d1d5db; background: #fff; color:#0f172a; outline: none;
+}
+input:focus, select:focus, textarea:focus { border-color:#4f46e5; box-shadow: 0 0 0 3px rgba(79,70,229,.15); }
+textarea { min-height: 80px; resize: vertical; }
+
+/* Center columns in tables that opt-in with .table--center */
+.table--center th,
+.table--center td {
+  text-align: center;
+  vertical-align: middle;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
+/* Keep the first column (date/name) left-aligned for readability */
+.table--center th:first-child,
+.table--center td:first-child {
+  text-align: left;
+}
+
+/* Make the actions cell look nicely centered */
+.table--center td .actions {
+  display: inline-flex;
+  gap: 10px;
+  justify-content: center;
+  align-items: center;
+}
+/* ============ Mobile-friendly tables (stack on small screens) ============ */
+/* Opt-in by adding class: table--stack (you already have table + table--center) */
+
+.table-wrap { width: 100%; overflow-x: auto; } /* safety fallback if needed */
+
+@media (max-width: 680px) {
+  .table--stack {
+    border: 0;
+  }
+  .table--stack thead {
+    display: none; /* hide header on phones; labels come from data-label */
+  }
+  .table--stack tbody,
+  .table--stack tr,
+  .table--stack td {
+    display: block;
+    width: 100%;
+  }
+  .table--stack tr {
+    margin: 12px 0;
+    background: #fff;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    overflow: hidden;
+  }
+  .table--stack td {
+    border: 0 !important;
+    padding: 10px 12px;
+    display: grid;
+    grid-template-columns: 44% 56%; /* label | value */
+    align-items: center;
+    gap: 8px;
+  }
+  .table--stack td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: #6b7280;
+    text-align: left;
+  }
+  .table--stack td:last-child {
+    padding-bottom: 12px;
+  }
+
+  /* Keep the actions nicely centered & tappable */
+  .table--stack td .actions {
+    justify-content: flex-start;
+    gap: 10px;
+  }
+  .btn-edit, .btn-delete {
+    min-width: 0;
+    height: 40px;
+    padding: 0 12px;
+    border-radius: 10px;
+    box-shadow: none;
   }
 }
 
-body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+/* ============ Small header tweaks on phones (optional) ============ */
+@media (max-width: 480px) {
+  .shell { gap: 8px; padding: 8px 12px; }
+  .brand { display: none; } /* hide the “Timesheet” wordmark; keep logo */
+  .nav { overflow-x: auto; }
 }

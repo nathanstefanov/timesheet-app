@@ -1,115 +1,202 @@
-import Image from "next/image";
-import { Geist, Geist_Mono } from "next/font/google";
+import { useEffect, useRef, useState } from 'react';
+import { useRouter } from 'next/router';
+import { supabase } from '../lib/supabaseClient';
 
-const geistSans = Geist({
-  variable: "--font-geist-sans",
-  subsets: ["latin"],
-});
+type Mode = 'signin' | 'signup';
 
-const geistMono = Geist_Mono({
-  variable: "--font-geist-mono",
-  subsets: ["latin"],
-});
+// 👉 drop your logo URL here (or leave blank to hide)
+const LOGO_URL = 'https://sdmntprwestus2.oaiusercontent.com/files/00000000-ad4c-61f8-abc5-60eb97f8bbe6/raw?se=2025-08-13T22%3A07%3A48Z&sp=r&sv=2024-08-04&sr=b&scid=f162bcf4-d7b7-57b9-905c-fb668c920def&skoid=ea1de0bc-0467-43d6-873a-9a5cf0a9f835&sktid=a48cca56-e6da-484e-a814-9c849652bcb3&skt=2025-08-13T20%3A18%3A15Z&ske=2025-08-14T20%3A18%3A15Z&sks=b&skv=2024-08-04&sig=pD2CU2t/KcUSFrrJ%2BwdD4fBp%2B%2BkS88pqcAnlWmk%2Bq7E%3D';
 
-export default function Home() {
+export default function AuthPage() {
+  const r = useRouter();
+  const [mode, setMode] = useState<Mode>('signin');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [showPw, setShowPw] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState<string>();
+  const [msg, setMsg] = useState<string>();
+  const emailRef = useRef<HTMLInputElement>(null);
+
+  useEffect(() => { emailRef.current?.focus(); }, [mode]);
+
+  function clearAlerts() { setErr(undefined); setMsg(undefined); }
+
+  async function submit() {
+    clearAlerts();
+    setLoading(true);
+    try {
+      if (!email) throw new Error('Enter your email');
+      if (mode === 'signup' && password.length < 8) throw new Error('Password must be at least 8 characters');
+      if (mode === 'signin' && !password) throw new Error('Enter your password');
+
+      if (mode === 'signup') {
+        const { error } = await supabase.auth.signUp({ email, password });
+        if (error) throw error;
+        setMsg('Account created. You can sign in now.');
+        setMode('signin');
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({ email, password });
+        if (error) throw error;
+        r.push('/dashboard');
+      }
+    } catch (e: any) {
+      setErr(e.message || 'Something went wrong');
+    } finally { setLoading(false); }
+  }
+
+  async function sendMagicLink() {
+    clearAlerts(); setLoading(true);
+    try {
+      if (!email) throw new Error('Enter your email');
+      const redirectTo = typeof window !== 'undefined' ? `${location.origin}/dashboard` : undefined;
+      const { error } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: redirectTo } });
+      if (error) throw error;
+      setMsg('Check your email for a login link.');
+    } catch (e: any) { setErr(e.message || 'Could not send link'); }
+    finally { setLoading(false); }
+  }
+
+  async function sendReset() {
+    clearAlerts(); setLoading(true);
+    try {
+      if (!email) throw new Error('Enter your email first');
+      const redirectTo = typeof window !== 'undefined' ? `${location.origin}/update-password` : undefined;
+      const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
+      if (error) throw error;
+      setMsg('Password reset email sent. Check your inbox.');
+    } catch (e: any) { setErr(e.message || 'Could not send reset email'); }
+    finally { setLoading(false); }
+  }
+
+  function onKeyDown(e: React.KeyboardEvent) { if (e.key === 'Enter') submit(); }
+
   return (
-    <div
-      className={`${geistSans.className} ${geistMono.className} font-sans grid grid-rows-[20px_1fr_20px] items-center justify-items-center min-h-screen p-8 pb-20 gap-16 sm:p-20`}
-    >
-      <main className="flex flex-col gap-[32px] row-start-2 items-center sm:items-start">
-        <Image
-          className="dark:invert"
-          src="/next.svg"
-          alt="Next.js logo"
-          width={180}
-          height={38}
-          priority
-        />
-        <ol className="font-mono list-inside list-decimal text-sm/6 text-center sm:text-left">
-          <li className="mb-2 tracking-[-.01em]">
-            Get started by editing{" "}
-            <code className="bg-black/[.05] dark:bg-white/[.06] font-mono font-semibold px-1 py-0.5 rounded">
-              pages/index.tsx
-            </code>
-            .
-          </li>
-          <li className="tracking-[-.01em]">
-            Save and see your changes instantly.
-          </li>
-        </ol>
-        <div className="flex gap-4 items-center flex-col sm:flex-row">
-          <a
-            className="rounded-full border border-solid border-transparent transition-colors flex items-center justify-center bg-foreground text-background gap-2 hover:bg-[#383838] dark:hover:bg-[#ccc] font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 sm:w-auto"
-            href="https://vercel.com/new?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            <Image
-              className="dark:invert"
-              src="/vercel.svg"
-              alt="Vercel logomark"
-              width={20}
-              height={20}
-            />
-            Deploy now
-          </a>
-          <a
-            className="rounded-full border border-solid border-black/[.08] dark:border-white/[.145] transition-colors flex items-center justify-center hover:bg-[#f2f2f2] dark:hover:bg-[#1a1a1a] hover:border-transparent font-medium text-sm sm:text-base h-10 sm:h-12 px-4 sm:px-5 w-full sm:w-auto md:w-[158px]"
-            href="https://nextjs.org/docs?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-            target="_blank"
-            rel="noopener noreferrer"
-          >
-            Read our docs
-          </a>
+    <div className="wrap">
+      <div className="card">
+        <div className="title-row">
+          {LOGO_URL ? <img src={LOGO_URL} alt="Logo" className="logo" /> : null}
+          <h1 className="title">Timesheet</h1>
         </div>
-      </main>
-      <footer className="row-start-3 flex gap-[24px] flex-wrap items-center justify-center">
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org/learn?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/file.svg"
-            alt="File icon"
-            width={16}
-            height={16}
+
+        <div className="tabs">
+          <button
+            className={`tab ${mode === 'signin' ? 'active' : ''}`}
+            onClick={() => setMode('signin')}
+            aria-pressed={mode === 'signin'}
+          >
+            Sign In
+          </button>
+          <button
+            className={`tab ${mode === 'signup' ? 'active' : ''}`}
+            onClick={() => setMode('signup')}
+            aria-pressed={mode === 'signup'}
+          >
+            Create Account
+          </button>
+        </div>
+
+        <label className="label">Email</label>
+        <input
+          ref={emailRef}
+          className="input"
+          type="email"
+          inputMode="email"
+          autoComplete="username"
+          placeholder="you@company.com"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          onKeyDown={onKeyDown}
+        />
+
+        <label className="label">Password {mode === 'signup' ? '(min 8 chars)' : ''}</label>
+        <div className="pwrow">
+          <input
+            className="input"
+            type={showPw ? 'text' : 'password'}
+            autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
+            placeholder={mode === 'signin' ? 'Your password' : 'Create a password'}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            onKeyDown={onKeyDown}
           />
-          Learn
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://vercel.com/templates?framework=next.js&utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/window.svg"
-            alt="Window icon"
-            width={16}
-            height={16}
-          />
-          Examples
-        </a>
-        <a
-          className="flex items-center gap-2 hover:underline hover:underline-offset-4"
-          href="https://nextjs.org?utm_source=create-next-app&utm_medium=default-template-tw&utm_campaign=create-next-app"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          <Image
-            aria-hidden
-            src="/globe.svg"
-            alt="Globe icon"
-            width={16}
-            height={16}
-          />
-          Go to nextjs.org →
-        </a>
-      </footer>
+          <label className="show">
+            <input type="checkbox" checked={showPw} onChange={(e) => setShowPw(e.target.checked)} />
+            Show
+          </label>
+        </div>
+
+        {err && <div className="alert error">{err}</div>}
+        {msg && <div className="alert ok">{msg}</div>}
+
+        <button className="btn primary" onClick={submit} disabled={loading}>
+          {loading ? 'Working…' : mode === 'signin' ? 'Sign In' : 'Create Account'}
+        </button>
+
+        <div className="actions">
+          <button className="link" onClick={sendMagicLink} disabled={loading}>Email me a login link</button>
+          <span className="sep">•</span>
+          <button className="link" onClick={sendReset} disabled={loading}>Forgot password?</button>
+        </div>
+      </div>
+
+      <style jsx>{`
+        /* Viewport-safe centering on iOS Safari */
+        .wrap {
+          min-height: 100svh;                 /* small viewport units -> avoids iOS toolbars shifting height */
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          padding: clamp(16px, 4vw, 32px);
+          background: #f7f8fc;
+        }
+        .card {
+          width: min(520px, 94vw);
+          margin-inline: auto;
+          background: #fff;
+          color: #111;
+          border: 1px solid #e6e8ee;
+          border-radius: 16px;
+          padding: 22px 18px;
+          box-shadow: 0 10px 30px rgba(0,0,0,.05);
+          font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+          box-sizing: border-box;
+        }
+        .title-row { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
+        .logo { width: 28px; height: 28px; object-fit: contain; }
+        .title { margin: 0; font-size: 22px; font-weight: 700; }
+
+        .tabs { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin: 10px 0 14px; }
+        .tab {
+          height: 44px; border-radius: 10px; border: 1px solid #d9dce6;
+          background: #f3f5fb; color: #1f2a44; font-weight: 600; cursor: pointer;
+        }
+        .tab.active { background: #4f46e5; color: #fff; border-color: #4f46e5; }
+
+        .label { display:block; margin: 8px 0 6px; font-size:14px; color:#374151; }
+        .input {
+          width: 100%; height: 44px; padding: 0 12px; border-radius: 10px;
+          border: 1px solid #d1d5db; background: #fff; color:#111; outline:none; box-sizing:border-box;
+        }
+        .input:focus { border-color:#4f46e5; box-shadow: 0 0 0 3px rgba(79,70,229,.15); }
+        .pwrow { display:flex; gap:8px; align-items:center; }
+        .show { font-size: 13px; color:#555; display:inline-flex; align-items:center; gap:6px; user-select:none; }
+
+        .btn {
+          width: 100%; margin-top: 12px; height: 46px; border-radius: 12px;
+          border: 0; background: #2b2d35; color:#fff; cursor:pointer; font-weight:700;
+        }
+        .btn.primary { background:#4f46e5; }
+        .btn:disabled { opacity:.6; cursor:not-allowed; }
+
+        .actions { display:flex; justify-content:center; gap:12px; margin-top: 12px; flex-wrap:wrap; }
+        .link { background:none; border:none; color:#4f46e5; text-decoration:underline; cursor:pointer; padding:0; }
+        .sep { opacity:.6; }
+
+        .alert { margin-top:10px; padding:10px 12px; border-radius:10px; font-size:14px; }
+        .alert.error { background:#fee2e2; color:#991b1b; border:1px solid #fecaca; }
+        .alert.ok { background:#dcfce7; color:#065f46; border:1px solid #bbf7d0; }
+      `}</style>
     </div>
   );
 }
