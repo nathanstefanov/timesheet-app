@@ -5,7 +5,8 @@ import { supabase } from '../lib/supabaseClient';
 type Mode = 'signin' | 'signup';
 
 // 👉 drop your logo URL here (or leave blank to hide)
-const LOGO_URL = 'https://cdn.prod.website-files.com/67c10208e6e94bb6c9fba39b/689d0fe09b90825b708049a1_ChatGPT%20Image%20Aug%2013%2C%202025%2C%2005_18_33%20PM.png';
+const LOGO_URL =
+  "https://cdn.prod.website-files.com/67c10208e6e94bb6c9fba39b/689d0fe09b90825b708049a1_ChatGPT%20Image%20Aug%2013%2C%202025%2C%2005_18_33%20PM.png";
 
 export default function AuthPage() {
   const r = useRouter();
