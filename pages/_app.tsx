@@ -1,12 +1,16 @@
+// pages/_app.tsx
 import type { AppProps } from 'next/app';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
+import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
 import '../styles/globals.css';
 
 type Profile = { id: string; full_name?: string | null; role: 'employee' | 'admin' } | null;
 
 export default function App({ Component, pageProps }: AppProps) {
+  const router = useRouter();
+
   const [profile, setProfile] = useState<Profile>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
 
@@ -15,6 +19,8 @@ export default function App({ Component, pageProps }: AppProps) {
     if (!user) {
       setProfile(null);
       setLoadingProfile(false);
+      // If they’re on a protected page, send them to sign in
+      if (router.pathname !== '/') router.replace('/');
       return;
     }
     const { data: p } = await supabase
@@ -30,21 +36,34 @@ export default function App({ Component, pageProps }: AppProps) {
     let mounted = true;
     (async () => { if (mounted) await loadProfile(); })();
 
-    // Re-load whenever auth changes (sign in, sign out, token refresh, etc.)
-    const { data: sub } = supabase.auth.onAuthStateChange(() => {
+    // React to login/logout from any tab
+    const { data: sub } = supabase.auth.onAuthStateChange(async (_event, session) => {
       setLoadingProfile(true);
-      loadProfile();
+      if (!session) {
+        // Logged out -> go to sign in
+        setProfile(null);
+        setLoadingProfile(false);
+        if (router.pathname !== '/') router.replace('/');
+      } else {
+        await loadProfile();
+        // If they’re on "/" and just logged in, go to dashboard
+        if (router.pathname === '/') router.replace('/dashboard');
+      }
     });
+
     return () => {
       mounted = false;
       sub.subscription.unsubscribe();
     };
-  }, []);
+  }, [router]);
 
   async function handleSignOut() {
-    await supabase.auth.signOut();
-    setProfile(null);
-    // optional: window.location.assign('/')  // if you want a hard redirect
+    try {
+      await supabase.auth.signOut();
+    } finally {
+      // Hard redirect to guarantee it
+      router.replace('/');
+    }
   }
 
   return (
@@ -70,7 +89,10 @@ export default function App({ Component, pageProps }: AppProps) {
               <Link href="/admin" className="nav-link">Admin</Link>
             )}
 
-            <button className="signout" onClick={handleSignOut}>Sign out</button>
+            {/* Only show Sign out when a user is signed in */}
+            {!loadingProfile && profile && (
+              <button className="signout" onClick={handleSignOut}>Sign out</button>
+            )}
           </nav>
         </div>
       </header>
