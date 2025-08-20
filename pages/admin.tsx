@@ -11,11 +11,12 @@ import {
 type Mode = 'week' | 'month' | 'all';
 type SortBy = 'name' | 'hours' | 'pay' | 'unpaid';
 type SortDir = 'asc' | 'desc';
+type Profile = { id: string; role: 'admin' | 'employee' } | null;
 
 export default function Admin() {
   const r = useRouter();
 
-  const [me, setMe] = useState<any | null>(null);
+  const [me, setMe] = useState<Profile>(null);
   const [checking, setChecking] = useState(true);
 
   const [shifts, setShifts] = useState<any[]>([]);
@@ -31,23 +32,53 @@ export default function Admin() {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | undefined>();
 
-  // Auth + admin check
+  // ---- Auth + role check (fixes the "need to refresh" issue) ----
   useEffect(() => {
-    (async () => {
+    let active = true;
+
+    async function loadProfile() {
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { r.replace('/'); return; }
+      if (!active) return;
+
+      if (!user) {
+        setMe(null);
+        setChecking(false);
+        r.replace('/');
+        return;
+      }
+
       const { data: prof } = await supabase
         .from('profiles')
         .select('id, role')
         .eq('id', user.id)
         .single();
-      setMe(prof || null);
+
+      if (!active) return;
+
+      setMe((prof as any) ?? null);
       setChecking(false);
-      if (!prof || prof.role !== 'admin') r.replace('/dashboard?msg=not_admin');
-    })();
+
+      // Decide access ONLY after we know the role
+      if (!prof || prof.role !== 'admin') {
+        r.replace('/dashboard?msg=not_admin');
+      }
+    }
+
+    setChecking(true);
+    loadProfile();
+
+    const { data: sub } = supabase.auth.onAuthStateChange(() => {
+      setChecking(true);
+      loadProfile();
+    });
+
+    return () => {
+      active = false;
+      sub.subscription.unsubscribe();
+    };
   }, [r]);
 
-  // Range builder
+  // ---- Range builder ----
   const range = useMemo(() => {
     const now = new Date();
     if (mode === 'week') {
@@ -65,9 +96,11 @@ export default function Admin() {
     return { start: null as any, end: null as any, label: 'All time' };
   }, [mode, offset]);
 
-  // Load shifts
+  // ---- Load shifts after role is known ----
   useEffect(() => {
+    if (checking) return;
     if (!me || me.role !== 'admin') return;
+
     (async () => {
       setLoading(true);
       setErr(undefined);
@@ -105,9 +138,9 @@ export default function Admin() {
         setLoading(false);
       }
     })();
-  }, [me, mode, offset, unpaidOnly, range]);
+  }, [checking, me, mode, offset, unpaidOnly, range]);
 
-  // Totals by employee
+  // ---- Totals by employee ----
   const totals = useMemo(() => {
     const m: Record<string, { id: string; name: string; hours: number; pay: number; unpaid: number }> = {};
     for (const s of shifts) {
@@ -122,7 +155,7 @@ export default function Admin() {
     return Object.values(m);
   }, [shifts, names]);
 
-  // Sort totals table
+  // ---- Sort totals table ----
   const sortedTotals = useMemo(() => {
     const a = [...totals];
     if (sortBy === 'name') {
@@ -137,7 +170,7 @@ export default function Admin() {
     return a;
   }, [totals, sortBy, sortDir]);
 
-  // Group shifts by employee and sort within group
+  // ---- Group shifts by employee ----
   const groups = useMemo(() => {
     const m: Record<string, any[]> = {};
     for (const s of shifts) (m[s.user_id] ??= []).push(s);
@@ -151,17 +184,17 @@ export default function Admin() {
     return m;
   }, [shifts]);
 
-  // Order of employee sections = order in sorted totals table
+  // Order employee sections following totals sort
   const sectionOrder = useMemo(() => sortedTotals.map(t => t.id), [sortedTotals]);
 
-  // Toggle paid
+  // ---- Actions ----
   async function togglePaid(row: any, next: boolean) {
     const patch = {
       is_paid: next,
       paid_at: next ? new Date().toISOString() : null,
-      paid_by: next ? me!.id : null,
+      paid_by: next ? (me as any)!.id : null,
     };
-    // optimistic
+    // optimistic update
     setShifts(prev => prev.map(s => s.id === row.id ? { ...s, ...patch } : s));
     const { error } = await supabase.from('shifts').update(patch).eq('id', row.id);
     if (error) {
@@ -179,7 +212,15 @@ export default function Admin() {
     setShifts(prev => prev.filter(s => s.id !== row.id));
   }
 
-  if (checking || !me || me.role !== 'admin') return null;
+  if (checking) {
+    return (
+      <main className="page">
+        <h1>Admin</h1>
+        <p>Loading…</p>
+      </main>
+    );
+  }
+  if (!me || me.role !== 'admin') return null;
 
   return (
     <main className="page">
