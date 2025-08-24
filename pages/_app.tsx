@@ -14,55 +14,60 @@ export default function App({ Component, pageProps }: AppProps) {
   const [profile, setProfile] = useState<Profile>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
 
-  async function loadProfile() {
-    const { data: { user } } = await supabase.auth.getUser();
-    if (!user) {
-      setProfile(null);
-      setLoadingProfile(false);
-      // If they’re on a protected page, send them to sign in
-      if (router.pathname !== '/') router.replace('/');
-      return;
-    }
-    const { data: p } = await supabase
+  async function fetchProfile(userId: string) {
+    const { data } = await supabase
       .from('profiles')
       .select('id, full_name, role')
-      .eq('id', user.id)
+      .eq('id', userId)
       .single();
-    setProfile((p as any) ?? null);
+    setProfile((data as any) ?? null);
     setLoadingProfile(false);
   }
 
   useEffect(() => {
-    let mounted = true;
-    (async () => { if (mounted) await loadProfile(); })();
+    let cancelled = false;
 
-    // React to login/logout from any tab
-    const { data: sub } = supabase.auth.onAuthStateChange(async (_event, session) => {
-      setLoadingProfile(true);
-      if (!session) {
-        // Logged out -> go to sign in
+    (async () => {
+      // Fast path: get current session from local storage (no network).
+      const { data: { session } } = await supabase.auth.getSession();
+      if (cancelled) return;
+
+      if (!session?.user) {
         setProfile(null);
         setLoadingProfile(false);
+        // Kick unauthenticated users off protected pages.
         if (router.pathname !== '/') router.replace('/');
+        return;
+      }
+
+      // We have a user—fetch their profile.
+      await fetchProfile(session.user.id);
+
+      // If already on the login page, send them to dashboard.
+      if (router.pathname === '/') router.replace('/dashboard');
+    })();
+
+    // Keep UI in sync with auth changes (sign-in/out, token refresh).
+    const { data: sub } = supabase.auth.onAuthStateChange(async (_evt, session) => {
+      if (!session?.user) {
+        setProfile(null);
+        setLoadingProfile(false);
+        router.replace('/'); // always land on sign-in when logged out
       } else {
-        await loadProfile();
-        // If they’re on "/" and just logged in, go to dashboard
+        setLoadingProfile(true);
+        await fetchProfile(session.user.id);
         if (router.pathname === '/') router.replace('/dashboard');
       }
     });
 
-    return () => {
-      mounted = false;
-      sub.subscription.unsubscribe();
-    };
+    return () => { cancelled = true; sub.subscription.unsubscribe(); };
   }, [router]);
 
   async function handleSignOut() {
-    try {
-      await supabase.auth.signOut();
-    } finally {
-      // Hard redirect to guarantee it
-      router.replace('/');
+    try { await supabase.auth.signOut(); }
+    finally {
+      // Hard redirect avoids Safari/Chrome cache weirdness after refreshes.
+      window.location.href = '/';
     }
   }
 
@@ -71,7 +76,6 @@ export default function App({ Component, pageProps }: AppProps) {
       <header className="topbar">
         <div className="shell">
           <div className="brand-wrap">
-            {/* your logo */}
             <img
               src="https://cdn.prod.website-files.com/67c10208e6e94bb6c9fba39b/689d0fe09b90825b708049a1_ChatGPT%20Image%20Aug%2013%2C%202025%2C%2005_18_33%20PM.png"
               alt="Logo"
@@ -81,17 +85,16 @@ export default function App({ Component, pageProps }: AppProps) {
           </div>
 
           <nav className="nav">
-            <Link href="/dashboard" className="nav-link">Dashboard</Link>
-            <Link href="/new-shift" className="nav-link">Log Shift</Link>
-
-            {/* Only show Admin when we know profile.role */}
-            {!loadingProfile && profile?.role === 'admin' && (
-              <Link href="/admin" className="nav-link">Admin</Link>
-            )}
-
-            {/* Only show Sign out when a user is signed in */}
+            {/* Only render app links when a user is loaded */}
             {!loadingProfile && profile && (
-              <button className="signout" onClick={handleSignOut}>Sign out</button>
+              <>
+                <Link href="/dashboard" className="nav-link">Dashboard</Link>
+                <Link href="/new-shift" className="nav-link">Log Shift</Link>
+                {profile.role === 'admin' && (
+                  <Link href="/admin" className="nav-link">Admin</Link>
+                )}
+                <button className="signout" onClick={handleSignOut}>Sign out</button>
+              </>
             )}
           </nav>
         </div>
