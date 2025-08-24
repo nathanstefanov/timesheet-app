@@ -13,6 +13,14 @@ type SortBy = 'name' | 'hours' | 'pay' | 'unpaid';
 type SortDir = 'asc' | 'desc';
 type Profile = { id: string; role: 'admin' | 'employee' } | null;
 
+/** Compute pay with Breakdown $50 minimum (uses DB pay_due if present). */
+function payFor(s: any): number {
+  const rate  = Number(s.pay_rate ?? 25);
+  const hours = Number(s.hours_worked ?? 0);
+  const base  = s.pay_due != null ? Number(s.pay_due) : hours * rate;
+  return s.shift_type === 'Breakdown' ? Math.max(base, 50) : base;
+}
+
 export default function Admin() {
   const r = useRouter();
 
@@ -58,7 +66,6 @@ export default function Admin() {
       setMe((prof as any) ?? null);
       setChecking(false);
 
-      // Decide access ONLY after we know the role
       if (!prof || prof.role !== 'admin') {
         r.replace('/dashboard?msg=not_admin');
       }
@@ -140,14 +147,14 @@ export default function Admin() {
     })();
   }, [checking, me, mode, offset, unpaidOnly, range]);
 
-  // ---- Totals by employee ----
+  // ---- Totals by employee (uses payFor) ----
   const totals = useMemo(() => {
     const m: Record<string, { id: string; name: string; hours: number; pay: number; unpaid: number }> = {};
     for (const s of shifts) {
       const id = s.user_id;
       const name = names[id] || '—';
       m[id] ??= { id, name, hours: 0, pay: 0, unpaid: 0 };
-      const h = Number(s.hours_worked || 0), p = Number(s.pay_due || 0);
+      const h = Number(s.hours_worked || 0), p = payFor(s);
       m[id].hours += h;
       m[id].pay += p;
       if (!Boolean((s as any).is_paid)) m[id].unpaid += p;
@@ -194,7 +201,6 @@ export default function Admin() {
       paid_at: next ? new Date().toISOString() : null,
       paid_by: next ? (me as any)!.id : null,
     };
-    // optimistic update
     setShifts(prev => prev.map(s => s.id === row.id ? { ...s, ...patch } : s));
     const { error } = await supabase.from('shifts').update(patch).eq('id', row.id);
     if (error) {
@@ -249,7 +255,6 @@ export default function Admin() {
           Unpaid only
         </label>
 
-        {/* Sort controls for totals table */}
         <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginLeft: 'auto' }}>
           <label>Sort totals by</label>
           <select value={sortBy} onChange={e => setSortBy(e.target.value as SortBy)}>
@@ -265,7 +270,7 @@ export default function Admin() {
         </div>
       </div>
 
-      {/* Totals by employee (mobile stacked) */}
+      {/* Totals by employee */}
       <h3>Totals by Employee</h3>
       <div className="table-wrap">
         <table className="table table--center table--stack" style={{ marginBottom: 16 }}>
@@ -290,7 +295,7 @@ export default function Admin() {
         </table>
       </div>
 
-      {/* Grouped shifts with per-employee subtotals (mobile stacked) */}
+      {/* Grouped shifts with per-employee subtotals */}
       <h3>All Shifts — Grouped by Employee</h3>
       {loading && <p>Loading…</p>}
 
@@ -319,7 +324,7 @@ export default function Admin() {
               const subtotal = rows.reduce(
                 (acc, s) => {
                   acc.hours += Number(s.hours_worked || 0);
-                  acc.pay += Number(s.pay_due || 0);
+                  acc.pay += payFor(s);
                   return acc;
                 },
                 { hours: 0, pay: 0 }
@@ -327,13 +332,13 @@ export default function Admin() {
 
               return (
                 <React.Fragment key={uid}>
-                  {/* Section header row */}
                   <tr className="section-head">
                     <td colSpan={10}>{name}</td>
                   </tr>
 
                   {rows.map((s) => {
                     const paid = Boolean((s as any).is_paid);
+                    const pay = payFor(s);
                     return (
                       <tr key={s.id}>
                         <td data-label="Employee">{name}</td>
@@ -346,7 +351,7 @@ export default function Admin() {
                           {new Date(s.time_out).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </td>
                         <td data-label="Hours">{Number(s.hours_worked).toFixed(2)}</td>
-                        <td data-label="Pay">${Number(s.pay_due).toFixed(2)}</td>
+                        <td data-label="Pay">${pay.toFixed(2)}</td>
                         <td data-label="Paid?">
                           <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                             <input
@@ -376,7 +381,6 @@ export default function Admin() {
                     );
                   })}
 
-                  {/* Subtotal row */}
                   <tr className="subtotal">
                     <td colSpan={5} data-label="Subtotal" style={{ textAlign: 'right' }}>
                       Total — {name}
