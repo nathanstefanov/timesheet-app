@@ -5,9 +5,13 @@ import { supabase } from '../lib/supabaseClient';
 
 type ShiftType = 'Setup' | 'Breakdown' | 'Shop';
 
-function toISO(date: string, time: string) {
-  // Combine local date+time and convert to ISO
-  return new Date(`${date}T${time}:00`).toISOString();
+/** Combine a local date (YYYY-MM-DD) and time (HH:MM) into a JS Date in local tz */
+function combineLocal(date: string, time: string): Date {
+  // Construct at midnight local, then set hours/minutes to avoid DST issues
+  const d = new Date(`${date}T00:00:00`);
+  const [hh, mm] = time.split(':').map(Number);
+  d.setHours(hh ?? 0, mm ?? 0, 0, 0);
+  return d;
 }
 
 export default function NewShift() {
@@ -33,22 +37,38 @@ export default function NewShift() {
   async function submit() {
     setErr(undefined);
     if (!userId) return;
+
     try {
-      if (!date || !tin || !tout) throw new Error('Date, Time In and Time Out are required.');
-      const time_in = toISO(date, tin);
-      const time_out = toISO(date, tout);
-      if (new Date(time_out) <= new Date(time_in)) throw new Error('Time Out must be after Time In.');
+      if (!date || !tin || !tout) {
+        throw new Error('Date, Time In and Time Out are required.');
+      }
+
+      // Build local Date objects
+      let timeIn = combineLocal(date, tin);
+      let timeOut = combineLocal(date, tout);
+
+      // If out <= in, treat as overnight (roll to next day)
+      if (timeOut <= timeIn) {
+        timeOut.setDate(timeOut.getDate() + 1);
+      }
+
+      // (Optional sanity check: max 18 hours)
+      const hours = (timeOut.getTime() - timeIn.getTime()) / 36e5;
+      if (hours <= 0 || hours > 18) {
+        throw new Error('Please double-check your times (shift length seems off).');
+      }
 
       setSaving(true);
       const { error } = await supabase.from('shifts').insert({
         user_id: userId,
-        shift_date: date,
+        shift_date: date,            // start date (keep as your canonical day)
         shift_type: type,
-        time_in,
-        time_out,
+        time_in: timeIn.toISOString(),
+        time_out: timeOut.toISOString(),
         notes,
       });
       if (error) throw error;
+
       r.push('/dashboard');
     } catch (e: any) {
       setErr(e.message || 'Could not save shift');
@@ -154,12 +174,12 @@ export default function NewShift() {
         .input {
           width: 100%;
           box-sizing: border-box;
-          height: 48px;                  /* unified height */
+          height: 48px;
           padding: 12px 14px;
           border: 1px solid #d1d5db;
           border-radius: 12px;
           background: #fff;
-          font-size: 16px;               /* prevents iOS zoom */
+          font-size: 16px;
           line-height: 1.2;
           -webkit-appearance: none;
           appearance: none;
@@ -176,7 +196,6 @@ export default function NewShift() {
           padding-bottom: 10px;
         }
 
-        /* Select arrow for iOS/Android */
         .select {
           padding-right: 36px;
           background-image:
@@ -189,15 +208,13 @@ export default function NewShift() {
           background-repeat: no-repeat;
         }
 
-        /* Time inputs side-by-side on wide screens */
         .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
 
-        /* Mobile tweaks */
         @media (max-width: 560px) {
           .wrap { margin: 16px auto; }
           .card { padding: 16px; border-radius: 14px; }
           .grid { grid-template-columns: 1fr; }  /* stack time fields */
-          .input { height: 50px; }               /* bigger touch targets */
+          .input { height: 50px; }
         }
 
         .primary {

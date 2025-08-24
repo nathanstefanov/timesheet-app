@@ -1,13 +1,18 @@
+// pages/shift/[id].tsx
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../../lib/supabaseClient';
 
-function toLocalTime(iso: string) {
+type ShiftType = 'Setup' | 'Breakdown' | 'Shop';
+
+function fmtTimeLocal(iso: string) {
   const d = new Date(iso);
-  return `${String(d.getHours()).padStart(2,'0')}:${String(d.getMinutes()).padStart(2,'0')}`;
+  const hh = String(d.getHours()).padStart(2, '0');
+  const mm = String(d.getMinutes()).padStart(2, '0');
+  return `${hh}:${mm}`;
 }
-function toISO(date: string, time: string) {
-  return new Date(`${date}T${time}:00`).toISOString();
+function buildLocal(date: string, time: string) {
+  return new Date(`${date}T${time}:00`);
 }
 
 export default function EditShift() {
@@ -16,39 +21,67 @@ export default function EditShift() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [err, setErr] = useState<string>();
-  const [isPaid, setIsPaid] = useState(false);
+  const [err, setErr] = useState<string | undefined>();
 
   const [date, setDate] = useState('');
-  const [type, setType] = useState<'Setup'|'Breakdown'|'Shop'>('Setup');
+  const [type, setType] = useState<ShiftType>('Setup');
   const [tin, setTin] = useState('');
   const [tout, setTout] = useState('');
   const [notes, setNotes] = useState('');
 
+  // derived for UI: does out fall on the following calendar day?
+  const [endsNextDay, setEndsNextDay] = useState(false);
+
   useEffect(() => {
     (async () => {
       if (!id) return;
+      setLoading(true);
       const { data, error } = await supabase.from('shifts').select('*').eq('id', id).single();
       if (error) { setErr(error.message); setLoading(false); return; }
+
       setDate(data.shift_date);
       setType(data.shift_type);
-      setTin(toLocalTime(data.time_in));
-      setTout(toLocalTime(data.time_out));
+      setTin(fmtTimeLocal(data.time_in));
+      setTout(fmtTimeLocal(data.time_out));
       setNotes(data.notes || '');
-      setIsPaid(Boolean((data as any).is_paid));
+
+      const inD = new Date(data.time_in);
+      const outD = new Date(data.time_out);
+      setEndsNextDay(outD.toDateString() !== inD.toDateString());
+
       setLoading(false);
     })();
   }, [id]);
 
   async function save() {
-    setErr(undefined); setSaving(true);
+    setErr(undefined);
+    setSaving(true);
     try {
       if (!date || !tin || !tout) throw new Error('Date, Time In, and Time Out are required');
-      const patch = { shift_date: date, shift_type: type, time_in: toISO(date, tin), time_out: toISO(date, tout), notes };
+
+      const inDt = buildLocal(date, tin);
+      let outDt = buildLocal(date, tout);
+      if (endsNextDay || outDt <= inDt) outDt.setDate(outDt.getDate() + 1);
+
+      if (outDt.getTime() - inDt.getTime() < 60_000) {
+        throw new Error('Time Out must be after Time In.');
+      }
+
+      const patch = {
+        shift_date: date,
+        shift_type: type,
+        time_in: inDt.toISOString(),
+        time_out: outDt.toISOString(),
+        notes,
+      };
       const { error } = await supabase.from('shifts').update(patch).eq('id', id!);
       if (error) throw error;
       r.back();
-    } catch (e: any) { setErr(e.message); } finally { setSaving(false); }
+    } catch (e: any) {
+      setErr(e.message);
+    } finally {
+      setSaving(false);
+    }
   }
 
   async function del() {
@@ -58,47 +91,45 @@ export default function EditShift() {
     r.push('/dashboard');
   }
 
-  if (loading) return <main className="page">Loading…</main>;
+  if (loading) return <main className="page" style={{ padding: 24 }}>Loading…</main>;
 
   return (
-    <main className="page" style={{ maxWidth: 560 }}>
+    <main className="page" style={{ maxWidth: 520, margin: '32px auto', fontFamily: 'system-ui' }}>
       <h1>Edit Shift</h1>
-
-      {isPaid && (
-        <div style={{background:'#fff4f4', border:'1px solid #f8caca', color:'#7a1111',
-                     padding:10, borderRadius:8, marginBottom:10}}>
-          This shift is marked <b>PAID</b>. If you shouldn’t edit paid shifts, ask an admin.
-        </div>
-      )}
       {err && <p style={{ color: 'crimson' }}>{err}</p>}
 
       <label>Date</label>
-      <input type="date" value={date} onChange={e=>setDate(e.target.value)} />
+      <input type="date" value={date} onChange={e => setDate(e.target.value)} style={{ width: '100%', padding: 8, marginBottom: 8 }} />
 
       <label>Shift Type</label>
-      <select value={type} onChange={e=>setType(e.target.value as any)}>
-        <option>Setup</option><option>Breakdown</option><option>Shop</option>
+      <select value={type} onChange={e => setType(e.target.value as ShiftType)} style={{ width: '100%', padding: 8, marginBottom: 8 }}>
+        <option>Setup</option>
+        <option>Breakdown</option>
+        <option>Shop</option>
       </select>
 
-      <div className="row" style={{ gap: 12 }}>
-        <div style={{ flex: 1 }}>
+      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+        <div>
           <label>Time In</label>
-          <input type="time" value={tin} onChange={e=>setTin(e.target.value)} />
+          <input type="time" value={tin} onChange={e => setTin(e.target.value)} style={{ width: '100%', padding: 8, marginBottom: 8 }} />
         </div>
-        <div style={{ flex: 1 }}>
+        <div>
           <label>Time Out</label>
-          <input type="time" value={tout} onChange={e=>setTout(e.target.value)} />
+          <input type="time" value={tout} onChange={e => setTout(e.target.value)} style={{ width: '100%', padding: 8, marginBottom: 8 }} />
         </div>
       </div>
 
-      <label>Notes</label>
-      <textarea value={notes} onChange={e=>setNotes(e.target.value)} />
+      <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+        <input type="checkbox" checked={endsNextDay} onChange={e => setEndsNextDay(e.target.checked)} />
+        Ends after midnight (next day)
+      </label>
 
-      <div className="actions" style={{ marginTop: 10 }}>
-        <button className="btn-edit" onClick={save} disabled={saving}>
-          {saving ? 'Saving…' : 'Save'}
-        </button>
-        <button className="btn-delete" onClick={del}>Delete</button>
+      <label>Notes</label>
+      <textarea value={notes} onChange={e => setNotes(e.target.value)} style={{ width: '100%', padding: 8, marginBottom: 12 }} />
+
+      <div style={{ display: 'flex', gap: 8 }}>
+        <button onClick={save} disabled={saving} style={{ padding: '10px 14px' }}>{saving ? 'Saving…' : 'Save'}</button>
+        <button onClick={del} style={{ padding: '10px 14px', background: '#fee2e2', border: '1px solid #fecaca' }}>Delete</button>
         <button onClick={() => history.back()} style={{ marginLeft: 'auto' }}>Cancel</button>
       </div>
     </main>
