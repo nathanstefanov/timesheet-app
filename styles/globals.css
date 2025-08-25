@@ -272,3 +272,27 @@ textarea{ min-height:80px; resize:vertical; }
 
 /* Consistent spacing around inputs */
 .form-field{ margin-bottom: 12px; }
+
+/* --- Responsive employee header row --- */
+.section-controls{ flex-wrap: wrap; row-gap: 8px; }
+.section-controls__left{ min-width:0; gap:12px; }
+.section-controls__right{ margin-left:auto; flex-wrap:wrap; gap:8px; }
+
+@media (max-width: 900px){
+  .section-controls__left{ width:100%; justify-content:space-between; }
+  .section-controls__right{ width:100%; justify-content:flex-start; }
+}
+
+/* --- Centered "unpaid shifts" counter --- */
+.section-stat{
+  display:grid; place-items:center;
+  padding:4px 10px; border:1px solid var(--border);
+  border-radius:10px; background:#fff;
+}
+.section-stat__num{ font-weight:800; font-size:16px; line-height:1; }
+.section-stat__label{ margin-top:2px; font-size:12px; line-height:1.05; color:var(--muted); text-align:center; }
+
+/* (optional) tighter buttons on small screens */
+@media (max-width: 520px){
+  .section-controls__right .topbar-btn{ padding:6px 10px; }
+}

@@ -37,9 +37,10 @@ export default function Admin() {
 
   const [bulkBusy, setBulkBusy] = useState<Record<string, boolean>>({});
 
-  // Auth + role check
+  // ---- Auth + role check ----
   useEffect(() => {
     let active = true;
+
     async function loadProfile() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!active) return;
@@ -80,7 +81,7 @@ export default function Admin() {
     };
   }, [r]);
 
-  // Load shifts after role is known
+  // ---- Load shifts after role is known ----
   useEffect(() => {
     if (checking) return;
     if (!me || me.role !== 'admin') return;
@@ -99,6 +100,7 @@ export default function Admin() {
         const rows = data || [];
         setShifts(rows);
 
+        // Fetch names for display
         const ids = Array.from(new Set(rows.map((s: any) => s.user_id)));
         if (ids.length) {
           const { data: profs } = await supabase
@@ -119,7 +121,7 @@ export default function Admin() {
     })();
   }, [checking, me, tab]);
 
-  // Totals by employee
+  // ---- Totals by employee ----
   const totals = useMemo(() => {
     const m: Record<string, { id: string; name: string; hours: number; pay: number; unpaid: number; minCount: number }> = {};
     for (const s of shifts) {
@@ -138,7 +140,7 @@ export default function Admin() {
 
   const unpaidTotal = useMemo(() => totals.reduce((sum, t) => sum + t.unpaid, 0), [totals]);
 
-  // Sort totals
+  // ---- Sort totals table ----
   const sortedTotals = useMemo(() => {
     const a = [...totals];
     if (sortBy === 'name') {
@@ -153,7 +155,7 @@ export default function Admin() {
     return a;
   }, [totals, sortBy, sortDir]);
 
-  // Group shifts by employee
+  // ---- Group shifts by employee ----
   const groups = useMemo(() => {
     const m: Record<string, any[]> = {};
     for (const s of shifts) (m[s.user_id] ??= []).push(s);
@@ -169,7 +171,7 @@ export default function Admin() {
 
   const sectionOrder = useMemo(() => sortedTotals.map(t => t.id), [sortedTotals]);
 
-  // Actions
+  // ---- Actions ----
   async function togglePaid(row: any, next: boolean) {
     const patch = {
       is_paid: next,
@@ -316,21 +318,17 @@ export default function Admin() {
             <tbody>
               {sortedTotals.map((t) => (
                 <tr key={t.id}>
-                  <td>
+                  <td data-label="Employee">
                     {t.name}
                     {t.minCount > 0 && (
-                      <span
-                        title={`${t.minCount} Breakdown shift(s) hit the $50 minimum`}
-                        className="muted"
-                        style={{ marginLeft: 8 }}
-                      >
+                      <span className="muted" style={{ marginLeft: 8 }}>
                         ({t.minCount}× MIN)
                       </span>
                     )}
                   </td>
-                  <td>{t.hours.toFixed(2)}</td>
-                  <td>${t.pay.toFixed(2)}</td>
-                  <td>${t.unpaid.toFixed(2)}</td>
+                  <td data-label="Hours">{t.hours.toFixed(2)}</td>
+                  <td data-label="Pay">${t.pay.toFixed(2)}</td>
+                  <td data-label="Unpaid">${t.unpaid.toFixed(2)}</td>
                 </tr>
               ))}
             </tbody>
@@ -382,10 +380,13 @@ export default function Admin() {
                     <td colSpan={10} className="section-controls">
                       <div className="section-controls__left">
                         <strong>{name}</strong>
-                        <span className="muted" style={{ marginLeft: 12 }}>
-                          {unpaidCount} unpaid shift{unpaidCount !== 1 ? 's' : ''}
-                        </span>
+                        {/* Centered unpaid shifts counter */}
+                        <div className="section-stat" aria-label="Unpaid shifts">
+                          <div className="section-stat__num">{unpaidCount}</div>
+                          <div className="section-stat__label">unpaid<br/>shifts</div>
+                        </div>
                       </div>
+
                       <div className="section-controls__right">
                         <button
                           className="topbar-btn"
