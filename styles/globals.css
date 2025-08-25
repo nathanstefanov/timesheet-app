@@ -135,7 +135,22 @@ body{
   background:#f8fafc; border-top:0; text-align:left; font-weight:700; color: var(--ink-subtle);
 }
 .table tbody tr:hover{ background: #fafafa; }
-.section-head td{ font-weight:800; background:#f8fafc; color:#111827; border-top:2px solid var(--border); }
+
+/* Section (employee) header row */
+.section-head td{ 
+  font-weight:800; background:#f8fafc; color:#111827; border-top:2px solid var(--border);
+  padding: 0;                         /* remove TD padding so inner flex sets spacing */
+}
+.section-controls{
+  display:flex; align-items:center; justify-content:space-between; gap:12px;
+  width:100%;                         /* make the flex fill the whole colSpan cell */
+}
+.section-controls__left,
+.section-controls__right{
+  display:flex; align-items:center; gap:8px; padding:10px 12px; /* put padding on inner flex */
+}
+.section-controls__right .topbar-btn{ white-space: nowrap; }     /* keep buttons from wrapping */
+
 .subtotal td{ background:#fbfbff; color:#1f2937; font-weight:700; border-top:2px solid var(--brand-border); }
 
 .table--center th, .table--center td{ text-align:center; vertical-align: middle; }
@@ -143,10 +158,6 @@ body{
 .table--center td .actions{ display:inline-flex; gap:10px; justify-content:center; align-items:center; }
 
 .table-wrap{ width:100%; overflow-x:auto; }
-
-/* Row controls in admin sections */
-.section-controls{ display:flex; align-items:center; justify-content:space-between; }
-.section-controls__right{ display:flex; gap:8px; }
 
 /* ======================================================
    Admin: Tabs + Summary
