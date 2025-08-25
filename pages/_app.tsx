@@ -70,11 +70,10 @@ export default function App({ Component, pageProps }: AppProps) {
       if (router.pathname === '/') safeReplace('/dashboard');
     })();
 
-    // Only respond to meaningful events (avoid refresh loops on TOKEN_REFRESHED / PASSED_RECOVERY)
+    // Only respond to meaningful events (avoid refresh loops on TOKEN_REFRESHED / PASSWORD_RECOVERY etc.)
     const { data: sub } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (cancelled) return;
 
-      // Debug tip: console.log('auth event', event);
       switch (event) {
         case 'SIGNED_IN':
         case 'USER_UPDATED': {
@@ -96,7 +95,7 @@ export default function App({ Component, pageProps }: AppProps) {
           safeReplace('/');
           break;
         }
-        // ignore refresh noise
+        // ignore refresh/noise events
         case 'TOKEN_REFRESHED':
         case 'PASSWORD_RECOVERY':
         default:

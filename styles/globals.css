@@ -4,14 +4,14 @@
 :root{
   --bg: #f7f8fc;
   --card: #ffffff;
-  --ink: #0f172a;              /* slate-900-ish */
-  --ink-subtle: #334155;       /* slate-700 */
-  --muted: #6b7280;            /* gray-500 */
-  --border: #e5e7eb;           /* gray-200 */
-  --border-soft: #f1f5f9;      /* slate-100 */
-  --brand: #4f46e5;            /* indigo-600 */
-  --brand-weak: #eef2ff;       /* indigo-50 */
-  --brand-border: #c7d2fe;     /* indigo-200 */
+  --ink: #0f172a;
+  --ink-subtle: #334155;
+  --muted: #6b7280;
+  --border: #e5e7eb;
+  --border-soft: #f1f5f9;
+  --brand: #4f46e5;
+  --brand-weak: #eef2ff;
+  --brand-border: #c7d2fe;
 
   --success-bg: #dcfce7; --success-ink:#065f46; --success-brd:#bbf7d0;
   --danger-bg:  #fee2e2; --danger-ink: #7a1111; --danger-brd: #fecaca;
@@ -42,7 +42,6 @@ body{
 .row{ display:flex; align-items:center; gap: var(--gap); }
 .link-right{ margin-left:auto; text-decoration:none; color:#2563eb; font-weight:600; }
 
-/* Focus styles for a11y */
 :focus-visible{
   outline: 3px solid color-mix(in oklab, var(--brand) 40%, transparent);
   outline-offset: 2px;
@@ -65,7 +64,6 @@ body{
 .nav-link:hover{ background:#f3f4f6; border-color:var(--border); }
 .nav-link.active{ background:var(--brand-weak); color:#3730a3; border-color:var(--brand-border); }
 
-/* Sign out button (match nav-link aesthetics) */
 .signout, .topbar-btn{
   margin-left:auto; padding:8px 12px; border-radius:10px; font-weight:600;
   border:1px solid var(--border); background:#fff; color:#111827; cursor:pointer;
@@ -74,7 +72,6 @@ body{
 .signout:hover, .topbar-btn:hover{ background:#f9fafb; }
 .signout:active, .topbar-btn:active{ transform: translateY(1px); }
 
-/* Error banner (optional) */
 .banner-error{ background:#fff1f2; color:#9f1239; border-bottom:1px solid #fecdd3; padding:10px 16px; text-align:center; }
 
 /* ======================================================
@@ -89,32 +86,18 @@ body{
 .table thead th{
   background:#f8fafc; border-top:0; text-align:left; font-weight:700; color: var(--ink-subtle);
 }
-
-/* Subtle row hover */
 .table tbody tr:hover{ background: #fafafa; }
+.section-head td{ font-weight:800; background:#f8fafc; color:#111827; border-top:2px solid var(--border); }
+.subtotal td{ background:#fbfbff; color:#1f2937; font-weight:700; border-top:2px solid var(--brand-border); }
 
-/* Section header rows (used in Admin "grouped by employee") */
-.section-head td{
-  font-weight:800; background:#f8fafc; color:#111827; border-top:2px solid var(--border);
-}
-
-/* Subtotal rows */
-.subtotal td{
-  background:#fbfbff; color:#1f2937; font-weight:700; border-top:2px solid var(--brand-border);
-}
-
-/* Centered variant (opt-in) */
 .table--center th, .table--center td{ text-align:center; vertical-align: middle; }
 .table--center th:first-child, .table--center td:first-child{ text-align:left; }
-
-/* Keep actions centered nicely in cells */
 .table--center td .actions{ display:inline-flex; gap:10px; justify-content:center; align-items:center; }
 
-/* Table wrapper for overflow safety */
 .table-wrap{ width:100%; overflow-x:auto; }
 
 /* ======================================================
-   Admin: Tabs + Summary Bar
+   Admin: Tabs + Summary
 ====================================================== */
 .tabs{ display:flex; gap:8px; flex-wrap: wrap; }
 .tabs button{
@@ -122,19 +105,16 @@ body{
   padding:8px 12px; border-radius:10px; font-weight:700; cursor:pointer;
   transition: background .15s, border-color .15s, color .15s, transform .02s;
 }
-.tabs button.active, .tabs button.is-active{
-  background: var(--brand-weak); color:#3730a3; border-color: var(--brand-border);
-}
+.tabs button.active, .tabs button.is-active{ background: var(--brand-weak); color:#3730a3; border-color: var(--brand-border); }
 .tabs button:hover{ background:#f9fafb; }
 .tabs button:active{ transform: translateY(1px); }
 
-/* Summary bar above tables */
-.summary-bar, .admin-summary{
+.admin-summary{
   margin:16px 0; padding:12px 14px; background:#f6f7ff;
   border:1px solid var(--brand-border); border-radius: var(--radius); display:flex;
   gap:16px; align-items:center; font-weight:700; box-shadow: var(--shadow-sm);
 }
-.summary-bar .meta, .admin-summary .meta{ font-weight:500; font-size:12px; color: var(--muted); margin-left:auto; }
+.admin-summary .meta{ font-weight:500; font-size:12px; color: var(--muted); margin-left:auto; }
 
 /* ======================================================
    Badges & Chips
@@ -151,12 +131,10 @@ body{
   padding:8px 12px; background:#fff; border:1px solid var(--border);
   border-radius: 999px; font-weight:600; color:#1f2937;
 }
-
-/* tiny, muted inline helper text */
 .muted{ color: var(--muted); font-size: 12px; }
 
 /* ======================================================
-   Action Buttons (Edit / Delete)
+   Actions
 ====================================================== */
 .actions{ display:flex; gap:12px; }
 .btn-edit, .btn-delete{
@@ -169,7 +147,6 @@ body{
 .btn-edit{ background:#2563eb; color:#fff; }
 .btn-edit:hover{ filter: brightness(0.98); }
 .btn-edit:active{ transform: translateY(1px); }
-
 .btn-delete{ background:var(--danger-bg); color:var(--danger-ink); border:1px solid var(--danger-brd); }
 .btn-delete:hover{ background:#fecaca; }
 .btn-delete:active{ transform: translateY(1px); }
@@ -188,8 +165,6 @@ input:focus, select:focus, textarea:focus{
   box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 20%, transparent);
 }
 textarea{ min-height:80px; resize:vertical; }
-
-/* Inline switch/checkbox align */
 .inline-check{ display:inline-flex; align-items:center; gap:6px; }
 
 /* ======================================================
@@ -207,24 +182,12 @@ textarea{ min-height:80px; resize:vertical; }
     border:0 !important; padding:10px 12px;
     display:grid; grid-template-columns:44% 56%; align-items:center; gap:8px;
   }
-  .table--stack td::before{
-    content: attr(data-label); font-weight:700; color: var(--muted); text-align:left;
-  }
+  .table--stack td::before{ content: attr(data-label); font-weight:700; color: var(--muted); text-align:left; }
   .table--stack td:last-child{ padding-bottom:12px; }
-
   .table--stack td .actions{ justify-content:flex-start; gap:10px; }
   .btn-edit, .btn-delete{ min-width:0; height:40px; padding:0 12px; border-radius:10px; box-shadow:none; }
 
-  /* Header tweaks */
   .shell{ gap:8px; padding:8px 12px; }
   .brand{ display:none; }
   .nav{ overflow-x:auto; }
 }
-
-/* ======================================================
-   Utilities (handy on Admin)
-====================================================== */
-.flex{ display:flex; } .items-center{ align-items:center; } .justify-between{ justify-content:space-between; }
-.gap-6{ gap:6px; } .gap-8{ gap:8px; } .gap-12{ gap:12px; }
-.right{ margin-left:auto; } .text-right{ text-align:right; }
-.w-full{ width:100%; }
