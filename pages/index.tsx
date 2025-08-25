@@ -4,7 +4,6 @@ import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
-import '../styles/globals.css';
 
 type Profile = { id: string; full_name?: string | null; role: 'employee' | 'admin' } | null;
 
