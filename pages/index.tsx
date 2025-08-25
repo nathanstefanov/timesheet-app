@@ -1,159 +1,140 @@
-// pages/_app.tsx
-import type { AppProps } from 'next/app';
-import Link from 'next/link';
-import { useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/router';
-import { supabase } from '../lib/supabaseClient';
+// pages/index.tsx
+import { useState, useRef, useEffect } from "react";
+import { useRouter } from "next/router";
+import { supabase } from "../lib/supabaseClient";
 
-type Profile = { id: string; full_name?: string | null; role: 'employee' | 'admin' } | null;
+type Mode = "signin" | "signup";
 
-export default function App({ Component, pageProps }: AppProps) {
-  const router = useRouter();
-  const [profile, setProfile] = useState<Profile>(null);
-  const [authError, setAuthError] = useState<string | null>(null);
-  const [initialized, setInitialized] = useState(false); // we never block rendering
+export default function AuthPage() {
+  const r = useRouter();
+  const [mode, setMode] = useState<Mode>("signin");
+  const [email, setEmail] = useState("");
+  const [password, setPassword] = useState("");
+  const [showPw, setShowPw] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState<string>();
+  const [msg, setMsg] = useState<string>();
+  const emailRef = useRef<HTMLInputElement>(null);
 
-  const navLock = useRef(false);
-  const isLogin = router.pathname === '/';
-
-  function safeReplace(path: string) {
-    if (navLock.current || router.asPath === path) return;
-    navLock.current = true;
-    router.replace(path).finally(() => setTimeout(() => (navLock.current = false), 120));
-  }
-
-  async function fetchProfile(userId: string) {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, full_name, role')
-        .eq('id', userId)
-        .single();
-      if (error) throw error;
-      setProfile((data as any) ?? null);
-    } catch (e: any) {
-      setProfile(null);
-      setAuthError(e.message || 'Failed to load profile');
-    }
-  }
-
-  // ---- helpers: tolerant getUser with timeout + retry ----
-  const withTimeout = <T,>(p: Promise<T>, ms = 12000) =>
-    Promise.race([
-      p,
-      new Promise<T>((_, rej) => setTimeout(() => rej(new Error('auth timeout')), ms)),
-    ]);
-
-  async function getUserWithRetry() {
-    try {
-      return await withTimeout(supabase.auth.getUser(), 12000);
-    } catch {
-      // quick retry for transient delays (service worker, tracker, first-load, etc.)
-      return await withTimeout(supabase.auth.getUser(), 12000);
-    }
-  }
-
-  // ---- Initialize auth (non-blocking UI) ----
   useEffect(() => {
-    let cancelled = false;
+    emailRef.current?.focus();
+  }, [mode]);
 
-    (async () => {
-      setAuthError(null);
-      try {
-        // Fast local check (with our timeout guard)
-        const { data: uData } = await getUserWithRetry();
-        if (cancelled) return;
+  function clearAlerts() {
+    setErr(undefined);
+    setMsg(undefined);
+  }
 
-        const user = uData?.user ?? null;
-
-        if (!user) {
-          setProfile(null);
-          setInitialized(true);
-          if (!isLogin) safeReplace('/');
-          return;
-        }
-
-        await fetchProfile(user.id);
-        setInitialized(true);
-        if (isLogin) safeReplace('/dashboard');
-      } catch (e: any) {
-        if (cancelled) return;
-        // Soft-fail: show toast, keep UI usable
-        setProfile(null);
-        setAuthError(e?.message || 'Auth check failed');
-        setInitialized(true);
-        if (!isLogin) safeReplace('/');
-      }
-    })();
-
-    // Real auth events (sign in/out). Ignore refresh-related events to avoid loops.
-    const { data: sub } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
-        if (session?.user) {
-          await fetchProfile(session.user.id);
-          if (router.pathname === '/') safeReplace('/dashboard');
-        }
-      } else if (event === 'SIGNED_OUT') {
-        setProfile(null);
-        if (router.pathname !== '/') safeReplace('/');
-      }
-      // ignore TOKEN_REFRESHED / INITIAL_SESSION
-    });
-
-    return () => {
-      cancelled = true;
-      sub.subscription.unsubscribe();
-    };
-  }, [router.pathname, isLogin]);
-
-  async function handleSignOut() {
+  async function submit() {
+    clearAlerts();
+    setLoading(true);
     try {
-      await supabase.auth.signOut();
+      if (!email) throw new Error("Enter your email");
+      if (mode === "signup" && password.length < 8)
+        throw new Error("Password must be at least 8 characters");
+      if (mode === "signin" && !password) throw new Error("Enter your password");
+
+      if (mode === "signup") {
+        const { error } = await supabase.auth.signUp({ email, password });
+        if (error) throw error;
+        setMsg("Account created. You can sign in now.");
+        setMode("signin");
+      } else {
+        const { error } = await supabase.auth.signInWithPassword({
+          email,
+          password,
+        });
+        if (error) throw error;
+        r.push("/dashboard");
+      }
+    } catch (e: any) {
+      setErr(e.message || "Something went wrong");
     } finally {
-      // hard reload clears any transient auth storage issues
-      window.location.href = '/';
+      setLoading(false);
+    }
+  }
+
+  async function sendReset() {
+    clearAlerts();
+    setLoading(true);
+    try {
+      if (!email) throw new Error("Enter your email first");
+      const redirectTo =
+        typeof window !== "undefined"
+          ? `${location.origin}/update-password`
+          : undefined;
+      const { error } = await supabase.auth.resetPasswordForEmail(email, {
+        redirectTo,
+      });
+      if (error) throw error;
+      setMsg("Password reset email sent. Check your inbox.");
+    } catch (e: any) {
+      setErr(e.message || "Could not send reset email");
+    } finally {
+      setLoading(false);
     }
   }
 
   return (
-    <>
-      <header className="topbar">
-        <div className="shell">
-          <div className="brand-wrap">
-            <img
-              src="https://cdn.prod.website-files.com/67c10208e6e94bb6c9fba39b/689d0fe09b90825b708049a1_ChatGPT%20Image%20Aug%2013%2C%202025%2C%2005_18_33%20PM.png"
-              alt="Logo"
-              className="logo"
-            />
-            <span className="brand">Timesheet</span>
-          </div>
+    <div className="wrap">
+      <div className="card">
+        <h1 className="title">Timesheet Login</h1>
 
-          <nav className="nav">
-            {profile && (
-              <>
-                <Link href="/dashboard" className="nav-link">Dashboard</Link>
-                <Link href="/new-shift" className="nav-link">Log Shift</Link>
-                {profile.role === 'admin' && <Link href="/admin" className="nav-link">Admin</Link>}
-                <button className="topbar-btn" onClick={handleSignOut}>Sign out</button>
-              </>
-            )}
-          </nav>
+        <div className="tabs">
+          <button
+            className={`tab ${mode === "signin" ? "active" : ""}`}
+            onClick={() => setMode("signin")}
+          >
+            Sign In
+          </button>
+          <button
+            className={`tab ${mode === "signup" ? "active" : ""}`}
+            onClick={() => setMode("signup")}
+          >
+            Create Account
+          </button>
         </div>
-      </header>
 
-      {authError && (
-        <div className="toast toast--error">
-          <span>
-            {authError === 'auth timeout'
-              ? 'Auth request took too long. If this persists, refresh or try a private window.'
-              : `Auth error: ${authError}`}
-          </span>
-          <button className="toast__dismiss" onClick={() => setAuthError(null)}>Dismiss</button>
+        <label>Email</label>
+        <input
+          ref={emailRef}
+          type="email"
+          value={email}
+          onChange={(e) => setEmail(e.target.value)}
+          placeholder="you@company.com"
+        />
+
+        <label>Password</label>
+        <div>
+          <input
+            type={showPw ? "text" : "password"}
+            value={password}
+            onChange={(e) => setPassword(e.target.value)}
+            placeholder="••••••••"
+          />
+          <label>
+            <input
+              type="checkbox"
+              checked={showPw}
+              onChange={(e) => setShowPw(e.target.checked)}
+            />{" "}
+            Show
+          </label>
         </div>
-      )}
 
-      {/* Never block page rendering; every page handles its own loading */}
-      <Component {...pageProps} />
-    </>
+        {err && <div style={{ color: "red" }}>{err}</div>}
+        {msg && <div style={{ color: "green" }}>{msg}</div>}
+
+        <button onClick={submit} disabled={loading}>
+          {loading ? "Working…" : mode === "signin" ? "Sign In" : "Create Account"}
+        </button>
+
+        <div style={{ marginTop: "10px" }}>
+          <button onClick={sendReset} disabled={loading}>
+            Forgot password?
+          </button>
+        </div>
+      </div>
+    </div>
   );
 }
