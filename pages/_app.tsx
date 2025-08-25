@@ -10,23 +10,17 @@ type Profile = { id: string; full_name?: string | null; role: 'employee' | 'admi
 
 export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();
-
   const [profile, setProfile] = useState<Profile>(null);
-  const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [initialized, setInitialized] = useState(false); // UI never blocks; this only prevents early redirects
 
-  // prevent multiple redirects during a single transition
-  const navigating = useRef(false);
-
-  const isLoginRoute = router.pathname === '/';
-  const isReady = router.isReady;
+  const navLock = useRef(false);
+  const isLogin = router.pathname === '/';
 
   function safeReplace(path: string) {
-    if (navigating.current || router.asPath === path) return;
-    navigating.current = true;
-    router.replace(path).finally(() => {
-      setTimeout(() => (navigating.current = false), 100);
-    });
+    if (navLock.current || router.asPath === path) return;
+    navLock.current = true;
+    router.replace(path).finally(() => setTimeout(() => (navLock.current = false), 120));
   }
 
   async function fetchProfile(userId: string) {
@@ -36,7 +30,6 @@ export default function App({ Component, pageProps }: AppProps) {
         .select('id, full_name, role')
         .eq('id', userId)
         .single();
-
       if (error) throw error;
       setProfile((data as any) ?? null);
     } catch (e: any) {
@@ -45,92 +38,73 @@ export default function App({ Component, pageProps }: AppProps) {
     }
   }
 
-  // initial session load
+  // Initialize auth without ever blocking the page
   useEffect(() => {
-    if (!isReady) return;
-
     let cancelled = false;
+
     (async () => {
-      setLoading(true);
       setAuthError(null);
 
-      const { data: { session }, error } = await supabase.auth.getSession();
-      if (cancelled) return;
+      // Race getUser() (fast, local) with a slow network getSession() — whichever wins sets state.
+      const withTimeout = <T,>(p: Promise<T>, ms = 4000) =>
+        Promise.race([
+          p,
+          new Promise<T>((_, rej) => setTimeout(() => rej(new Error('auth timeout')), ms)),
+        ]);
 
-      if (error) {
+      try {
+        const { data: uData } = await withTimeout(supabase.auth.getUser());
+        if (cancelled) return;
+
+        const user = uData?.user ?? null;
+
+        if (!user) {
+          setProfile(null);
+          setInitialized(true);
+          // Only push to login if they landed on a protected route AND we aren’t already on /
+          if (!isLogin) safeReplace('/');
+          return;
+        }
+
+        await fetchProfile(user.id);
+        setInitialized(true);
+        if (isLogin) safeReplace('/dashboard');
+      } catch (e: any) {
+        if (cancelled) return;
         setProfile(null);
-        setLoading(false);
-        return;
+        setAuthError(e.message);
+        setInitialized(true);
+        if (!isLogin) safeReplace('/');
       }
-
-      if (!session?.user) {
-        setProfile(null);
-        setLoading(false);
-        // only redirect to login if we're on a protected route
-        if (!isLoginRoute) safeReplace('/');
-        return;
-      }
-
-      await fetchProfile(session.user.id);
-      setLoading(false);
-
-      // if already signed in and sitting on login, go to dashboard
-      if (isLoginRoute) safeReplace('/dashboard');
     })();
 
+    // Listen for real sign in/out events; do not treat refresh as state changes
     const { data: sub } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (cancelled) return;
-
-      // ignore noise events to avoid loops
-      if (event !== 'SIGNED_IN' && event !== 'SIGNED_OUT' && event !== 'USER_UPDATED') return;
-
-      setLoading(true);
-      setAuthError(null);
-
-      if (session?.user) {
-        await fetchProfile(session.user.id);
-        setLoading(false);
-        if (isLoginRoute) safeReplace('/dashboard');
-      } else {
+      if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+        if (session?.user) {
+          await fetchProfile(session.user.id);
+          if (router.pathname === '/') safeReplace('/dashboard');
+        }
+      } else if (event === 'SIGNED_OUT') {
         setProfile(null);
-        setLoading(false);
-        if (!isLoginRoute) safeReplace('/');
+        if (router.pathname !== '/') safeReplace('/');
       }
+      // ignore TOKEN_REFRESHED / INITIAL_SESSION etc. to avoid loops
     });
 
-    return () => { cancelled = true; sub.subscription.unsubscribe(); };
-  }, [isReady, isLoginRoute]);
+    return () => {
+      cancelled = true;
+      sub.subscription.unsubscribe();
+    };
+  }, [router.pathname, isLogin]);
 
   async function handleSignOut() {
     try {
       await supabase.auth.signOut();
     } finally {
-      // hard reload to clear any cached state
+      // hard reload clears any transient auth storage issues
       window.location.href = '/';
     }
-  }
-
-  // simple loading screen to avoid “blank” flashes
-  if (!isReady || loading) {
-    return (
-      <>
-        <header className="topbar">
-          <div className="shell">
-            <div className="brand-wrap">
-              <img
-                src="https://cdn.prod.website-files.com/67c10208e6e94bb6c9fba39b/689d0fe09b90825b708049a1_ChatGPT%20Image%20Aug%2013%2C%202025%2C%2005_18_33%20PM.png"
-                alt="Logo"
-                className="logo"
-              />
-              <span className="brand">Timesheet</span>
-            </div>
-          </div>
-        </header>
-        <main className="page" style={{ textAlign:'center', padding:'32px 0' }}>
-          <div className="chip">Loading…</div>
-        </main>
-      </>
-    );
   }
 
   return (
@@ -151,9 +125,7 @@ export default function App({ Component, pageProps }: AppProps) {
               <>
                 <Link href="/dashboard" className="nav-link">Dashboard</Link>
                 <Link href="/new-shift" className="nav-link">Log Shift</Link>
-                {profile.role === 'admin' && (
-                  <Link href="/admin" className="nav-link">Admin</Link>
-                )}
+                {profile.role === 'admin' && <Link href="/admin" className="nav-link">Admin</Link>}
                 <button className="topbar-btn" onClick={handleSignOut}>Sign out</button>
               </>
             )}
@@ -168,6 +140,7 @@ export default function App({ Component, pageProps }: AppProps) {
         </div>
       )}
 
+      {/* We don't block the UI anymore; pages handle their own loading/redirects */}
       <Component {...pageProps} />
     </>
   );
