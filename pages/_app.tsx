@@ -10,19 +10,18 @@ type Profile = { id: string; full_name?: string | null; role: 'employee' | 'admi
 
 export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();
-
   const [profile, setProfile] = useState<Profile>(null);
   const [authError, setAuthError] = useState<string | null>(null);
+  const [initialized, setInitialized] = useState(false); // we never block rendering
 
-  // prevent duplicate redirects
   const navLock = useRef(false);
   const isLogin = router.pathname === '/';
 
-  const safeReplace = (path: string) => {
+  function safeReplace(path: string) {
     if (navLock.current || router.asPath === path) return;
     navLock.current = true;
     router.replace(path).finally(() => setTimeout(() => (navLock.current = false), 120));
-  };
+  }
 
   async function fetchProfile(userId: string) {
     try {
@@ -39,85 +38,80 @@ export default function App({ Component, pageProps }: AppProps) {
     }
   }
 
-  // Initialize auth, tolerant of slow storage/network. Never blocks UI.
+  // ---- helpers: tolerant getUser with timeout + retry ----
+  const withTimeout = <T,>(p: Promise<T>, ms = 12000) =>
+    Promise.race([
+      p,
+      new Promise<T>((_, rej) => setTimeout(() => rej(new Error('auth timeout')), ms)),
+    ]);
+
+  async function getUserWithRetry() {
+    try {
+      return await withTimeout(supabase.auth.getUser(), 12000);
+    } catch {
+      // quick retry for transient delays (service worker, tracker, first-load, etc.)
+      return await withTimeout(supabase.auth.getUser(), 12000);
+    }
+  }
+
+  // ---- Initialize auth (non-blocking UI) ----
   useEffect(() => {
     let cancelled = false;
 
     (async () => {
       setAuthError(null);
-
-      // 1) Try fast local state
       try {
-        const { data: uData } = await supabase.auth.getUser();
+        // Fast local check (with our timeout guard)
+        const { data: uData } = await getUserWithRetry();
         if (cancelled) return;
 
-        if (uData?.user) {
-          await fetchProfile(uData.user.id);
-          if (isLogin) safeReplace('/dashboard');
+        const user = uData?.user ?? null;
+
+        if (!user) {
+          setProfile(null);
+          setInitialized(true);
+          if (!isLogin) safeReplace('/');
           return;
         }
-      } catch { /* ignore and keep trying */ }
 
-      // 2) Slow path with generous timeout (cold start/private mode can be slow)
-      const withTimeout = <T,>(p: Promise<T>, ms = 15000) =>
-        Promise.race([
-          p,
-          new Promise<T>((_, rej) => setTimeout(() => rej(new Error('auth timeout')), ms)),
-        ]);
-
-      try {
-        const { data: sData } = await withTimeout(supabase.auth.getSession(), 15000);
-        if (cancelled) return;
-
-        const user = sData?.session?.user ?? null;
-        if (user) {
-          await fetchProfile(user.id);
-          if (isLogin) safeReplace('/dashboard');
-        } else if (!isLogin) {
-          setProfile(null);
-          safeReplace('/');
-        }
+        await fetchProfile(user.id);
+        setInitialized(true);
+        if (isLogin) safeReplace('/dashboard');
       } catch (e: any) {
         if (cancelled) return;
-        // We still render the page; just surface the error and route to login if protected.
+        // Soft-fail: show toast, keep UI usable
         setProfile(null);
-        setAuthError(e.message || 'Authentication took too long');
+        setAuthError(e?.message || 'Auth check failed');
+        setInitialized(true);
         if (!isLogin) safeReplace('/');
       }
     })();
 
-    // Auth state changes (ignore refresh noise)
+    // Real auth events (sign in/out). Ignore refresh-related events to avoid loops.
     const { data: sub } = supabase.auth.onAuthStateChange(async (event, session) => {
-      switch (event) {
-        case 'SIGNED_IN':
-        case 'USER_UPDATED':
-          if (session?.user) {
-            await fetchProfile(session.user.id);
-            if (router.pathname === '/') safeReplace('/dashboard');
-          }
-          break;
-        case 'SIGNED_OUT':
-          setProfile(null);
-          if (router.pathname !== '/') safeReplace('/');
-          break;
-        default:
-          // ignore TOKEN_REFRESHED, INITIAL_SESSION, etc.
-          break;
+      if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+        if (session?.user) {
+          await fetchProfile(session.user.id);
+          if (router.pathname === '/') safeReplace('/dashboard');
+        }
+      } else if (event === 'SIGNED_OUT') {
+        setProfile(null);
+        if (router.pathname !== '/') safeReplace('/');
       }
+      // ignore TOKEN_REFRESHED / INITIAL_SESSION
     });
 
     return () => {
       cancelled = true;
       sub.subscription.unsubscribe();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [router.pathname]); // keep deps minimal; don't include isLogin (derived)
+  }, [router.pathname, isLogin]);
 
   async function handleSignOut() {
     try {
       await supabase.auth.signOut();
     } finally {
-      // full reload clears any transient IndexedDB/localStorage issues
+      // hard reload clears any transient auth storage issues
       window.location.href = '/';
     }
   }
@@ -150,11 +144,16 @@ export default function App({ Component, pageProps }: AppProps) {
 
       {authError && (
         <div className="toast toast--error">
-          <span>Auth error: {authError}</span>
+          <span>
+            {authError === 'auth timeout'
+              ? 'Auth request took too long. If this persists, refresh or try a private window.'
+              : `Auth error: ${authError}`}
+          </span>
           <button className="toast__dismiss" onClick={() => setAuthError(null)}>Dismiss</button>
         </div>
       )}
 
+      {/* Never block page rendering; every page handles its own loading */}
       <Component {...pageProps} />
     </>
   );
