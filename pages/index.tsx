@@ -1,6 +1,5 @@
 // pages/index.tsx
 import { useEffect, useRef, useState } from 'react';
-import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
 
 type Mode = 'signin' | 'signup';
@@ -8,7 +7,6 @@ const LOGO_URL =
   'https://cdn.prod.website-files.com/67c10208e6e94bb6c9fba39b/689d0fe09b90825b708049a1_ChatGPT%20Image%20Aug%2013%2C%202025%2C%2005_18_33%20PM.png';
 
 export default function AuthPage() {
-  const r = useRouter();
   const [mode, setMode] = useState<Mode>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -19,8 +17,7 @@ export default function AuthPage() {
   const emailRef = useRef<HTMLInputElement>(null);
 
   useEffect(() => { emailRef.current?.focus(); }, [mode]);
-
-  function clearAlerts(){ setErr(undefined); setMsg(undefined); }
+  const clearAlerts = () => { setErr(undefined); setMsg(undefined); };
 
   async function submit() {
     clearAlerts();
@@ -33,13 +30,35 @@ export default function AuthPage() {
       if (mode === 'signup') {
         const { error } = await supabase.auth.signUp({ email, password });
         if (error) throw error;
-        setMsg('Account created. You can sign in now.'); setMode('signin');
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-        // Don’t wait for profile / onAuthStateChange; just go.
-        r.replace('/dashboard');
+        setMsg('Account created. You can sign in now.');
+        setMode('signin');
+        return;
       }
+
+      // --- SIGN IN (hardened) ---
+      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      if (error) throw error;
+
+      // Confirm we actually have a session in storage (prod sometimes lags)
+      const confirm = await Promise.race([
+        (async () => {
+          for (let i = 0; i < 10; i++) {
+            const { data: s } = await supabase.auth.getSession();
+            if (s?.session?.access_token) return true;
+            await new Promise(r => setTimeout(r, 150));
+          }
+          return false;
+        })(),
+        new Promise<boolean>(r => setTimeout(() => r(false), 3000)),
+      ]);
+
+      if (!confirm) {
+        // If we got a token response but it isn't in storage yet, refresh once
+        await supabase.auth.refreshSession();
+      }
+
+      // 🔥 Force a full navigation so Next/router can’t stall
+      window.location.assign('/dashboard');
     } catch (e: any) {
       setErr(e?.message || 'Sign-in failed');
     } finally {
@@ -66,7 +85,7 @@ export default function AuthPage() {
       const redirectTo = typeof window !== 'undefined' ? `${location.origin}/update-password` : undefined;
       const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
       if (error) throw error;
-      setMsg('Password reset email sent.');
+      setMsg('Password reset email sent. Check your inbox.');
     } catch (e: any) { setErr(e?.message || 'Could not send reset email'); }
     finally { setLoading(false); }
   }
