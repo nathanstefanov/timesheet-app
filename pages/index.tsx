@@ -1,103 +1,160 @@
-import { useState } from 'react';
+// pages/_app.tsx
+import type { AppProps } from 'next/app';
+import Link from 'next/link';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
+import '../styles/globals.css';
 
-export default function AuthDebug() {
-  const r = useRouter();
-  const [email, setEmail] = useState('');
-  const [pw, setPw] = useState('');
-  const [busy, setBusy] = useState(false);
-  const [msg, setMsg] = useState<string | null>(null);
+type Profile = { id: string; full_name?: string | null; role: 'employee' | 'admin' } | null;
 
-  const withTimeout = <T,>(p: Promise<T>, ms = 10000) =>
-    Promise.race<T>([
+export default function App({ Component, pageProps }: AppProps) {
+  const router = useRouter();
+  const [profile, setProfile] = useState<Profile>(null);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [initialized, setInitialized] = useState(false); // we never block rendering
+
+  const navLock = useRef(false);
+  const isLogin = router.pathname === '/';
+
+  function safeReplace(path: string) {
+    if (navLock.current || router.asPath === path) return;
+    navLock.current = true;
+    router.replace(path).finally(() => setTimeout(() => (navLock.current = false), 120));
+  }
+
+  async function fetchProfile(userId: string) {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, full_name, role')
+        .eq('id', userId)
+        .single();
+      if (error) throw error;
+      setProfile((data as any) ?? null);
+    } catch (e: any) {
+      setProfile(null);
+      setAuthError(e.message || 'Failed to load profile');
+    }
+  }
+
+  // ---- helpers: tolerant getUser with timeout + retry ----
+  const withTimeout = <T,>(p: Promise<T>, ms = 12000) =>
+    Promise.race([
       p,
-      new Promise<T>((_, rej) => setTimeout(() => rej(new Error('Auth request timed out')), ms)),
+      new Promise<T>((_, rej) => setTimeout(() => rej(new Error('auth timeout')), ms)),
     ]);
 
-  async function signIn() {
-    if (busy) return;
-    setBusy(true);
-    setMsg(null);
-
-    console.log('[auth] start');
+  async function getUserWithRetry() {
     try {
-      console.log('[auth] env', {
-        url: process.env.NEXT_PUBLIC_SUPABASE_URL,
-        hasAnon: Boolean(process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY),
-      });
+      return await withTimeout(supabase.auth.getUser(), 12000);
+    } catch {
+      // quick retry for transient delays (service worker, tracker, first-load, etc.)
+      return await withTimeout(supabase.auth.getUser(), 12000);
+    }
+  }
 
-      console.log('[auth] pre getUser');
-      const g1 = await withTimeout(supabase.auth.getUser(), 5000);
-      console.log('[auth] getUser returned', g1);
+  // ---- Initialize auth (non-blocking UI) ----
+  useEffect(() => {
+    let cancelled = false;
 
-      console.log('[auth] signInWithPassword →', email);
-      const { data, error } = await withTimeout(
-        supabase.auth.signInWithPassword({ email, password: pw }),
-        10000
-      );
+    (async () => {
+      setAuthError(null);
+      try {
+        // Fast local check (with our timeout guard)
+        const { data: uData } = await getUserWithRetry();
+        if (cancelled) return;
 
-      if (error) {
-        console.error('[auth] error', error);
-        throw error;
+        const user = uData?.user ?? null;
+
+        if (!user) {
+          setProfile(null);
+          setInitialized(true);
+          if (!isLogin) safeReplace('/');
+          return;
+        }
+
+        await fetchProfile(user.id);
+        setInitialized(true);
+        if (isLogin) safeReplace('/dashboard');
+      } catch (e: any) {
+        if (cancelled) return;
+        // Soft-fail: show toast, keep UI usable
+        setProfile(null);
+        setAuthError(e?.message || 'Auth check failed');
+        setInitialized(true);
+        if (!isLogin) safeReplace('/');
       }
-      console.log('[auth] signIn data', data);
+    })();
 
-      console.log('[auth] post getUser');
-      const g2 = await withTimeout(supabase.auth.getUser(), 5000);
-      console.log('[auth] post getUser returned', g2);
+    // Real auth events (sign in/out). Ignore refresh-related events to avoid loops.
+    const { data: sub } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
+        if (session?.user) {
+          await fetchProfile(session.user.id);
+          if (router.pathname === '/') safeReplace('/dashboard');
+        }
+      } else if (event === 'SIGNED_OUT') {
+        setProfile(null);
+        if (router.pathname !== '/') safeReplace('/');
+      }
+      // ignore TOKEN_REFRESHED / INITIAL_SESSION
+    });
 
-      setMsg('Signed in! Redirecting…');
-      await r.replace('/dashboard');
-    } catch (e: any) {
-      console.error('[auth] caught', e);
-      setMsg(e?.message || 'Unknown auth error');
+    return () => {
+      cancelled = true;
+      sub.subscription.unsubscribe();
+    };
+  }, [router.pathname, isLogin]);
+
+  async function handleSignOut() {
+    try {
+      await supabase.auth.signOut();
     } finally {
-      setBusy(false);
+      // hard reload clears any transient auth storage issues
+      window.location.href = '/';
     }
   }
 
   return (
-    <main style={{ minHeight: '100svh', display: 'grid', placeItems: 'center', background: '#f7f8fc' }}>
-      <div style={{ width: 'min(520px, 94vw)', background: '#fff', border: '1px solid #e6e8ee', borderRadius: 16, padding: 18 }}>
-        <h2 style={{ marginTop: 0 }}>Debug Sign In</h2>
-
-        <label>Email</label>
-        <input
-          style={{ width: '100%', height: 44, borderRadius: 10, border: '1px solid #d1d5db', padding: '0 12px' }}
-          type="email"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          autoComplete="username"
-        />
-
-        <label style={{ display: 'block', marginTop: 10 }}>Password</label>
-        <input
-          style={{ width: '100%', height: 44, borderRadius: 10, border: '1px solid #d1d5db', padding: '0 12px' }}
-          type="password"
-          value={pw}
-          onChange={(e) => setPw(e.target.value)}
-          autoComplete="current-password"
-        />
-
-        <button
-          onClick={signIn}
-          disabled={busy}
-          style={{ width: '100%', height: 46, marginTop: 12, borderRadius: 12, border: 0, fontWeight: 700, color: '#fff', background: '#4f46e5', opacity: busy ? .7 : 1 }}
-        >
-          {busy ? 'Working…' : 'Sign In'}
-        </button>
-
-        {msg && (
-          <div style={{ marginTop: 10, padding: '10px 12px', borderRadius: 10, background: msg.startsWith('Signed') ? '#dcfce7' : '#fee2e2', border: `1px solid ${msg.startsWith('Signed') ? '#bbf7d0' : '#fecaca'}`, color: msg.startsWith('Signed') ? '#065f46' : '#991b1b' }}>
-            {msg}
+    <>
+      <header className="topbar">
+        <div className="shell">
+          <div className="brand-wrap">
+            <img
+              src="https://cdn.prod.website-files.com/67c10208e6e94bb6c9fba39b/689d0fe09b90825b708049a1_ChatGPT%20Image%20Aug%2013%2C%202025%2C%2005_18_33%20PM.png"
+              alt="Logo"
+              className="logo"
+            />
+            <span className="brand">Timesheet</span>
           </div>
-        )}
 
-        <p style={{ fontSize: 12, color: '#6b7280', marginTop: 10 }}>
-          Open DevTools → Console to see step-by-step logs. If it times out, the issue is network / CORS / URL config.
-        </p>
-      </div>
-    </main>
+          <nav className="nav">
+            {profile && (
+              <>
+                <Link href="/dashboard" className="nav-link">Dashboard</Link>
+                <Link href="/new-shift" className="nav-link">Log Shift</Link>
+                {profile.role === 'admin' && <Link href="/admin" className="nav-link">Admin</Link>}
+                <button className="topbar-btn" onClick={handleSignOut}>Sign out</button>
+              </>
+            )}
+          </nav>
+        </div>
+      </header>
+
+      {authError && (
+        <div className="toast toast--error">
+          <span>
+            {authError === 'auth timeout'
+              ? 'Auth request took too long. If this persists, refresh or try a private window.'
+              : `Auth error: ${authError}`}
+          </span>
+          <button className="toast__dismiss" onClick={() => setAuthError(null)}>Dismiss</button>
+        </div>
+      )}
+
+      {/* Never block page rendering; every page handles its own loading */}
+      <Component {...pageProps} />
+    </>
   );
 }
