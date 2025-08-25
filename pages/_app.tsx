@@ -12,11 +12,22 @@ export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();
 
   const [profile, setProfile] = useState<Profile>(null);
-  const [loadingProfile, setLoadingProfile] = useState(true);
+  const [loading, setLoading] = useState(true);
   const [authError, setAuthError] = useState<string | null>(null);
 
-  // Prevent duplicate router.replace calls (StrictMode, rapid events, etc.)
-  const redirectingRef = useRef(false);
+  // prevent multiple redirects during a single transition
+  const navigating = useRef(false);
+
+  const isLoginRoute = router.pathname === '/';
+  const isReady = router.isReady;
+
+  function safeReplace(path: string) {
+    if (navigating.current || router.asPath === path) return;
+    navigating.current = true;
+    router.replace(path).finally(() => {
+      setTimeout(() => (navigating.current = false), 100);
+    });
+  }
 
   async function fetchProfile(userId: string) {
     try {
@@ -31,132 +42,117 @@ export default function App({ Component, pageProps }: AppProps) {
     } catch (e: any) {
       setProfile(null);
       setAuthError(e.message || 'Failed to load profile');
-    } finally {
-      setLoadingProfile(false);
     }
   }
 
-  // Centralized redirect helper (debounced)
-  function safeReplace(path: string) {
-    if (redirectingRef.current) return;
-    redirectingRef.current = true;
-    router.replace(path).finally(() => {
-      setTimeout(() => {
-        redirectingRef.current = false;
-      }, 100);
-    });
-  }
-
+  // initial session load
   useEffect(() => {
-    let cancelled = false;
+    if (!isReady) return;
 
+    let cancelled = false;
     (async () => {
-      setLoadingProfile(true);
+      setLoading(true);
       setAuthError(null);
 
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session }, error } = await supabase.auth.getSession();
       if (cancelled) return;
+
+      if (error) {
+        setProfile(null);
+        setLoading(false);
+        return;
+      }
 
       if (!session?.user) {
         setProfile(null);
-        setLoadingProfile(false);
-        if (router.pathname !== '/') safeReplace('/');
+        setLoading(false);
+        // only redirect to login if we're on a protected route
+        if (!isLoginRoute) safeReplace('/');
         return;
       }
 
       await fetchProfile(session.user.id);
+      setLoading(false);
 
-      if (router.pathname === '/') safeReplace('/dashboard');
+      // if already signed in and sitting on login, go to dashboard
+      if (isLoginRoute) safeReplace('/dashboard');
     })();
 
     const { data: sub } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (cancelled) return;
 
-      switch (event) {
-        case 'SIGNED_IN':
-        case 'USER_UPDATED': {
-          setLoadingProfile(true);
-          setAuthError(null);
-          if (session?.user) {
-            await fetchProfile(session.user.id);
-            if (router.pathname === '/') safeReplace('/dashboard');
-          } else {
-            setProfile(null);
-            setLoadingProfile(false);
-            safeReplace('/');
-          }
-          break;
-        }
-        case 'SIGNED_OUT': {
-          setProfile(null);
-          setLoadingProfile(false);
-          safeReplace('/');
-          break;
-        }
-        // ignore refresh/noise events
-        default:
-          break;
+      // ignore noise events to avoid loops
+      if (event !== 'SIGNED_IN' && event !== 'SIGNED_OUT' && event !== 'USER_UPDATED') return;
+
+      setLoading(true);
+      setAuthError(null);
+
+      if (session?.user) {
+        await fetchProfile(session.user.id);
+        setLoading(false);
+        if (isLoginRoute) safeReplace('/dashboard');
+      } else {
+        setProfile(null);
+        setLoading(false);
+        if (!isLoginRoute) safeReplace('/');
       }
     });
 
-    return () => {
-      cancelled = true;
-      sub.subscription.unsubscribe();
-    };
-  }, [router]);
+    return () => { cancelled = true; sub.subscription.unsubscribe(); };
+  }, [isReady, isLoginRoute]);
 
   async function handleSignOut() {
     try {
       await supabase.auth.signOut();
     } finally {
+      // hard reload to clear any cached state
       window.location.href = '/';
     }
   }
 
-  const isActive = (href: string) =>
-    router.pathname === href || router.pathname.startsWith(`${href}/`);
+  // simple loading screen to avoid “blank” flashes
+  if (!isReady || loading) {
+    return (
+      <>
+        <header className="topbar">
+          <div className="shell">
+            <div className="brand-wrap">
+              <img
+                src="https://cdn.prod.website-files.com/67c10208e6e94bb6c9fba39b/689d0fe09b90825b708049a1_ChatGPT%20Image%20Aug%2013%2C%202025%2C%2005_18_33%20PM.png"
+                alt="Logo"
+                className="logo"
+              />
+              <span className="brand">Timesheet</span>
+            </div>
+          </div>
+        </header>
+        <main className="page" style={{ textAlign:'center', padding:'32px 0' }}>
+          <div className="chip">Loading…</div>
+        </main>
+      </>
+    );
+  }
 
   return (
     <>
-      <a href="#main" className="skip-link">Skip to content</a>
-
-      <header className="topbar" role="banner">
+      <header className="topbar">
         <div className="shell">
           <div className="brand-wrap">
             <img
               src="https://cdn.prod.website-files.com/67c10208e6e94bb6c9fba39b/689d0fe09b90825b708049a1_ChatGPT%20Image%20Aug%2013%2C%202025%2C%2005_18_33%20PM.png"
-              alt="Timesheet logo"
+              alt="Logo"
               className="logo"
-              height={60}
             />
             <span className="brand">Timesheet</span>
           </div>
 
-          <nav className="nav" aria-label="Primary">
-            {!loadingProfile && profile && (
+          <nav className="nav">
+            {profile && (
               <>
-                <Link
-                  href="/dashboard"
-                  className={`nav-link ${isActive('/dashboard') ? 'active' : ''}`}
-                  aria-current={isActive('/dashboard') ? 'page' : undefined}
-                >
-                  Dashboard
-                </Link>
-                <Link
-                  href="/new-shift"
-                  className={`nav-link ${isActive('/new-shift') ? 'active' : ''}`}
-                  aria-current={isActive('/new-shift') ? 'page' : undefined}
-                >
-                  Log Shift
-                </Link>
+                <Link href="/dashboard" className="nav-link">Dashboard</Link>
+                <Link href="/new-shift" className="nav-link">Log Shift</Link>
                 {profile.role === 'admin' && (
-                  <Link
-                    href="/admin"
-                    className={`nav-link ${isActive('/admin') ? 'active' : ''}`}
-                    aria-current={isActive('/admin') ? 'page' : undefined}
-                  >
-                    Admin
-                  </Link>
+                  <Link href="/admin" className="nav-link">Admin</Link>
                 )}
                 <button className="topbar-btn" onClick={handleSignOut}>Sign out</button>
               </>
@@ -166,15 +162,13 @@ export default function App({ Component, pageProps }: AppProps) {
       </header>
 
       {authError && (
-        <div className="toast toast--error" role="alert">
+        <div className="toast toast--error">
           <span>Auth error: {authError}</span>
-          <button className="toast__dismiss" onClick={() => setAuthError(null)} aria-label="Dismiss">✕</button>
+          <button className="toast__dismiss" onClick={() => setAuthError(null)}>Dismiss</button>
         </div>
       )}
 
-      <main id="main" className="page" role="main" aria-live="polite">
-        <Component {...pageProps} />
-      </main>
+      <Component {...pageProps} />
     </>
   );
 }
