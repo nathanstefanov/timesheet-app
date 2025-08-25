@@ -35,30 +35,29 @@ export default function AuthPage() {
         return;
       }
 
-      // --- SIGN IN (hardened) ---
+      // ---- SIGN IN ----
       const { data, error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
 
-      // Confirm we actually have a session in storage (prod sometimes lags)
-      const confirm = await Promise.race([
-        (async () => {
-          for (let i = 0; i < 10; i++) {
-            const { data: s } = await supabase.auth.getSession();
-            if (s?.session?.access_token) return true;
-            await new Promise(r => setTimeout(r, 150));
-          }
-          return false;
-        })(),
-        new Promise<boolean>(r => setTimeout(() => r(false), 3000)),
-      ]);
-
-      if (!confirm) {
-        // If we got a token response but it isn't in storage yet, refresh once
-        await supabase.auth.refreshSession();
+      // If for any reason the client didn't persist the session, set it manually.
+      if (data?.session?.access_token && data?.session?.refresh_token) {
+        await supabase.auth.setSession({
+          access_token: data.session.access_token,
+          refresh_token: data.session.refresh_token,
+        });
+      } else {
+        // Fallback loop: wait a moment for storage to populate
+        let ok = false;
+        for (let i = 0; i < 12; i++) {
+          const { data: s } = await supabase.auth.getSession();
+          if (s?.session?.access_token) { ok = true; break; }
+          await new Promise(r => setTimeout(r, 150));
+        }
+        if (!ok) throw new Error('Signed in, but no session was created.');
       }
 
-      // 🔥 Force a full navigation so Next/router can’t stall
-      window.location.assign('/dashboard');
+      // Hard navigation (avoids any Next.js/router stalling)
+      window.location.replace('/dashboard');
     } catch (e: any) {
       setErr(e?.message || 'Sign-in failed');
     } finally {
