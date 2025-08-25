@@ -17,17 +17,15 @@ export default function Dashboard() {
   const [offset, setOffset] = useState(0);
   const [err, setErr] = useState<string>();
 
-  // get current user
   useEffect(() => {
     supabase.auth.getUser().then(({ data }) => setUser(data.user));
   }, []);
 
-  // compute range + label
   const range = useMemo(() => {
     const now = new Date();
     if (mode === 'week') {
       const base = addWeeks(now, offset);
-      const start = startOfWeek(base, { weekStartsOn: 1 }); // Monday
+      const start = startOfWeek(base, { weekStartsOn: 1 });
       const end = endOfWeek(base, { weekStartsOn: 1 });
       return { start, end, label: `${format(start, 'MMM d')} – ${format(end, 'MMM d, yyyy')}` };
     }
@@ -40,7 +38,6 @@ export default function Dashboard() {
     return { start: null as any, end: null as any, label: 'All time' };
   }, [mode, offset]);
 
-  // load shifts for the chosen range
   useEffect(() => {
     if (!user) return;
     (async () => {
@@ -66,7 +63,6 @@ export default function Dashboard() {
     })();
   }, [user, mode, offset, range]);
 
-  // totals
   const totals = useMemo(() => {
     const hours = shifts.reduce((s, x) => s + Number(x.hours_worked || 0), 0);
     const pay = shifts.reduce((s, x) => s + Number(x.pay_due || 0), 0);
@@ -84,43 +80,45 @@ export default function Dashboard() {
   if (!user) return null;
 
   return (
-    <main className="page">
-      <h1>
-        My Shifts ({mode === 'week' ? 'This Week' : mode === 'month' ? 'This Month' : 'All Time'})
-      </h1>
-      {err && <p className="error">Error: {err}</p>}
+    <>
+      <h1>My Shifts ({mode === 'week' ? 'This Week' : mode === 'month' ? 'This Month' : 'All Time'})</h1>
+      {err && <p className="error" role="alert">Error: {err}</p>}
 
       {/* Range controls */}
-      <div className="row" style={{ gap: 8, flexWrap: 'wrap', margin: '8px 0 16px' }}>
-        <select
-          value={mode}
-          onChange={(e) => { setMode(e.target.value as Mode); setOffset(0); }}
-        >
-          <option value="week">This week</option>
-          <option value="month">This month</option>
-          <option value="all">All time</option>
-        </select>
+      <div className="row wrap gap-sm between mb-md">
+        <div className="row gap-sm">
+          <label className="sr-only" htmlFor="range-mode">Range</label>
+          <select
+            id="range-mode"
+            value={mode}
+            onChange={(e) => { setMode(e.target.value as Mode); setOffset(0); }}
+          >
+            <option value="week">This week</option>
+            <option value="month">This month</option>
+            <option value="all">All time</option>
+          </select>
 
-        {mode !== 'all' && (
-          <>
-            <button onClick={() => setOffset(n => n - 1)}>◀ Prev</button>
-            <button onClick={() => setOffset(0)}>This {mode}</button>
-            <button onClick={() => setOffset(n => n + 1)} disabled={offset >= 0}>Next ▶</button>
-            <div style={{ marginLeft: 8, opacity: 0.8 }}>{range.label}</div>
-          </>
-        )}
+          {mode !== 'all' && (
+            <>
+              <button onClick={() => setOffset(n => n - 1)} aria-label="Previous range">◀ Prev</button>
+              <button onClick={() => setOffset(0)}>{mode === 'week' ? 'This week' : 'This month'}</button>
+              <button onClick={() => setOffset(n => n + 1)} disabled={offset >= 0} aria-label="Next range">Next ▶</button>
+              <div className="muted" aria-live="polite" style={{ alignSelf: 'center' }}>{range.label}</div>
+            </>
+          )}
+        </div>
 
-        <Link href="/new-shift" className="link-right">+ Log Shift</Link>
+        <Link href="/new-shift" className="link-right btn-edit" style={{ textDecoration: 'none' }}>+ Log Shift</Link>
       </div>
 
       {/* Totals row */}
-      <div className="row" style={{ gap: 16, marginBottom: 12 }}>
+      <div className="row gap-md mb-sm">
         <div className="chip">Hours: <b>{totals.hours.toFixed(2)}</b></div>
         <div className="chip">Pay: <b>${totals.pay.toFixed(2)}</b></div>
         <div className="chip">Unpaid: <b>${totals.unpaid.toFixed(2)}</b></div>
       </div>
 
-      {/* Table (centered + stacks on mobile) */}
+      {/* Table */}
       <div className="table-wrap">
         <table className="table table--center table--stack">
           <thead>
@@ -155,7 +153,7 @@ export default function Dashboard() {
                       {paid ? 'PAID' : 'NOT PAID'}
                     </span>
                     {(s as any).paid_at
-                      ? <span style={{ marginLeft: 8, opacity: 0.7 }}>
+                      ? <span className="muted" style={{ marginLeft: 8 }}>
                           ({new Date((s as any).paid_at).toLocaleDateString()})
                         </span>
                       : null}
@@ -169,9 +167,14 @@ export default function Dashboard() {
                 </tr>
               );
             })}
+            {shifts.length === 0 && (
+              <tr>
+                <td colSpan={8} style={{ textAlign: 'center' }} className="muted">No shifts in this range.</td>
+              </tr>
+            )}
           </tbody>
         </table>
       </div>
-    </main>
+    </>
   );
 }

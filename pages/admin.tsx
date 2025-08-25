@@ -15,7 +15,7 @@ function payInfo(s: any): { pay: number; minApplied: boolean; base: number } {
   const base  = s.pay_due != null ? Number(s.pay_due) : hours * rate;
   const isBreakdown = s.shift_type === 'Breakdown';
   const pay = isBreakdown ? Math.max(base, 50) : base;
-  const minApplied = isBreakdown && base < 50; // highlight only when the minimum actually boosted pay
+  const minApplied = isBreakdown && base < 50;
   return { pay, minApplied, base };
 }
 
@@ -35,10 +35,9 @@ export default function Admin() {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | undefined>();
 
-  // track bulk action per-employee (UI disable)
   const [bulkBusy, setBulkBusy] = useState<Record<string, boolean>>({});
 
-  // ---- Auth + role check ----
+  // Auth + role check
   useEffect(() => {
     let active = true;
     async function loadProfile() {
@@ -81,7 +80,7 @@ export default function Admin() {
     };
   }, [r]);
 
-  // ---- Load shifts after role is known ----
+  // Load shifts after role is known
   useEffect(() => {
     if (checking) return;
     if (!me || me.role !== 'admin') return;
@@ -100,7 +99,6 @@ export default function Admin() {
         const rows = data || [];
         setShifts(rows);
 
-        // Fetch names for display
         const ids = Array.from(new Set(rows.map((s: any) => s.user_id)));
         if (ids.length) {
           const { data: profs } = await supabase
@@ -121,7 +119,7 @@ export default function Admin() {
     })();
   }, [checking, me, tab]);
 
-  // ---- Totals by employee (sums use payInfo) ----
+  // Totals by employee
   const totals = useMemo(() => {
     const m: Record<string, { id: string; name: string; hours: number; pay: number; unpaid: number; minCount: number }> = {};
     for (const s of shifts) {
@@ -140,7 +138,7 @@ export default function Admin() {
 
   const unpaidTotal = useMemo(() => totals.reduce((sum, t) => sum + t.unpaid, 0), [totals]);
 
-  // ---- Sort totals table ----
+  // Sort totals
   const sortedTotals = useMemo(() => {
     const a = [...totals];
     if (sortBy === 'name') {
@@ -155,7 +153,7 @@ export default function Admin() {
     return a;
   }, [totals, sortBy, sortDir]);
 
-  // ---- Group shifts by employee ----
+  // Group shifts by employee
   const groups = useMemo(() => {
     const m: Record<string, any[]> = {};
     for (const s of shifts) (m[s.user_id] ??= []).push(s);
@@ -171,7 +169,7 @@ export default function Admin() {
 
   const sectionOrder = useMemo(() => sortedTotals.map(t => t.id), [sortedTotals]);
 
-  // ---- Actions ----
+  // Actions
   async function togglePaid(row: any, next: boolean) {
     const patch = {
       is_paid: next,
@@ -186,7 +184,6 @@ export default function Admin() {
     }
   }
 
-  /** Bulk mark all current rows for an employee as paid/unpaid (respects the current tab dataset). */
   async function bulkTogglePaidForEmployee(userId: string, next: boolean) {
     const rows = groups[userId] || [];
     const toChange = rows.filter((s) => Boolean(s.is_paid) !== next).map((s) => s.id);
@@ -212,7 +209,7 @@ export default function Admin() {
     const { error } = await supabase.from('shifts').update(patch).in('id', toChange);
     if (error) {
       alert(error.message);
-      setShifts(prevShifts); // rollback on failure
+      setShifts(prevShifts);
     }
     setBulkBusy((b) => ({ ...b, [userId]: false }));
   }
@@ -239,54 +236,106 @@ export default function Admin() {
   return (
     <main className="page">
       <h1>Admin Dashboard</h1>
-      {err && <p className="error">Error: {err}</p>}
+      {err && <p className="error" role="alert">Error: {err}</p>}
 
       {/* Summary bar */}
-      <div style={{ margin: '16px 0', padding: 12, background: '#f0f0f0', borderRadius: 6, fontWeight: 'bold', display: 'flex', gap: 16, alignItems: 'center' }}>
+      <div className="admin-summary">
         <span>Total Unpaid: ${unpaidTotal.toFixed(2)}</span>
-        <span style={{ opacity: 0.7 }}>Employees with Unpaid: {totals.filter(t => t.unpaid > 0).length}</span>
-        <span style={{ marginLeft: 'auto', fontWeight: 500, fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-          <span className="badge badge-min">MIN $50</span> indicates Breakdown shift boosted to $50 minimum
+        <span className="meta">Employees with Unpaid: {totals.filter(t => t.unpaid > 0).length}</span>
+        <span className="meta inline">
+          <span className="badge badge-min">MIN $50</span>
+          <span className="muted">Breakdown shifts boosted to minimum</span>
         </span>
       </div>
 
       {/* Tabs */}
-      <div className="tabs" style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
-        <button onClick={() => setTab('unpaid')} className={tab==='unpaid' ? 'active' : ''}>Unpaid</button>
-        <button onClick={() => setTab('paid')} className={tab==='paid' ? 'active' : ''}>Paid</button>
-        <button onClick={() => setTab('all')} className={tab==='all' ? 'active' : ''}>All</button>
+      <div className="tabs" role="tablist" aria-label="Filter by paid status">
+        <button
+          role="tab"
+          aria-selected={tab === 'unpaid'}
+          className={tab === 'unpaid' ? 'active' : ''}
+          onClick={() => setTab('unpaid')}
+        >
+          Unpaid
+        </button>
+        <button
+          role="tab"
+          aria-selected={tab === 'paid'}
+          className={tab === 'paid' ? 'active' : ''}
+          onClick={() => setTab('paid')}
+        >
+          Paid
+        </button>
+        <button
+          role="tab"
+          aria-selected={tab === 'all'}
+          className={tab === 'all' ? 'active' : ''}
+          onClick={() => setTab('all')}
+        >
+          All
+        </button>
       </div>
 
       {/* Totals by employee */}
-      <h3>Totals by Employee</h3>
-      <div className="table-wrap">
-        <table className="table table--center table--stack" style={{ marginBottom: 16 }}>
-          <thead>
-            <tr>
-              <th>Employee</th>
-              <th>Hours</th>
-              <th>Pay</th>
-              <th>Unpaid</th>
-            </tr>
-          </thead>
-          <tbody>
-            {sortedTotals.map((t) => (
-              <tr key={t.id}>
-                <td>
-                  {t.name}
-                  {t.minCount > 0 && (
-                    <span title={`${t.minCount} Breakdown shift(s) hit the $50 minimum`} style={{ marginLeft: 8, fontSize: 11, opacity: 0.8 }}>
-                      ({t.minCount}× MIN)
-                    </span>
-                  )}
-                </td>
-                <td>{t.hours.toFixed(2)}</td>
-                <td>${t.pay.toFixed(2)}</td>
-                <td>${t.unpaid.toFixed(2)}</td>
+      <div className="card">
+        <div className="card__header">
+          <h3>Totals by Employee</h3>
+          <div className="row">
+            <label className="sr-only" htmlFor="sort-by">Sort by</label>
+            <select
+              id="sort-by"
+              value={sortBy}
+              onChange={(e) => setSortBy(e.target.value as SortBy)}
+            >
+              <option value="name">Name</option>
+              <option value="hours">Hours</option>
+              <option value="pay">Pay</option>
+              <option value="unpaid">Unpaid</option>
+            </select>
+            <button
+              className="topbar-btn"
+              onClick={() => setSortDir(d => (d === 'asc' ? 'desc' : 'asc'))}
+              aria-label="Toggle sort direction"
+              title="Toggle sort direction"
+            >
+              {sortDir === 'asc' ? 'Asc ↑' : 'Desc ↓'}
+            </button>
+          </div>
+        </div>
+
+        <div className="table-wrap">
+          <table className="table table--center table--stack">
+            <thead>
+              <tr>
+                <th>Employee</th>
+                <th>Hours</th>
+                <th>Pay</th>
+                <th>Unpaid</th>
               </tr>
-            ))}
-          </tbody>
-        </table>
+            </thead>
+            <tbody>
+              {sortedTotals.map((t) => (
+                <tr key={t.id}>
+                  <td>
+                    {t.name}
+                    {t.minCount > 0 && (
+                      <span
+                        title={`${t.minCount} Breakdown shift(s) hit the $50 minimum`}
+                        className="muted"
+                        style={{ marginLeft: 8 }}
+                      >
+                        ({t.minCount}× MIN)
+                      </span>
+                    )}
+                  </td>
+                  <td>{t.hours.toFixed(2)}</td>
+                  <td>${t.pay.toFixed(2)}</td>
+                  <td>${t.unpaid.toFixed(2)}</td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Shifts grouped by employee */}
@@ -329,23 +378,24 @@ export default function Admin() {
 
               return (
                 <React.Fragment key={uid}>
-                  {/* Section header with bulk buttons */}
                   <tr className="section-head">
-                    <td colSpan={10} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
-                      <div>
+                    <td colSpan={10} className="section-controls">
+                      <div className="section-controls__left">
                         <strong>{name}</strong>
-                        <span style={{ marginLeft: 12, fontSize: 12, opacity: 0.8 }}>
+                        <span className="muted" style={{ marginLeft: 12 }}>
                           {unpaidCount} unpaid shift{unpaidCount !== 1 ? 's' : ''}
                         </span>
                       </div>
-                      <div style={{ display: 'flex', gap: 8 }}>
+                      <div className="section-controls__right">
                         <button
+                          className="topbar-btn"
                           disabled={bulkBusy[uid] || allPaid}
                           onClick={() => bulkTogglePaidForEmployee(uid, true)}
                         >
                           Mark ALL Paid
                         </button>
                         <button
+                          className="topbar-btn"
                           disabled={bulkBusy[uid] || rows.length === unpaidCount}
                           onClick={() => bulkTogglePaidForEmployee(uid, false)}
                         >
@@ -360,13 +410,17 @@ export default function Admin() {
                     const paid = Boolean(s.is_paid);
                     return (
                       <tr key={s.id}>
-                        <td>{name}</td>
-                        <td>{s.shift_date}</td>
-                        <td>{s.shift_type}</td>
-                        <td>{new Date(s.time_in).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
-                        <td>{new Date(s.time_out).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
-                        <td>{Number(s.hours_worked).toFixed(2)}</td>
-                        <td>
+                        <td data-label="Employee">{name}</td>
+                        <td data-label="Date">{s.shift_date}</td>
+                        <td data-label="Type">{s.shift_type}</td>
+                        <td data-label="In">
+                          {new Date(s.time_in).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </td>
+                        <td data-label="Out">
+                          {new Date(s.time_out).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                        </td>
+                        <td data-label="Hours">{Number(s.hours_worked).toFixed(2)}</td>
+                        <td data-label="Pay">
                           ${pay.toFixed(2)}{' '}
                           {minApplied && (
                             <span
@@ -378,23 +432,26 @@ export default function Admin() {
                             </span>
                           )}
                         </td>
-                        <td>
-                          <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+                        <td data-label="Paid?">
+                          <label className="inline-check">
                             <input
                               type="checkbox"
                               checked={paid}
                               onChange={(e) => togglePaid(s, e.target.checked)}
                               disabled={bulkBusy[uid]}
+                              aria-label={paid ? 'Mark unpaid' : 'Mark paid'}
                             />
                             <span className={paid ? 'badge badge-paid' : 'badge badge-unpaid'}>
                               {paid ? 'PAID' : 'NOT PAID'}
                             </span>
                           </label>
                         </td>
-                        <td>{s.paid_at ? new Date(s.paid_at).toLocaleString() : '—'}</td>
-                        <td>
+                        <td data-label="Paid at">
+                          {s.paid_at ? new Date(s.paid_at).toLocaleString() : '—'}
+                        </td>
+                        <td data-label="Actions">
                           <div className="actions">
-                            <button className="btn-edit" onClick={() => editRow(s)} style={{ marginRight: 8 }}>Edit</button>
+                            <button className="btn-edit" onClick={() => editRow(s)}>Edit</button>
                             <button className="btn-delete" onClick={() => deleteRow(s)}>Delete</button>
                           </div>
                         </td>

@@ -12,6 +12,7 @@ function fmtTimeLocal(iso: string) {
   return `${hh}:${mm}`;
 }
 function buildLocal(date: string, time: string) {
+  // Let the browser build a local Date; we only convert to ISO when persisting
   return new Date(`${date}T${time}:00`);
 }
 
@@ -38,6 +39,7 @@ export default function EditShift() {
       setLoading(true);
       const { data, error } = await supabase.from('shifts').select('*').eq('id', id).single();
       if (error) { setErr(error.message); setLoading(false); return; }
+      if (!data) { setErr('Shift not found'); setLoading(false); return; }
 
       setDate(data.shift_date);
       setType(data.shift_type);
@@ -57,7 +59,7 @@ export default function EditShift() {
     setErr(undefined);
     setSaving(true);
     try {
-      if (!date || !tin || !tout) throw new Error('Date, Time In, and Time Out are required');
+      if (!date || !tin || !tout) throw new Error('Date, Time In, and Time Out are required.');
 
       const inDt = buildLocal(date, tin);
       let outDt = buildLocal(date, tout);
@@ -74,11 +76,13 @@ export default function EditShift() {
         time_out: outDt.toISOString(),
         notes,
       };
+
       const { error } = await supabase.from('shifts').update(patch).eq('id', id!);
       if (error) throw error;
+
       r.back();
     } catch (e: any) {
-      setErr(e.message);
+      setErr(e.message || 'Failed to save shift.');
     } finally {
       setSaving(false);
     }
@@ -91,46 +95,105 @@ export default function EditShift() {
     r.push('/dashboard');
   }
 
-  if (loading) return <main className="page" style={{ padding: 24 }}>Loading…</main>;
+  if (loading) {
+    return (
+      <main className="page">
+        <p>Loading…</p>
+      </main>
+    );
+  }
 
   return (
-    <main className="page" style={{ maxWidth: 520, margin: '32px auto', fontFamily: 'system-ui' }}>
-      <h1>Edit Shift</h1>
-      {err && <p style={{ color: 'crimson' }}>{err}</p>}
-
-      <label>Date</label>
-      <input type="date" value={date} onChange={e => setDate(e.target.value)} style={{ width: '100%', padding: 8, marginBottom: 8 }} />
-
-      <label>Shift Type</label>
-      <select value={type} onChange={e => setType(e.target.value as ShiftType)} style={{ width: '100%', padding: 8, marginBottom: 8 }}>
-        <option>Setup</option>
-        <option>Breakdown</option>
-        <option>Shop</option>
-      </select>
-
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-        <div>
-          <label>Time In</label>
-          <input type="time" value={tin} onChange={e => setTin(e.target.value)} style={{ width: '100%', padding: 8, marginBottom: 8 }} />
+    <main className="page">
+      {err && (
+        <div className="toast toast--error" role="alert">
+          <span>{err}</span>
+          <button className="toast__dismiss" onClick={() => setErr(undefined)} aria-label="Dismiss">✕</button>
         </div>
-        <div>
-          <label>Time Out</label>
-          <input type="time" value={tout} onChange={e => setTout(e.target.value)} style={{ width: '100%', padding: 8, marginBottom: 8 }} />
+      )}
+
+      <div className="card narrow mx-auto">
+        <div className="card__header">
+          <h1 style={{ margin: 0, fontSize: 22 }}>Edit Shift</h1>
         </div>
-      </div>
 
-      <label style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
-        <input type="checkbox" checked={endsNextDay} onChange={e => setEndsNextDay(e.target.checked)} />
-        Ends after midnight (next day)
-      </label>
+        <div style={{ padding: 14 }}>
+          <div className="form-field">
+            <label htmlFor="date">Date</label>
+            <input
+              id="date"
+              type="date"
+              value={date}
+              onChange={e => setDate(e.target.value)}
+              required
+            />
+          </div>
 
-      <label>Notes</label>
-      <textarea value={notes} onChange={e => setNotes(e.target.value)} style={{ width: '100%', padding: 8, marginBottom: 12 }} />
+          <div className="form-field">
+            <label htmlFor="type">Shift Type</label>
+            <select
+              id="type"
+              value={type}
+              onChange={e => setType(e.target.value as ShiftType)}
+            >
+              <option>Setup</option>
+              <option>Breakdown</option>
+              <option>Shop</option>
+            </select>
+          </div>
 
-      <div style={{ display: 'flex', gap: 8 }}>
-        <button onClick={save} disabled={saving} style={{ padding: '10px 14px' }}>{saving ? 'Saving…' : 'Save'}</button>
-        <button onClick={del} style={{ padding: '10px 14px', background: '#fee2e2', border: '1px solid #fecaca' }}>Delete</button>
-        <button onClick={() => history.back()} style={{ marginLeft: 'auto' }}>Cancel</button>
+          <div className="grid-2 gap-md">
+            <div className="form-field">
+              <label htmlFor="time-in">Time In</label>
+              <input
+                id="time-in"
+                type="time"
+                value={tin}
+                onChange={e => setTin(e.target.value)}
+                required
+              />
+            </div>
+            <div className="form-field">
+              <label htmlFor="time-out">Time Out</label>
+              <input
+                id="time-out"
+                type="time"
+                value={tout}
+                onChange={e => setTout(e.target.value)}
+                required
+              />
+            </div>
+          </div>
+
+          <label className="inline-check" style={{ margin: '8px 0 12px' }}>
+            <input
+              type="checkbox"
+              checked={endsNextDay}
+              onChange={e => setEndsNextDay(e.target.checked)}
+            />
+            Ends after midnight (next day)
+          </label>
+
+          <div className="form-field">
+            <label htmlFor="notes">Notes</label>
+            <textarea
+              id="notes"
+              value={notes}
+              onChange={e => setNotes(e.target.value)}
+              placeholder="Optional"
+            />
+          </div>
+
+          <div className="actions">
+            <button className="btn-edit" onClick={save} disabled={saving}>
+              {saving ? 'Saving…' : 'Save'}
+            </button>
+            <button className="btn-delete" onClick={del}>Delete</button>
+            <button className="topbar-btn" style={{ marginLeft: 'auto' }} onClick={() => history.back()}>
+              Cancel
+            </button>
+          </div>
+        </div>
       </div>
     </main>
   );

@@ -41,8 +41,9 @@ export default function App({ Component, pageProps }: AppProps) {
     if (redirectingRef.current) return;
     redirectingRef.current = true;
     router.replace(path).finally(() => {
-      // allow future redirects after the current navigation settles
-      setTimeout(() => { redirectingRef.current = false; }, 100);
+      setTimeout(() => {
+        redirectingRef.current = false;
+      }, 100);
     });
   }
 
@@ -53,7 +54,6 @@ export default function App({ Component, pageProps }: AppProps) {
       setLoadingProfile(true);
       setAuthError(null);
 
-      // Prefer local session first to avoid a network race
       const { data: { session } } = await supabase.auth.getSession();
       if (cancelled) return;
 
@@ -66,11 +66,9 @@ export default function App({ Component, pageProps }: AppProps) {
 
       await fetchProfile(session.user.id);
 
-      // If already on the login page, go to dashboard
       if (router.pathname === '/') safeReplace('/dashboard');
     })();
 
-    // Only respond to meaningful events (avoid refresh loops on TOKEN_REFRESHED / PASSWORD_RECOVERY etc.)
     const { data: sub } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (cancelled) return;
 
@@ -96,69 +94,87 @@ export default function App({ Component, pageProps }: AppProps) {
           break;
         }
         // ignore refresh/noise events
-        case 'TOKEN_REFRESHED':
-        case 'PASSWORD_RECOVERY':
         default:
           break;
       }
     });
 
-    return () => { cancelled = true; sub.subscription.unsubscribe(); };
+    return () => {
+      cancelled = true;
+      sub.subscription.unsubscribe();
+    };
   }, [router]);
 
   async function handleSignOut() {
     try {
       await supabase.auth.signOut();
     } finally {
-      // Hard navigation to wipe any odd caches/state
       window.location.href = '/';
     }
   }
 
+  const isActive = (href: string) =>
+    router.pathname === href || router.pathname.startsWith(`${href}/`);
+
   return (
     <>
-      <header className="topbar">
+      <a href="#main" className="skip-link">Skip to content</a>
+
+      <header className="topbar" role="banner">
         <div className="shell">
           <div className="brand-wrap">
             <img
               src="https://cdn.prod.website-files.com/67c10208e6e94bb6c9fba39b/689d0fe09b90825b708049a1_ChatGPT%20Image%20Aug%2013%2C%202025%2C%2005_18_33%20PM.png"
-              alt="Logo"
+              alt="Timesheet logo"
               className="logo"
+              height={60}
             />
             <span className="brand">Timesheet</span>
           </div>
 
-          <nav className="nav">
+          <nav className="nav" aria-label="Primary">
             {!loadingProfile && profile && (
               <>
-                <Link href="/dashboard" className="nav-link">Dashboard</Link>
-                <Link href="/new-shift" className="nav-link">Log Shift</Link>
+                <Link
+                  href="/dashboard"
+                  className={`nav-link ${isActive('/dashboard') ? 'active' : ''}`}
+                  aria-current={isActive('/dashboard') ? 'page' : undefined}
+                >
+                  Dashboard
+                </Link>
+                <Link
+                  href="/new-shift"
+                  className={`nav-link ${isActive('/new-shift') ? 'active' : ''}`}
+                  aria-current={isActive('/new-shift') ? 'page' : undefined}
+                >
+                  Log Shift
+                </Link>
                 {profile.role === 'admin' && (
-                  <Link href="/admin" className="nav-link">Admin</Link>
+                  <Link
+                    href="/admin"
+                    className={`nav-link ${isActive('/admin') ? 'active' : ''}`}
+                    aria-current={isActive('/admin') ? 'page' : undefined}
+                  >
+                    Admin
+                  </Link>
                 )}
-                <button className="signout" onClick={handleSignOut}>Sign out</button>
+                <button className="topbar-btn" onClick={handleSignOut}>Sign out</button>
               </>
             )}
           </nav>
         </div>
       </header>
 
-      {/* Small toast for auth/profile errors (optional) */}
       {authError && (
-        <div style={{
-          margin: '8px auto',
-          maxWidth: 840,
-          background: '#fff4f4',
-          border: '1px solid #ffd7d7',
-          color: '#7a1f1f',
-          padding: 10,
-          borderRadius: 6
-        }}>
-          Auth error: {authError} <button onClick={() => setAuthError(null)} style={{ marginLeft: 8 }}>Dismiss</button>
+        <div className="toast toast--error" role="alert">
+          <span>Auth error: {authError}</span>
+          <button className="toast__dismiss" onClick={() => setAuthError(null)} aria-label="Dismiss">✕</button>
         </div>
       )}
 
-      <Component {...pageProps} />
+      <main id="main" className="page" role="main" aria-live="polite">
+        <Component {...pageProps} />
+      </main>
     </>
   );
 }
