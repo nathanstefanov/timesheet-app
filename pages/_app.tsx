@@ -1,7 +1,7 @@
 // pages/_app.tsx
 import type { AppProps } from 'next/app';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
 import '../styles/globals.css';
@@ -13,50 +13,94 @@ export default function App({ Component, pageProps }: AppProps) {
 
   const [profile, setProfile] = useState<Profile>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
+  const [authError, setAuthError] = useState<string | null>(null);
+
+  // Prevent duplicate router.replace calls (StrictMode, rapid events, etc.)
+  const redirectingRef = useRef(false);
 
   async function fetchProfile(userId: string) {
-    const { data } = await supabase
-      .from('profiles')
-      .select('id, full_name, role')
-      .eq('id', userId)
-      .single();
-    setProfile((data as any) ?? null);
-    setLoadingProfile(false);
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, full_name, role')
+        .eq('id', userId)
+        .single();
+
+      if (error) throw error;
+      setProfile((data as any) ?? null);
+    } catch (e: any) {
+      setProfile(null);
+      setAuthError(e.message || 'Failed to load profile');
+    } finally {
+      setLoadingProfile(false);
+    }
+  }
+
+  // Centralized redirect helper (debounced)
+  function safeReplace(path: string) {
+    if (redirectingRef.current) return;
+    redirectingRef.current = true;
+    router.replace(path).finally(() => {
+      // allow future redirects after the current navigation settles
+      setTimeout(() => { redirectingRef.current = false; }, 100);
+    });
   }
 
   useEffect(() => {
     let cancelled = false;
 
     (async () => {
-      // Fast path: get current session from local storage (no network).
+      setLoadingProfile(true);
+      setAuthError(null);
+
+      // Prefer local session first to avoid a network race
       const { data: { session } } = await supabase.auth.getSession();
       if (cancelled) return;
 
       if (!session?.user) {
         setProfile(null);
         setLoadingProfile(false);
-        // Kick unauthenticated users off protected pages.
-        if (router.pathname !== '/') router.replace('/');
+        if (router.pathname !== '/') safeReplace('/');
         return;
       }
 
-      // We have a user—fetch their profile.
       await fetchProfile(session.user.id);
 
-      // If already on the login page, send them to dashboard.
-      if (router.pathname === '/') router.replace('/dashboard');
+      // If already on the login page, go to dashboard
+      if (router.pathname === '/') safeReplace('/dashboard');
     })();
 
-    // Keep UI in sync with auth changes (sign-in/out, token refresh).
-    const { data: sub } = supabase.auth.onAuthStateChange(async (_evt, session) => {
-      if (!session?.user) {
-        setProfile(null);
-        setLoadingProfile(false);
-        router.replace('/'); // always land on sign-in when logged out
-      } else {
-        setLoadingProfile(true);
-        await fetchProfile(session.user.id);
-        if (router.pathname === '/') router.replace('/dashboard');
+    // Only respond to meaningful events (avoid refresh loops on TOKEN_REFRESHED / PASSED_RECOVERY)
+    const { data: sub } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (cancelled) return;
+
+      // Debug tip: console.log('auth event', event);
+      switch (event) {
+        case 'SIGNED_IN':
+        case 'USER_UPDATED': {
+          setLoadingProfile(true);
+          setAuthError(null);
+          if (session?.user) {
+            await fetchProfile(session.user.id);
+            if (router.pathname === '/') safeReplace('/dashboard');
+          } else {
+            setProfile(null);
+            setLoadingProfile(false);
+            safeReplace('/');
+          }
+          break;
+        }
+        case 'SIGNED_OUT': {
+          setProfile(null);
+          setLoadingProfile(false);
+          safeReplace('/');
+          break;
+        }
+        // ignore refresh noise
+        case 'TOKEN_REFRESHED':
+        case 'PASSWORD_RECOVERY':
+        default:
+          break;
       }
     });
 
@@ -64,9 +108,10 @@ export default function App({ Component, pageProps }: AppProps) {
   }, [router]);
 
   async function handleSignOut() {
-    try { await supabase.auth.signOut(); }
-    finally {
-      // Hard redirect avoids Safari/Chrome cache weirdness after refreshes.
+    try {
+      await supabase.auth.signOut();
+    } finally {
+      // Hard navigation to wipe any odd caches/state
       window.location.href = '/';
     }
   }
@@ -85,7 +130,6 @@ export default function App({ Component, pageProps }: AppProps) {
           </div>
 
           <nav className="nav">
-            {/* Only render app links when a user is loaded */}
             {!loadingProfile && profile && (
               <>
                 <Link href="/dashboard" className="nav-link">Dashboard</Link>
@@ -99,6 +143,21 @@ export default function App({ Component, pageProps }: AppProps) {
           </nav>
         </div>
       </header>
+
+      {/* Small toast for auth/profile errors (optional) */}
+      {authError && (
+        <div style={{
+          margin: '8px auto',
+          maxWidth: 840,
+          background: '#fff4f4',
+          border: '1px solid #ffd7d7',
+          color: '#7a1f1f',
+          padding: 10,
+          borderRadius: 6
+        }}>
+          Auth error: {authError} <button onClick={() => setAuthError(null)} style={{ marginLeft: 8 }}>Dismiss</button>
+        </div>
+      )}
 
       <Component {...pageProps} />
     </>
