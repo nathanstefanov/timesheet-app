@@ -2,22 +2,18 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
-import {
-  startOfWeek, endOfWeek, addWeeks,
-  startOfMonth, endOfMonth, addMonths,
-  format
-} from 'date-fns';
+import { format } from 'date-fns';
 
-type Mode = 'week' | 'month' | 'all';
+type Tab = 'unpaid' | 'paid' | 'all';
 type SortBy = 'name' | 'hours' | 'pay' | 'unpaid';
 type SortDir = 'asc' | 'desc';
 type Profile = { id: string; role: 'admin' | 'employee' } | null;
 
 /** Compute pay with Breakdown $50 minimum (uses DB pay_due if present). */
 function payFor(s: any): number {
-  const rate  = Number(s.pay_rate ?? 25);
+  const rate = Number(s.pay_rate ?? 25);
   const hours = Number(s.hours_worked ?? 0);
-  const base  = s.pay_due != null ? Number(s.pay_due) : hours * rate;
+  const base = s.pay_due != null ? Number(s.pay_due) : hours * rate;
   return s.shift_type === 'Breakdown' ? Math.max(base, 50) : base;
 }
 
@@ -30,20 +26,16 @@ export default function Admin() {
   const [shifts, setShifts] = useState<any[]>([]);
   const [names, setNames] = useState<Record<string, string>>({});
 
-  const [mode, setMode] = useState<Mode>('week');
-  const [offset, setOffset] = useState(0);
-  const [unpaidOnly, setUnpaidOnly] = useState(false);
-
+  const [tab, setTab] = useState<Tab>('unpaid');
   const [sortBy, setSortBy] = useState<SortBy>('name');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
 
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | undefined>();
 
-  // ---- Auth + role check (fixes the "need to refresh" issue) ----
+  // ---- Auth + role check ----
   useEffect(() => {
     let active = true;
-
     async function loadProfile() {
       const { data: { user } } = await supabase.auth.getUser();
       if (!active) return;
@@ -62,7 +54,6 @@ export default function Admin() {
         .single();
 
       if (!active) return;
-
       setMe((prof as any) ?? null);
       setChecking(false);
 
@@ -85,24 +76,6 @@ export default function Admin() {
     };
   }, [r]);
 
-  // ---- Range builder ----
-  const range = useMemo(() => {
-    const now = new Date();
-    if (mode === 'week') {
-      const base = addWeeks(now, offset);
-      const start = startOfWeek(base, { weekStartsOn: 1 });
-      const end = endOfWeek(base, { weekStartsOn: 1 });
-      return { start, end, label: `${format(start, 'MMM d')} – ${format(end, 'MMM d, yyyy')}` };
-    }
-    if (mode === 'month') {
-      const base = addMonths(now, offset);
-      const start = startOfMonth(base);
-      const end = endOfMonth(base);
-      return { start, end, label: `${format(start, 'MMMM yyyy')}` };
-    }
-    return { start: null as any, end: null as any, label: 'All time' };
-  }, [mode, offset]);
-
   // ---- Load shifts after role is known ----
   useEffect(() => {
     if (checking) return;
@@ -113,12 +86,8 @@ export default function Admin() {
       setErr(undefined);
       try {
         let q = supabase.from('shifts').select('*').order('shift_date', { ascending: false });
-        if (mode !== 'all') {
-          q = q
-            .gte('shift_date', format(range.start, 'yyyy-MM-dd'))
-            .lte('shift_date', format(range.end, 'yyyy-MM-dd'));
-        }
-        if (unpaidOnly) q = q.eq('is_paid', false);
+        if (tab === 'unpaid') q = q.eq('is_paid', false);
+        if (tab === 'paid') q = q.eq('is_paid', true);
 
         const { data, error } = await q;
         if (error) throw error;
@@ -145,9 +114,9 @@ export default function Admin() {
         setLoading(false);
       }
     })();
-  }, [checking, me, mode, offset, unpaidOnly, range]);
+  }, [checking, me, tab]);
 
-  // ---- Totals by employee (uses payFor) ----
+  // ---- Totals by employee ----
   const totals = useMemo(() => {
     const m: Record<string, { id: string; name: string; hours: number; pay: number; unpaid: number }> = {};
     for (const s of shifts) {
@@ -161,6 +130,10 @@ export default function Admin() {
     }
     return Object.values(m);
   }, [shifts, names]);
+
+  const unpaidTotal = useMemo(() => {
+    return totals.reduce((sum, t) => sum + t.unpaid, 0);
+  }, [totals]);
 
   // ---- Sort totals table ----
   const sortedTotals = useMemo(() => {
@@ -191,7 +164,6 @@ export default function Admin() {
     return m;
   }, [shifts]);
 
-  // Order employee sections following totals sort
   const sectionOrder = useMemo(() => sortedTotals.map(t => t.id), [sortedTotals]);
 
   // ---- Actions ----
@@ -230,44 +202,19 @@ export default function Admin() {
 
   return (
     <main className="page">
-      <h1>Admin</h1>
+      <h1>Admin Dashboard</h1>
       {err && <p className="error">Error: {err}</p>}
 
-      {/* Controls */}
-      <div className="row" style={{ gap: 8, flexWrap: 'wrap', margin: '8px 0 16px' }}>
-        <select value={mode} onChange={e => { setMode(e.target.value as Mode); setOffset(0); }}>
-          <option value="week">This week</option>
-          <option value="month">This month</option>
-          <option value="all">All time</option>
-        </select>
+      {/* Summary bar */}
+      <div style={{ margin: '16px 0', padding: 12, background: '#f0f0f0', borderRadius: 6, fontWeight: 'bold' }}>
+        Total Unpaid: ${unpaidTotal.toFixed(2)}
+      </div>
 
-        {mode !== 'all' && (
-          <>
-            <button onClick={() => setOffset(n => n - 1)}>◀ Prev</button>
-            <button onClick={() => setOffset(0)}>This {mode}</button>
-            <button onClick={() => setOffset(n => n + 1)} disabled={offset >= 0}>Next ▶</button>
-            <div style={{ marginLeft: 8, opacity: 0.8 }}>{range.label}</div>
-          </>
-        )}
-
-        <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
-          <input type="checkbox" checked={unpaidOnly} onChange={e => setUnpaidOnly(e.target.checked)} />
-          Unpaid only
-        </label>
-
-        <div style={{ display: 'inline-flex', alignItems: 'center', gap: 8, marginLeft: 'auto' }}>
-          <label>Sort totals by</label>
-          <select value={sortBy} onChange={e => setSortBy(e.target.value as SortBy)}>
-            <option value="name">Name (A–Z)</option>
-            <option value="hours">Hours</option>
-            <option value="pay">Pay</option>
-            <option value="unpaid">Unpaid</option>
-          </select>
-          <select value={sortDir} onChange={e => setSortDir(e.target.value as SortDir)}>
-            <option value="asc">Asc</option>
-            <option value="desc">Desc</option>
-          </select>
-        </div>
+      {/* Tabs */}
+      <div className="tabs" style={{ display: 'flex', gap: 8, marginBottom: 16 }}>
+        <button onClick={() => setTab('unpaid')} className={tab==='unpaid' ? 'active' : ''}>Unpaid</button>
+        <button onClick={() => setTab('paid')} className={tab==='paid' ? 'active' : ''}>Paid</button>
+        <button onClick={() => setTab('all')} className={tab==='all' ? 'active' : ''}>All</button>
       </div>
 
       {/* Totals by employee */}
@@ -285,20 +232,19 @@ export default function Admin() {
           <tbody>
             {sortedTotals.map((t) => (
               <tr key={t.id}>
-                <td data-label="Employee">{t.name}</td>
-                <td data-label="Hours">{t.hours.toFixed(2)}</td>
-                <td data-label="Pay">${t.pay.toFixed(2)}</td>
-                <td data-label="Unpaid">${t.unpaid.toFixed(2)}</td>
+                <td>{t.name}</td>
+                <td>{t.hours.toFixed(2)}</td>
+                <td>${t.pay.toFixed(2)}</td>
+                <td>${t.unpaid.toFixed(2)}</td>
               </tr>
             ))}
           </tbody>
         </table>
       </div>
 
-      {/* Grouped shifts with per-employee subtotals */}
-      <h3>All Shifts — Grouped by Employee</h3>
+      {/* Shifts grouped by employee */}
+      <h3>Shifts</h3>
       {loading && <p>Loading…</p>}
-
       <div className="table-wrap">
         <table className="table table--center table--stack">
           <thead>
@@ -335,24 +281,19 @@ export default function Admin() {
                   <tr className="section-head">
                     <td colSpan={10}>{name}</td>
                   </tr>
-
                   {rows.map((s) => {
                     const paid = Boolean((s as any).is_paid);
                     const pay = payFor(s);
                     return (
                       <tr key={s.id}>
-                        <td data-label="Employee">{name}</td>
-                        <td data-label="Date">{s.shift_date}</td>
-                        <td data-label="Type">{s.shift_type}</td>
-                        <td data-label="In">
-                          {new Date(s.time_in).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </td>
-                        <td data-label="Out">
-                          {new Date(s.time_out).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                        </td>
-                        <td data-label="Hours">{Number(s.hours_worked).toFixed(2)}</td>
-                        <td data-label="Pay">${pay.toFixed(2)}</td>
-                        <td data-label="Paid?">
+                        <td>{name}</td>
+                        <td>{s.shift_date}</td>
+                        <td>{s.shift_type}</td>
+                        <td>{new Date(s.time_in).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+                        <td>{new Date(s.time_out).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
+                        <td>{Number(s.hours_worked).toFixed(2)}</td>
+                        <td>${pay.toFixed(2)}</td>
+                        <td>
                           <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                             <input
                               type="checkbox"
@@ -364,29 +305,20 @@ export default function Admin() {
                             </span>
                           </label>
                         </td>
-                        <td data-label="Paid at">
-                          {(s as any).paid_at ? new Date((s as any).paid_at).toLocaleString() : '—'}
-                        </td>
-                        <td data-label="Actions">
+                        <td>{(s as any).paid_at ? new Date((s as any).paid_at).toLocaleString() : '—'}</td>
+                        <td>
                           <div className="actions">
-                            <button className="btn-edit" onClick={() => editRow(s)} style={{ marginRight: 8 }}>
-                              Edit
-                            </button>
-                            <button className="btn-delete" onClick={() => deleteRow(s)}>
-                              Delete
-                            </button>
+                            <button className="btn-edit" onClick={() => editRow(s)} style={{ marginRight: 8 }}>Edit</button>
+                            <button className="btn-delete" onClick={() => deleteRow(s)}>Delete</button>
                           </div>
                         </td>
                       </tr>
                     );
                   })}
-
                   <tr className="subtotal">
-                    <td colSpan={5} data-label="Subtotal" style={{ textAlign: 'right' }}>
-                      Total — {name}
-                    </td>
-                    <td data-label="Hours">{subtotal.hours.toFixed(2)}</td>
-                    <td data-label="Pay">${subtotal.pay.toFixed(2)}</td>
+                    <td colSpan={5} style={{ textAlign: 'right' }}>Total — {name}</td>
+                    <td>{subtotal.hours.toFixed(2)}</td>
+                    <td>${subtotal.pay.toFixed(2)}</td>
                     <td colSpan={3}></td>
                   </tr>
                 </React.Fragment>
