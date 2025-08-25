@@ -137,19 +137,19 @@ body{
 .table tbody tr:hover{ background: #fafafa; }
 
 /* Section (employee) header row */
-.section-head td{ 
+.section-head td{
   font-weight:800; background:#f8fafc; color:#111827; border-top:2px solid var(--border);
-  padding: 0;                         /* remove TD padding so inner flex sets spacing */
+  padding: 0;
 }
 .section-controls{
   display:flex; align-items:center; justify-content:space-between; gap:12px;
-  width:100%;                         /* make the flex fill the whole colSpan cell */
+  width:100%;
 }
 .section-controls__left,
 .section-controls__right{
-  display:flex; align-items:center; gap:8px; padding:10px 12px; /* put padding on inner flex */
+  display:flex; align-items:center; gap:8px; padding:10px 12px;
 }
-.section-controls__right .topbar-btn{ white-space: nowrap; }     /* keep buttons from wrapping */
+.section-controls__right .topbar-btn{ white-space: nowrap; }
 
 .subtotal td{ background:#fbfbff; color:#1f2937; font-weight:700; border-top:2px solid var(--brand-border); }
 
@@ -296,3 +296,12 @@ textarea{ min-height:80px; resize:vertical; }
 @media (max-width: 520px){
   .section-controls__right .topbar-btn{ padding:6px 10px; }
 }
+
+/* --- Stack name over counter for perfect alignment --- */
+.section-controls__left{
+  flex-direction: column;   /* overrides the row layout */
+  align-items: flex-start;
+  gap: 6px;
+}
+.section-controls__left strong{ font-size: 15px; }
+.section-controls__left .section-stat{ margin-left: 0; }
