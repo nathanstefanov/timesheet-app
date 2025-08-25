@@ -139,17 +139,20 @@ body{
 /* Section (employee) header row */
 .section-head td{
   font-weight:800; background:#f8fafc; color:#111827; border-top:2px solid var(--border);
-  padding: 0;
+  padding: 10px 12px;                   /* ensure the row has height */
 }
 .section-controls{
-  display:flex; align-items:center; justify-content:space-between; gap:12px;
-  width:100%;
+  display:flex; flex-wrap:wrap; align-items:flex-start; gap:12px; width:100%;
 }
-.section-controls__left,
+.section-controls__left{
+  display:flex; flex-direction:column; align-items:flex-start;
+  gap:6px; min-width:220px; flex:1 1 320px;
+}
+.section-controls__left strong{ font-size:15px; }
 .section-controls__right{
-  display:flex; align-items:center; gap:8px; padding:10px 12px;
+  display:flex; gap:8px; justify-content:flex-start; flex:1 1 300px;
 }
-.section-controls__right .topbar-btn{ white-space: nowrap; }
+.section-controls__right .topbar-btn{ white-space:nowrap; }
 
 .subtotal td{ background:#fbfbff; color:#1f2937; font-weight:700; border-top:2px solid var(--brand-border); }
 
@@ -256,34 +259,14 @@ textarea{ min-height:80px; resize:vertical; }
   .nav{ overflow-x:auto; }
 }
 
-/* ==== Layout utilities (for forms/pages) ==== */
+/* ==== Layout utilities ==== */
 .narrow{ max-width: 560px; }
 .mx-auto{ margin-left:auto; margin-right:auto; }
-
-/* Simple responsive 2-col grid for form rows */
-.grid-2{
-  display:grid;
-  grid-template-columns: 1fr 1fr;
-  gap: 12px;
-}
-@media (max-width: 600px){
-  .grid-2{ grid-template-columns: 1fr; }
-}
-
-/* Consistent spacing around inputs */
+.grid-2{ display:grid; grid-template-columns: 1fr 1fr; gap:12px; }
+@media (max-width: 600px){ .grid-2{ grid-template-columns: 1fr; } }
 .form-field{ margin-bottom: 12px; }
 
-/* --- Responsive employee header row --- */
-.section-controls{ flex-wrap: wrap; row-gap: 8px; }
-.section-controls__left{ min-width:0; gap:12px; }
-.section-controls__right{ margin-left:auto; flex-wrap:wrap; gap:8px; }
-
-@media (max-width: 900px){
-  .section-controls__left{ width:100%; justify-content:space-between; }
-  .section-controls__right{ width:100%; justify-content:flex-start; }
-}
-
-/* --- Centered "unpaid shifts" counter --- */
+/* --- Counter box for unpaid shifts --- */
 .section-stat{
   display:grid; place-items:center;
   padding:4px 10px; border:1px solid var(--border);
@@ -292,16 +275,11 @@ textarea{ min-height:80px; resize:vertical; }
 .section-stat__num{ font-weight:800; font-size:16px; line-height:1; }
 .section-stat__label{ margin-top:2px; font-size:12px; line-height:1.05; color:var(--muted); text-align:center; }
 
-/* (optional) tighter buttons on small screens */
+/* --- Responsive tweaks for buttons --- */
+@media (max-width: 900px){
+  .section-controls__left,
+  .section-controls__right{ flex:1 1 100%; }
+}
 @media (max-width: 520px){
   .section-controls__right .topbar-btn{ padding:6px 10px; }
 }
-
-/* --- Stack name over counter for perfect alignment --- */
-.section-controls__left{
-  flex-direction: column;   /* overrides the row layout */
-  align-items: flex-start;
-  gap: 6px;
-}
-.section-controls__left strong{ font-size: 15px; }
-.section-controls__left .section-stat{ margin-left: 0; }
