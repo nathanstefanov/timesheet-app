@@ -1,203 +1,110 @@
-import { useEffect, useRef, useState } from 'react';
+// pages/index.tsx
+import { useState, useRef } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
 
-type Mode = 'signin' | 'signup';
-
-// 👉 drop your logo URL here (or leave blank to hide)
-const LOGO_URL =
-  "https://cdn.prod.website-files.com/67c10208e6e94bb6c9fba39b/689d0fe09b90825b708049a1_ChatGPT%20Image%20Aug%2013%2C%202025%2C%2005_18_33%20PM.png";
-
-export default function AuthPage() {
+export default function Login() {
   const r = useRouter();
-  const [mode, setMode] = useState<Mode>('signin');
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
-  const [showPw, setShowPw] = useState(false);
-  const [loading, setLoading] = useState(false);
-  const [err, setErr] = useState<string>();
-  const [msg, setMsg] = useState<string>();
-  const emailRef = useRef<HTMLInputElement>(null);
+  const [busy, setBusy] = useState(false);
+  const [msg, setMsg] = useState<string | null>(null);
+  const clickLock = useRef(false);
 
-  useEffect(() => { emailRef.current?.focus(); }, [mode]);
-
-  function clearAlerts() { setErr(undefined); setMsg(undefined); }
-
-  async function submit() {
-    clearAlerts();
-    setLoading(true);
-    try {
-      if (!email) throw new Error('Enter your email');
-      if (mode === 'signup' && password.length < 8) throw new Error('Password must be at least 8 characters');
-      if (mode === 'signin' && !password) throw new Error('Enter your password');
-
-      if (mode === 'signup') {
-        const { error } = await supabase.auth.signUp({ email, password });
-        if (error) throw error;
-        setMsg('Account created. You can sign in now.');
-        setMode('signin');
-      } else {
-        const { error } = await supabase.auth.signInWithPassword({ email, password });
-        if (error) throw error;
-        r.push('/dashboard');
-      }
-    } catch (e: any) {
-      setErr(e.message || 'Something went wrong');
-    } finally { setLoading(false); }
+  // small helper: race a promise with a timeout
+  function withTimeout<T>(p: Promise<T>, ms = 8000) {
+    return Promise.race<T>([
+      p,
+      new Promise<T>((_, rej) => setTimeout(() => rej(new Error('Timed out')), ms)),
+    ]);
   }
 
-  async function sendMagicLink() {
-    clearAlerts(); setLoading(true);
+  async function ensureProfile(uid: string) {
+    // Try to read a profile row. If not found, create a minimal one.
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, role, full_name')
+      .eq('id', uid)
+      .maybeSingle();
+
+    if (error) throw error;
+    if (data) return;
+
+    // Insert a basic row; your RLS policies must allow user to insert/update own row or admin
+    const { error: upsertErr } = await supabase
+      .from('profiles')
+      .upsert({ id: uid, role: 'employee', full_name: null }, { onConflict: 'id' });
+    if (upsertErr) throw upsertErr;
+  }
+
+  async function onSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    if (busy || clickLock.current) return;
+    clickLock.current = true;
+    setBusy(true);
+    setMsg(null);
+
     try {
-      if (!email) throw new Error('Enter your email');
-      const redirectTo = typeof window !== 'undefined' ? `${location.origin}/dashboard` : undefined;
-      const { error } = await supabase.auth.signInWithOtp({ email, options: { emailRedirectTo: redirectTo } });
+      const { data, error } = await withTimeout(
+        supabase.auth.signInWithPassword({ email, password }),
+        12000
+      );
+
       if (error) throw error;
-      setMsg('Check your email for a login link.');
-    } catch (e: any) { setErr(e.message || 'Could not send link'); }
-    finally { setLoading(false); }
-  }
+      const user = data?.user;
+      if (!user) throw new Error('No user in session');
 
-  async function sendReset() {
-    clearAlerts(); setLoading(true);
-    try {
-      if (!email) throw new Error('Enter your email first');
-      const redirectTo = typeof window !== 'undefined' ? `${location.origin}/update-password` : undefined;
-      const { error } = await supabase.auth.resetPasswordForEmail(email, { redirectTo });
-      if (error) throw error;
-      setMsg('Password reset email sent. Check your inbox.');
-    } catch (e: any) { setErr(e.message || 'Could not send reset email'); }
-    finally { setLoading(false); }
-  }
+      // make sure a profile row exists so the rest of the app doesn’t spin
+      await withTimeout(ensureProfile(user.id), 10000);
 
-  function onKeyDown(e: React.KeyboardEvent) { if (e.key === 'Enter') submit(); }
+      // hard replace to dashboard
+      await r.replace('/dashboard');
+    } catch (err: any) {
+      setMsg(err?.message || 'Login failed');
+    } finally {
+      setBusy(false);
+      // brief unlock after next tick (avoid rapid double submits)
+      setTimeout(() => (clickLock.current = false), 150);
+    }
+  }
 
   return (
-    <div className="wrap">
-      <div className="card">
-        <div className="title-row">
-          {LOGO_URL ? <img src={LOGO_URL} alt="Logo" className="logo" /> : null}
-          <h1 className="title">Timesheet</h1>
+    <main className="page narrow mx-auto">
+      <h1>Sign in</h1>
+      {msg && (
+        <div className="toast toast--error" role="alert">
+          <span>{msg}</span>
+          <button className="toast__dismiss" onClick={() => setMsg(null)}>Dismiss</button>
         </div>
+      )}
 
-        <div className="tabs">
-          <button
-            className={`tab ${mode === 'signin' ? 'active' : ''}`}
-            onClick={() => setMode('signin')}
-            aria-pressed={mode === 'signin'}
-          >
-            Sign In
-          </button>
-          <button
-            className={`tab ${mode === 'signup' ? 'active' : ''}`}
-            onClick={() => setMode('signup')}
-            aria-pressed={mode === 'signup'}
-          >
-            Create Account
-          </button>
-        </div>
-
-        <label className="label">Email</label>
+      <form onSubmit={onSubmit}>
+        <label htmlFor="email">Email</label>
         <input
-          ref={emailRef}
-          className="input"
+          id="email"
           type="email"
-          inputMode="email"
-          autoComplete="username"
-          placeholder="you@company.com"
+          autoComplete="email"
+          required
           value={email}
           onChange={(e) => setEmail(e.target.value)}
-          onKeyDown={onKeyDown}
         />
 
-        <label className="label">Password {mode === 'signup' ? '(min 8 chars)' : ''}</label>
-        <div className="pwrow">
-          <input
-            className="input"
-            type={showPw ? 'text' : 'password'}
-            autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
-            placeholder={mode === 'signin' ? 'Your password' : 'Create a password'}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            onKeyDown={onKeyDown}
-          />
-          <label className="show">
-            <input type="checkbox" checked={showPw} onChange={(e) => setShowPw(e.target.checked)} />
-            Show
-          </label>
+        <label htmlFor="pw">Password</label>
+        <input
+          id="pw"
+          type="password"
+          autoComplete="current-password"
+          required
+          value={password}
+          onChange={(e) => setPassword(e.target.value)}
+        />
+
+        <div style={{ display: 'flex', gap: 8, marginTop: 12 }}>
+          <button className="topbar-btn" type="submit" disabled={busy}>
+            {busy ? 'Working…' : 'Sign in'}
+          </button>
         </div>
-
-        {err && <div className="alert error">{err}</div>}
-        {msg && <div className="alert ok">{msg}</div>}
-
-        <button className="btn primary" onClick={submit} disabled={loading}>
-          {loading ? 'Working…' : mode === 'signin' ? 'Sign In' : 'Create Account'}
-        </button>
-
-        <div className="actions">
-          <button className="link" onClick={sendMagicLink} disabled={loading}>Email me a login link</button>
-          <span className="sep">•</span>
-          <button className="link" onClick={sendReset} disabled={loading}>Forgot password?</button>
-        </div>
-      </div>
-
-      <style jsx>{`
-        /* Viewport-safe centering on iOS Safari */
-        .wrap {
-          min-height: 100svh;                 /* small viewport units -> avoids iOS toolbars shifting height */
-          display: flex;
-          align-items: center;
-          justify-content: center;
-          padding: clamp(16px, 4vw, 32px);
-          background: #f7f8fc;
-        }
-        .card {
-          width: min(520px, 94vw);
-          margin-inline: auto;
-          background: #fff;
-          color: #111;
-          border: 1px solid #e6e8ee;
-          border-radius: 16px;
-          padding: 22px 18px;
-          box-shadow: 0 10px 30px rgba(0,0,0,.05);
-          font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-          box-sizing: border-box;
-        }
-        .title-row { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
-        .logo { width: 28px; height: 28px; object-fit: contain; }
-        .title { margin: 0; font-size: 22px; font-weight: 700; }
-
-        .tabs { display:grid; grid-template-columns:1fr 1fr; gap:8px; margin: 10px 0 14px; }
-        .tab {
-          height: 44px; border-radius: 10px; border: 1px solid #d9dce6;
-          background: #f3f5fb; color: #1f2a44; font-weight: 600; cursor: pointer;
-        }
-        .tab.active { background: #4f46e5; color: #fff; border-color: #4f46e5; }
-
-        .label { display:block; margin: 8px 0 6px; font-size:14px; color:#374151; }
-        .input {
-          width: 100%; height: 44px; padding: 0 12px; border-radius: 10px;
-          border: 1px solid #d1d5db; background: #fff; color:#111; outline:none; box-sizing:border-box;
-        }
-        .input:focus { border-color:#4f46e5; box-shadow: 0 0 0 3px rgba(79,70,229,.15); }
-        .pwrow { display:flex; gap:8px; align-items:center; }
-        .show { font-size: 13px; color:#555; display:inline-flex; align-items:center; gap:6px; user-select:none; }
-
-        .btn {
-          width: 100%; margin-top: 12px; height: 46px; border-radius: 12px;
-          border: 0; background: #2b2d35; color:#fff; cursor:pointer; font-weight:700;
-        }
-        .btn.primary { background:#4f46e5; }
-        .btn:disabled { opacity:.6; cursor:not-allowed; }
-
-        .actions { display:flex; justify-content:center; gap:12px; margin-top: 12px; flex-wrap:wrap; }
-        .link { background:none; border:none; color:#4f46e5; text-decoration:underline; cursor:pointer; padding:0; }
-        .sep { opacity:.6; }
-
-        .alert { margin-top:10px; padding:10px 12px; border-radius:10px; font-size:14px; }
-        .alert.error { background:#fee2e2; color:#991b1b; border:1px solid #fecaca; }
-        .alert.ok { background:#dcfce7; color:#065f46; border:1px solid #bbf7d0; }
-      `}</style>
-    </div>
+      </form>
+    </main>
   );
 }
