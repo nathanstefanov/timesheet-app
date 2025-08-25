@@ -2,19 +2,21 @@
 import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
-import { format } from 'date-fns';
 
 type Tab = 'unpaid' | 'paid' | 'all';
 type SortBy = 'name' | 'hours' | 'pay' | 'unpaid';
 type SortDir = 'asc' | 'desc';
 type Profile = { id: string; role: 'admin' | 'employee' } | null;
 
-/** Compute pay with Breakdown $50 minimum (uses DB pay_due if present). */
-function payFor(s: any): number {
-  const rate = Number(s.pay_rate ?? 25);
+/** Compute pay info with Breakdown $50 minimum (uses DB pay_due if present). */
+function payInfo(s: any): { pay: number; minApplied: boolean; base: number } {
+  const rate  = Number(s.pay_rate ?? 25);
   const hours = Number(s.hours_worked ?? 0);
-  const base = s.pay_due != null ? Number(s.pay_due) : hours * rate;
-  return s.shift_type === 'Breakdown' ? Math.max(base, 50) : base;
+  const base  = s.pay_due != null ? Number(s.pay_due) : hours * rate;
+  const isBreakdown = s.shift_type === 'Breakdown';
+  const pay = isBreakdown ? Math.max(base, 50) : base;
+  const minApplied = isBreakdown && base < 50; // highlight only when the minimum actually boosted pay
+  return { pay, minApplied, base };
 }
 
 export default function Admin() {
@@ -32,6 +34,9 @@ export default function Admin() {
 
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | undefined>();
+
+  // track bulk action per-employee (UI disable)
+  const [bulkBusy, setBulkBusy] = useState<Record<string, boolean>>({});
 
   // ---- Auth + role check ----
   useEffect(() => {
@@ -116,24 +121,24 @@ export default function Admin() {
     })();
   }, [checking, me, tab]);
 
-  // ---- Totals by employee ----
+  // ---- Totals by employee (sums use payInfo) ----
   const totals = useMemo(() => {
-    const m: Record<string, { id: string; name: string; hours: number; pay: number; unpaid: number }> = {};
+    const m: Record<string, { id: string; name: string; hours: number; pay: number; unpaid: number; minCount: number }> = {};
     for (const s of shifts) {
       const id = s.user_id;
       const name = names[id] || '—';
-      m[id] ??= { id, name, hours: 0, pay: 0, unpaid: 0 };
-      const h = Number(s.hours_worked || 0), p = payFor(s);
+      m[id] ??= { id, name, hours: 0, pay: 0, unpaid: 0, minCount: 0 };
+      const { pay, minApplied } = payInfo(s);
+      const h = Number(s.hours_worked || 0);
       m[id].hours += h;
-      m[id].pay += p;
-      if (!Boolean((s as any).is_paid)) m[id].unpaid += p;
+      m[id].pay += pay;
+      if (minApplied) m[id].minCount += 1;
+      if (!Boolean(s.is_paid)) m[id].unpaid += pay;
     }
     return Object.values(m);
   }, [shifts, names]);
 
-  const unpaidTotal = useMemo(() => {
-    return totals.reduce((sum, t) => sum + t.unpaid, 0);
-  }, [totals]);
+  const unpaidTotal = useMemo(() => totals.reduce((sum, t) => sum + t.unpaid, 0), [totals]);
 
   // ---- Sort totals table ----
   const sortedTotals = useMemo(() => {
@@ -181,6 +186,37 @@ export default function Admin() {
     }
   }
 
+  /** Bulk mark all current rows for an employee as paid/unpaid (respects the current tab dataset). */
+  async function bulkTogglePaidForEmployee(userId: string, next: boolean) {
+    const rows = groups[userId] || [];
+    const toChange = rows.filter((s) => Boolean(s.is_paid) !== next).map((s) => s.id);
+    if (!toChange.length) return;
+
+    const name = names[userId] || 'employee';
+    const verb = next ? 'mark ALL shifts PAID' : 'mark ALL shifts UNPAID';
+    if (!confirm(`Are you sure you want to ${verb} for ${name}? (${toChange.length} shift${toChange.length > 1 ? 's' : ''})`)) return;
+
+    const patch = {
+      is_paid: next,
+      paid_at: next ? new Date().toISOString() : null,
+      paid_by: next ? (me as any)!.id : null,
+    };
+
+    setBulkBusy((b) => ({ ...b, [userId]: true }));
+    const prevShifts = shifts;
+
+    setShifts((prev) =>
+      prev.map((s) => (s.user_id === userId && toChange.includes(s.id) ? { ...s, ...patch } : s))
+    );
+
+    const { error } = await supabase.from('shifts').update(patch).in('id', toChange);
+    if (error) {
+      alert(error.message);
+      setShifts(prevShifts); // rollback on failure
+    }
+    setBulkBusy((b) => ({ ...b, [userId]: false }));
+  }
+
   function editRow(row: any) { r.push(`/shift/${row.id}`); }
 
   async function deleteRow(row: any) {
@@ -206,8 +242,12 @@ export default function Admin() {
       {err && <p className="error">Error: {err}</p>}
 
       {/* Summary bar */}
-      <div style={{ margin: '16px 0', padding: 12, background: '#f0f0f0', borderRadius: 6, fontWeight: 'bold' }}>
-        Total Unpaid: ${unpaidTotal.toFixed(2)}
+      <div style={{ margin: '16px 0', padding: 12, background: '#f0f0f0', borderRadius: 6, fontWeight: 'bold', display: 'flex', gap: 16, alignItems: 'center' }}>
+        <span>Total Unpaid: ${unpaidTotal.toFixed(2)}</span>
+        <span style={{ opacity: 0.7 }}>Employees with Unpaid: {totals.filter(t => t.unpaid > 0).length}</span>
+        <span style={{ marginLeft: 'auto', fontWeight: 500, fontSize: 12, display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          <span className="badge badge-min">MIN $50</span> indicates Breakdown shift boosted to $50 minimum
+        </span>
       </div>
 
       {/* Tabs */}
@@ -232,7 +272,14 @@ export default function Admin() {
           <tbody>
             {sortedTotals.map((t) => (
               <tr key={t.id}>
-                <td>{t.name}</td>
+                <td>
+                  {t.name}
+                  {t.minCount > 0 && (
+                    <span title={`${t.minCount} Breakdown shift(s) hit the $50 minimum`} style={{ marginLeft: 8, fontSize: 11, opacity: 0.8 }}>
+                      ({t.minCount}× MIN)
+                    </span>
+                  )}
+                </td>
                 <td>{t.hours.toFixed(2)}</td>
                 <td>${t.pay.toFixed(2)}</td>
                 <td>${t.unpaid.toFixed(2)}</td>
@@ -269,21 +316,48 @@ export default function Admin() {
               const name = names[uid] || '—';
               const subtotal = rows.reduce(
                 (acc, s) => {
+                  const info = payInfo(s);
                   acc.hours += Number(s.hours_worked || 0);
-                  acc.pay += payFor(s);
+                  acc.pay += info.pay;
                   return acc;
                 },
                 { hours: 0, pay: 0 }
               );
 
+              const unpaidCount = rows.filter((s) => !s.is_paid).length;
+              const allPaid = unpaidCount === 0;
+
               return (
                 <React.Fragment key={uid}>
+                  {/* Section header with bulk buttons */}
                   <tr className="section-head">
-                    <td colSpan={10}>{name}</td>
+                    <td colSpan={10} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                      <div>
+                        <strong>{name}</strong>
+                        <span style={{ marginLeft: 12, fontSize: 12, opacity: 0.8 }}>
+                          {unpaidCount} unpaid shift{unpaidCount !== 1 ? 's' : ''}
+                        </span>
+                      </div>
+                      <div style={{ display: 'flex', gap: 8 }}>
+                        <button
+                          disabled={bulkBusy[uid] || allPaid}
+                          onClick={() => bulkTogglePaidForEmployee(uid, true)}
+                        >
+                          Mark ALL Paid
+                        </button>
+                        <button
+                          disabled={bulkBusy[uid] || rows.length === unpaidCount}
+                          onClick={() => bulkTogglePaidForEmployee(uid, false)}
+                        >
+                          Mark ALL Unpaid
+                        </button>
+                      </div>
+                    </td>
                   </tr>
+
                   {rows.map((s) => {
-                    const paid = Boolean((s as any).is_paid);
-                    const pay = payFor(s);
+                    const { pay, minApplied, base } = payInfo(s);
+                    const paid = Boolean(s.is_paid);
                     return (
                       <tr key={s.id}>
                         <td>{name}</td>
@@ -292,20 +366,32 @@ export default function Admin() {
                         <td>{new Date(s.time_in).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
                         <td>{new Date(s.time_out).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}</td>
                         <td>{Number(s.hours_worked).toFixed(2)}</td>
-                        <td>${pay.toFixed(2)}</td>
+                        <td>
+                          ${pay.toFixed(2)}{' '}
+                          {minApplied && (
+                            <span
+                              className="badge badge-min"
+                              title={`Breakdown minimum applied (base ${base.toFixed(2)} < $50)`}
+                              style={{ marginLeft: 6 }}
+                            >
+                              MIN $50
+                            </span>
+                          )}
+                        </td>
                         <td>
                           <label style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
                             <input
                               type="checkbox"
                               checked={paid}
                               onChange={(e) => togglePaid(s, e.target.checked)}
+                              disabled={bulkBusy[uid]}
                             />
                             <span className={paid ? 'badge badge-paid' : 'badge badge-unpaid'}>
                               {paid ? 'PAID' : 'NOT PAID'}
                             </span>
                           </label>
                         </td>
-                        <td>{(s as any).paid_at ? new Date((s as any).paid_at).toLocaleString() : '—'}</td>
+                        <td>{s.paid_at ? new Date(s.paid_at).toLocaleString() : '—'}</td>
                         <td>
                           <div className="actions">
                             <button className="btn-edit" onClick={() => editRow(s)} style={{ marginRight: 8 }}>Edit</button>
@@ -315,6 +401,7 @@ export default function Admin() {
                       </tr>
                     );
                   })}
+
                   <tr className="subtotal">
                     <td colSpan={5} style={{ textAlign: 'right' }}>Total — {name}</td>
                     <td>{subtotal.hours.toFixed(2)}</td>
