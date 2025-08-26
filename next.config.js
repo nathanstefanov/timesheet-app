@@ -1,11 +1,25 @@
+// next.config.js
 /** @type {import('next').NextConfig} */
 const nextConfig = {
-  eslint: {
-    // ✅ Don’t fail the build because of ESLint errors (like no-explicit-any)
-    ignoreDuringBuilds: true,
+  reactStrictMode: true,
+  async headers() {
+    // Disable CDN/browser cache for app pages that depend on auth/data
+    const noStore = [
+      "/admin",
+      "/dashboard",
+      "/new-shift",
+      "/shift/:id*",
+    ].map((p) => ({
+      source: p,
+      headers: [
+        { key: "Cache-Control", value: "no-store, no-cache, must-revalidate, max-age=0" },
+        { key: "Pragma", value: "no-cache" },
+        { key: "Expires", value: "0" },
+      ],
+    }));
+
+    return noStore;
   },
-  // If TypeScript starts blocking builds later, you can also un-comment this:
-  // typescript: { ignoreBuildErrors: true },
 };
 
 module.exports = nextConfig;
