@@ -1,7 +1,7 @@
 // pages/_app.tsx
 import type { AppProps } from 'next/app';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
 import '../styles/globals.css';
@@ -13,6 +13,7 @@ export default function App({ Component, pageProps }: AppProps) {
 
   const [profile, setProfile] = useState<Profile>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
+  const initialSessionChecked = useRef(false);
 
   async function fetchProfile(userId: string) {
     const { data } = await supabase
@@ -27,38 +28,36 @@ export default function App({ Component, pageProps }: AppProps) {
   useEffect(() => {
     let cancelled = false;
 
-    (async () => {
-      // Fast path: get current session from local storage (no network).
-      const { data: { session } } = await supabase.auth.getSession();
-      if (cancelled) return;
-
-      if (!session?.user) {
-        setProfile(null);
-        setLoadingProfile(false);
-        // Kick unauthenticated users off protected pages.
-        if (router.pathname !== '/') router.replace('/');
-        return;
-      }
-
-      // We have a user—fetch their profile.
-      await fetchProfile(session.user.id);
-
-      // If already on the login page, send them to dashboard.
-      if (router.pathname === '/') router.replace('/dashboard');
-    })();
-
-    // Keep UI in sync with auth changes (sign-in/out, token refresh).
+    // Wait for Supabase to restore session before rendering
     const { data: sub } = supabase.auth.onAuthStateChange(async (_evt, session) => {
+      if (cancelled) return;
+      initialSessionChecked.current = true;
       if (!session?.user) {
         setProfile(null);
         setLoadingProfile(false);
-        router.replace('/'); // always land on sign-in when logged out
+        if (router.pathname !== '/') router.replace('/');
       } else {
         setLoadingProfile(true);
         await fetchProfile(session.user.id);
         if (router.pathname === '/') router.replace('/dashboard');
       }
     });
+
+    // On mount, check session (in case already available)
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (cancelled) return;
+      if (!session?.user) {
+        setProfile(null);
+        setLoadingProfile(false);
+        if (router.pathname !== '/') router.replace('/');
+      } else {
+        setLoadingProfile(true);
+        await fetchProfile(session.user.id);
+        if (router.pathname === '/') router.replace('/dashboard');
+      }
+      initialSessionChecked.current = true;
+    })();
 
     return () => { cancelled = true; sub.subscription.unsubscribe(); };
   }, [router]);
@@ -69,6 +68,14 @@ export default function App({ Component, pageProps }: AppProps) {
       // Hard redirect avoids Safari/Chrome cache weirdness after refreshes.
       window.location.href = '/';
     }
+  }
+
+  if (loadingProfile) {
+    return (
+      <main className="page page--center">
+        <h1>Loading…</h1>
+      </main>
+    );
   }
 
   return (
@@ -86,7 +93,7 @@ export default function App({ Component, pageProps }: AppProps) {
 
           <nav className="nav">
             {/* Only render app links when a user is loaded */}
-            {!loadingProfile && profile && (
+            {profile && (
               <>
                 <Link href="/dashboard" className="nav-link">Dashboard</Link>
                 <Link href="/new-shift" className="nav-link">Log Shift</Link>
