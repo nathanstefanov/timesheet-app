@@ -47,6 +47,7 @@ export default function App({ Component, pageProps }: AppProps) {
 
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
+      console.log('[useEffect] session after getSession:', session);
       if (cancelled) return;
 
       if (!session?.user) {
