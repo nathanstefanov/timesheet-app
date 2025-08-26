@@ -8,10 +8,11 @@ type SortBy = 'name' | 'hours' | 'pay' | 'unpaid';
 type SortDir = 'asc' | 'desc';
 type Profile = { id: string; role: 'admin' | 'employee' } | null;
 
+/** Compute pay with Breakdown $50 minimum (uses DB pay_due if present) */
 function payInfo(s: any): { pay: number; minApplied: boolean; base: number } {
-  const rate = Number(s.pay_rate ?? 25);
+  const rate  = Number(s.pay_rate ?? 25);
   const hours = Number(s.hours_worked ?? 0);
-  const base = s.pay_due != null ? Number(s.pay_due) : hours * rate;
+  const base  = s.pay_due != null ? Number(s.pay_due) : hours * rate;
   const isBreakdown = s.shift_type === 'Breakdown';
   const pay = isBreakdown ? Math.max(base, 50) : base;
   const minApplied = isBreakdown && base < 50;
@@ -79,7 +80,7 @@ export default function Admin() {
     };
   }, [r]);
 
-  // ---- Load shifts ----
+  // ---- Load shifts after we know role ----
   useEffect(() => {
     if (checking) return;
     if (!me || me.role !== 'admin') return;
@@ -151,6 +152,7 @@ export default function Admin() {
     return a;
   }, [totals, sortBy, sortDir]);
 
+  // ---- Group shifts by employee ----
   const groups = useMemo(() => {
     const m: Record<string, any[]> = {};
     for (const s of shifts) (m[s.user_id] ??= []).push(s);
@@ -166,6 +168,7 @@ export default function Admin() {
 
   const sectionOrder = useMemo(() => sortedTotals.map(t => t.id), [sortedTotals]);
 
+  // ---- Actions ----
   async function togglePaid(row: any, next: boolean) {
     const patch = {
       is_paid: next,
@@ -234,7 +237,7 @@ export default function Admin() {
       <h1 className="page__title">Admin Dashboard</h1>
       {err && <p className="error" role="alert">Error: {err}</p>}
 
-      {/* === TOP SUMMARY — styled exactly like a card to match tables === */}
+      {/* Summary */}
       <div className="card card--tight full">
         <div className="admin-summary admin-summary--center" style={{ margin: 0, border: 0, boxShadow: 'none' }}>
           <span className="chip chip--xl">Total Unpaid: ${unpaidTotal.toFixed(2)}</span>
@@ -246,7 +249,7 @@ export default function Admin() {
         </div>
       </div>
 
-      {/* Tabs — full width */}
+      {/* Tabs */}
       <div className="card card--tight full" style={{ marginTop: 10, padding: 10 }}>
         <div className="tabs tabs--center" style={{ margin: 0 }}>
           <button className={tab === 'unpaid' ? 'active' : ''} onClick={() => setTab('unpaid')}>Unpaid</button>
@@ -255,7 +258,7 @@ export default function Admin() {
         </div>
       </div>
 
-      {/* Totals by employee — same card width as shifts */}
+      {/* Totals by Employee */}
       <div className="card card--tight full">
         <div className="card__header">
           <h3>Totals by Employee</h3>
@@ -309,7 +312,7 @@ export default function Admin() {
         </div>
       </div>
 
-      {/* Shifts — same full card wrapper */}
+      {/* Shifts */}
       <div className="card card--tight full" style={{ marginTop: 12 }}>
         <div className="card__header">
           <h3>Shifts</h3>
