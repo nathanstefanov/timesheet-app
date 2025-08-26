@@ -1,5 +1,5 @@
 // pages/admin.tsx
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
 
@@ -10,9 +10,9 @@ type Profile = { id: string; role: 'admin' | 'employee' } | null;
 
 /** Compute pay with Breakdown $50 minimum (uses DB pay_due if present) */
 function payInfo(s: any): { pay: number; minApplied: boolean; base: number } {
-  const rate  = Number(s.pay_rate ?? 25);
+  const rate = Number(s.pay_rate ?? 25);
   const hours = Number(s.hours_worked ?? 0);
-  const base  = s.pay_due != null ? Number(s.pay_due) : hours * rate;
+  const base = s.pay_due != null ? Number(s.pay_due) : hours * rate;
   const isBreakdown = s.shift_type === 'Breakdown';
   const pay = isBreakdown ? Math.max(base, 50) : base;
   const minApplied = isBreakdown && base < 50;
@@ -24,9 +24,7 @@ function venmoHref(raw?: string | null): string | null {
   if (!raw) return null;
   const v = raw.trim();
   if (!v) return null;
-  // full URL already
-  if (/^https?:\/\//i.test(v)) return v;
-  // @handle -> turn into https://venmo.com/u/handle (strip leading @)
+  if (/^https?:\/\//i.test(v)) return v; // already full URL
   const handle = v.startsWith('@') ? v.slice(1) : v;
   return `https://venmo.com/u/${encodeURIComponent(handle)}`;
 }
@@ -39,7 +37,7 @@ export default function Admin() {
 
   const [shifts, setShifts] = useState<any[]>([]);
   const [names, setNames] = useState<Record<string, string>>({});
-  const [venmo, setVenmo] = useState<Record<string, string>>({}); // user_id -> venmo_url/handle
+  const [venmo, setVenmo] = useState<Record<string, string>>({});
 
   const [tab, setTab] = useState<Tab>('unpaid');
   const [sortBy, setSortBy] = useState<SortBy>('name');
@@ -93,52 +91,67 @@ export default function Admin() {
     };
   }, [r]);
 
-  // ---- Load shifts after we know role ----
-  useEffect(() => {
+  // ---- Loader (callable on mount + when coming back from Venmo) ----
+  const loadShifts = useCallback(async () => {
     if (checking) return;
     if (!me || me.role !== 'admin') return;
 
-    (async () => {
-      setLoading(true);
-      setErr(undefined);
-      try {
-        let q = supabase.from('shifts').select('*').order('shift_date', { ascending: false });
-        if (tab === 'unpaid') q = q.eq('is_paid', false);
-        if (tab === 'paid') q = q.eq('is_paid', true);
+    setLoading(true);
+    setErr(undefined);
+    try {
+      let q = supabase.from('shifts').select('*').order('shift_date', { ascending: false });
+      if (tab === 'unpaid') q = q.eq('is_paid', false);
+      if (tab === 'paid') q = q.eq('is_paid', true);
 
-        const { data, error } = await q;
-        if (error) throw error;
+      const { data, error } = await q;
+      if (error) throw error;
 
-        const rows = data || [];
-        setShifts(rows);
+      const rows = data || [];
+      setShifts(rows);
 
-        // Fetch names + venmo for display
-        const ids = Array.from(new Set(rows.map((s: any) => s.user_id)));
-        if (ids.length) {
-          const { data: profs } = await supabase
-            .from('profiles')
-            .select('id, full_name, venmo_url')   // <-- make sure this column exists
-            .in('id', ids);
+      // names + venmo
+      const ids = Array.from(new Set(rows.map((s: any) => s.user_id)));
+      if (ids.length) {
+        const { data: profs } = await supabase
+          .from('profiles')
+          .select('id, full_name, venmo_url')
+          .in('id', ids);
 
-          const nameMap: Record<string, string> = {};
-          const venmoMap: Record<string, string> = {};
-          (profs || []).forEach((p: any) => {
-            nameMap[p.id] = p.full_name || '—';
-            if (p.venmo_url) venmoMap[p.id] = p.venmo_url;
-          });
-          setNames(nameMap);
-          setVenmo(venmoMap);
-        } else {
-          setNames({});
-          setVenmo({});
-        }
-      } catch (e: any) {
-        setErr(e.message);
-      } finally {
-        setLoading(false);
+        const nameMap: Record<string, string> = {};
+        const venmoMap: Record<string, string> = {};
+        (profs || []).forEach((p: any) => {
+          nameMap[p.id] = p.full_name || '—';
+          if (p.venmo_url) venmoMap[p.id] = p.venmo_url;
+        });
+        setNames(nameMap);
+        setVenmo(venmoMap);
+      } else {
+        setNames({});
+        setVenmo({});
       }
-    })();
+    } catch (e: any) {
+      setErr(e.message);
+    } finally {
+      setLoading(false);
+    }
   }, [checking, me, tab]);
+
+  // initial + on tab/me change
+  useEffect(() => { loadShifts(); }, [loadShifts]);
+
+  // refetch when returning to the tab/app
+  useEffect(() => {
+    const onFocus = () => loadShifts();
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') loadShifts();
+    };
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [loadShifts]);
 
   // ---- Totals by employee ----
   const totals = useMemo(() => {
@@ -159,6 +172,7 @@ export default function Admin() {
 
   const unpaidTotal = useMemo(() => totals.reduce((sum, t) => sum + t.unpaid, 0), [totals]);
 
+  const [sortBy, setSortByState] = useState<SortBy>('name'); // keep your UI behavior
   const sortedTotals = useMemo(() => {
     const a = [...totals];
     if (sortBy === 'name') {
@@ -258,7 +272,7 @@ export default function Admin() {
       <h1 className="page__title">Admin Dashboard</h1>
       {err && <p className="error" role="alert">Error: {err}</p>}
 
-      {/* Summary (unchanged) */}
+      {/* Summary */}
       <div className="card card--tight full">
         <div className="admin-summary admin-summary--center" style={{ margin: 0, border: 0, boxShadow: 'none' }}>
           <span className="chip chip--xl">Total Unpaid: ${unpaidTotal.toFixed(2)}</span>
@@ -270,7 +284,7 @@ export default function Admin() {
         </div>
       </div>
 
-      {/* Tabs (unchanged) */}
+      {/* Tabs */}
       <div className="card card--tight full" style={{ marginTop: 10, padding: 10 }}>
         <div className="tabs tabs--center" style={{ margin: 0 }}>
           <button className={tab === 'unpaid' ? 'active' : ''} onClick={() => setTab('unpaid')}>Unpaid</button>
@@ -279,13 +293,13 @@ export default function Admin() {
         </div>
       </div>
 
-      {/* Totals by Employee (only change is Venmo button rendered inside Unpaid cell) */}
+      {/* Totals by Employee (Venmo button inside Unpaid cell) */}
       <div className="card card--tight full">
         <div className="card__header">
           <h3>Totals by Employee</h3>
           <div className="row">
             <label className="sr-only" htmlFor="sort-by">Sort by</label>
-            <select id="sort-by" value={sortBy} onChange={(e) => setSortBy(e.target.value as SortBy)}>
+            <select id="sort-by" value={sortBy} onChange={(e) => setSortByState(e.target.value as SortBy)}>
               <option value="name">Name</option>
               <option value="hours">Hours</option>
               <option value="pay">Pay</option>
@@ -351,7 +365,7 @@ export default function Admin() {
         </div>
       </div>
 
-      {/* Shifts (unchanged) */}
+      {/* Shifts (unchanged UI) */}
       <div className="card card--tight full" style={{ marginTop: 12 }}>
         <div className="card__header">
           <h3>Shifts</h3>
@@ -494,7 +508,6 @@ export default function Admin() {
         </div>
       </div>
 
-      {/* Tiny style for the Venmo button (keeps your existing look) */}
       <style jsx>{`
         .btn-venmo{
           display:inline-flex; align-items:center; justify-content:center;
@@ -507,4 +520,9 @@ export default function Admin() {
       `}</style>
     </main>
   );
+}
+
+/** Force SSR so Vercel does not emit /admin/index static HTML */
+export async function getServerSideProps() {
+  return { props: {} };
 }

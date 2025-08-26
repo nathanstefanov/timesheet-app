@@ -88,7 +88,6 @@ export default function Dashboard() {
 
       {err && <p className="error center" role="alert">Error: {err}</p>}
 
-      {/* Centered toolbar */}
       <div className="toolbar toolbar--center">
         <div className="toolbar__left">
           <label className="sr-only" htmlFor="range-mode">Range</label>
@@ -114,18 +113,15 @@ export default function Dashboard() {
           )}
         </div>
 
-        {/* Primary action button */}
         <Link href="/new-shift" className="btn-primary">+ Log Shift</Link>
       </div>
 
-      {/* Centered totals row */}
       <div className="totals totals--center">
         <div className="chip chip--xl">Hours: <b>{totals.hours.toFixed(2)}</b></div>
         <div className="chip chip--xl">Pay: <b>${totals.pay.toFixed(2)}</b></div>
         <div className="chip chip--xl">Unpaid: <b>${totals.unpaid.toFixed(2)}</b></div>
       </div>
 
-      {/* Table */}
       <div className="table-wrap">
         <table className="table table--center table--stack">
           <thead>
@@ -184,4 +180,9 @@ export default function Dashboard() {
       </div>
     </main>
   );
+}
+
+/** Force SSR so Vercel does not emit /dashboard/index static HTML */
+export async function getServerSideProps() {
+  return { props: {} };
 }
