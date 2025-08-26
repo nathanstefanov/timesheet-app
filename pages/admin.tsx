@@ -227,7 +227,7 @@ export default function Admin() {
 
   async function bulkTogglePaidForEmployee(userId: string, next: boolean) {
     const rows = groups[userId] || [];
-    anconst toChange = rows.filter((s) => Boolean(s.is_paid) !== next).map((s) => s.id);
+    const toChange = rows.filter((s) => Boolean(s.is_paid) !== next).map((s) => s.id);
     if (!toChange.length) return;
 
     const name = names[userId] || 'employee';
