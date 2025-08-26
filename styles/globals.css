@@ -205,7 +205,7 @@ body{
 }
 .admin-summary--center{ justify-content:center; flex-wrap:wrap; }
 .admin-summary .meta{ font-weight:500; font-size:12px; color: var(--muted); }
-.admin-summary .inline{ display:flex; align-items:center; gap:8px; }
+.admin-summary .inline{ display:inline-flex; align-items:center; gap:8px; }
 
 /* ======================================================
    Badges & Chips
