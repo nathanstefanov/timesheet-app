@@ -1,5 +1,5 @@
 // pages/admin.tsx
-import React, { useEffect, useMemo, useState } from 'react';
+import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
 
@@ -24,9 +24,7 @@ function venmoHref(raw?: string | null): string | null {
   if (!raw) return null;
   const v = raw.trim();
   if (!v) return null;
-  // full URL already
-  if (/^https?:\/\//i.test(v)) return v;
-  // @handle -> turn into https://venmo.com/u/handle (strip leading @)
+  if (/^https?:\/\//i.test(v)) return v;  // already a URL
   const handle = v.startsWith('@') ? v.slice(1) : v;
   return `https://venmo.com/u/${encodeURIComponent(handle)}`;
 }
@@ -39,7 +37,7 @@ export default function Admin() {
 
   const [shifts, setShifts] = useState<any[]>([]);
   const [names, setNames] = useState<Record<string, string>>({});
-  const [venmo, setVenmo] = useState<Record<string, string>>({}); // user_id -> venmo_url/handle
+  const [venmo, setVenmo] = useState<Record<string, string>>({});
 
   const [tab, setTab] = useState<Tab>('unpaid');
   const [sortBy, setSortBy] = useState<SortBy>('name');
@@ -93,52 +91,66 @@ export default function Admin() {
     };
   }, [r]);
 
-  // ---- Load shifts after we know role ----
-  useEffect(() => {
+  // ---- Shared loader so we can call it on first mount AND on focus/visibility ----
+  const loadShifts = useCallback(async () => {
     if (checking) return;
     if (!me || me.role !== 'admin') return;
 
-    (async () => {
-      setLoading(true);
-      setErr(undefined);
-      try {
-        let q = supabase.from('shifts').select('*').order('shift_date', { ascending: false });
-        if (tab === 'unpaid') q = q.eq('is_paid', false);
-        if (tab === 'paid') q = q.eq('is_paid', true);
+    setLoading(true);
+    setErr(undefined);
+    try {
+      let q = supabase.from('shifts').select('*').order('shift_date', { ascending: false });
+      if (tab === 'unpaid') q = q.eq('is_paid', false);
+      if (tab === 'paid') q = q.eq('is_paid', true);
 
-        const { data, error } = await q;
-        if (error) throw error;
+      const { data, error } = await q;
+      if (error) throw error;
 
-        const rows = data || [];
-        setShifts(rows);
+      const rows = data || [];
+      setShifts(rows);
 
-        // Fetch names + venmo for display
-        const ids = Array.from(new Set(rows.map((s: any) => s.user_id)));
-        if (ids.length) {
-          const { data: profs } = await supabase
-            .from('profiles')
-            .select('id, full_name, venmo_url')   // <-- make sure this column exists
-            .in('id', ids);
+      const ids = Array.from(new Set(rows.map((s: any) => s.user_id)));
+      if (ids.length) {
+        const { data: profs } = await supabase
+          .from('profiles')
+          .select('id, full_name, venmo_url')
+          .in('id', ids);
 
-          const nameMap: Record<string, string> = {};
-          const venmoMap: Record<string, string> = {};
-          (profs || []).forEach((p: any) => {
-            nameMap[p.id] = p.full_name || '—';
-            if (p.venmo_url) venmoMap[p.id] = p.venmo_url;
-          });
-          setNames(nameMap);
-          setVenmo(venmoMap);
-        } else {
-          setNames({});
-          setVenmo({});
-        }
-      } catch (e: any) {
-        setErr(e.message);
-      } finally {
-        setLoading(false);
+        const nameMap: Record<string, string> = {};
+        const venmoMap: Record<string, string> = {};
+        (profs || []).forEach((p: any) => {
+          nameMap[p.id] = p.full_name || '—';
+          if (p.venmo_url) venmoMap[p.id] = p.venmo_url;
+        });
+        setNames(nameMap);
+        setVenmo(venmoMap);
+      } else {
+        setNames({});
+        setVenmo({});
       }
-    })();
+    } catch (e: any) {
+      setErr(e.message);
+    } finally {
+      setLoading(false);
+    }
   }, [checking, me, tab]);
+
+  // ---- Initial load + when tab/me changes ----
+  useEffect(() => { loadShifts(); }, [loadShifts]);
+
+  // ---- Refetch when you come back from Venmo (tab focus / visibility) ----
+  useEffect(() => {
+    const onFocus = () => loadShifts();
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') loadShifts();
+    };
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVisible);
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVisible);
+    };
+  }, [loadShifts]);
 
   // ---- Totals by employee ----
   const totals = useMemo(() => {
@@ -258,7 +270,7 @@ export default function Admin() {
       <h1 className="page__title">Admin Dashboard</h1>
       {err && <p className="error" role="alert">Error: {err}</p>}
 
-      {/* Summary (unchanged) */}
+      {/* Summary */}
       <div className="card card--tight full">
         <div className="admin-summary admin-summary--center" style={{ margin: 0, border: 0, boxShadow: 'none' }}>
           <span className="chip chip--xl">Total Unpaid: ${unpaidTotal.toFixed(2)}</span>
@@ -270,7 +282,7 @@ export default function Admin() {
         </div>
       </div>
 
-      {/* Tabs (unchanged) */}
+      {/* Tabs */}
       <div className="card card--tight full" style={{ marginTop: 10, padding: 10 }}>
         <div className="tabs tabs--center" style={{ margin: 0 }}>
           <button className={tab === 'unpaid' ? 'active' : ''} onClick={() => setTab('unpaid')}>Unpaid</button>
@@ -279,7 +291,7 @@ export default function Admin() {
         </div>
       </div>
 
-      {/* Totals by Employee (only change is Venmo button rendered inside Unpaid cell) */}
+      {/* Totals by Employee */}
       <div className="card card--tight full">
         <div className="card__header">
           <h3>Totals by Employee</h3>
@@ -351,7 +363,7 @@ export default function Admin() {
         </div>
       </div>
 
-      {/* Shifts (unchanged) */}
+      {/* Shifts */}
       <div className="card card--tight full" style={{ marginTop: 12 }}>
         <div className="card__header">
           <h3>Shifts</h3>
@@ -494,7 +506,6 @@ export default function Admin() {
         </div>
       </div>
 
-      {/* Tiny style for the Venmo button (keeps your existing look) */}
       <style jsx>{`
         .btn-venmo{
           display:inline-flex; align-items:center; justify-content:center;
