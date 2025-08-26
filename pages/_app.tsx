@@ -107,14 +107,11 @@ export default function App({ Component, pageProps }: AppProps) {
   }
 
   if (profileError) {
-    return (
-      <main className="page page--center">
-        <h1>Error loading profile/session</h1>
-        <pre style={{ color: 'red', whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>{profileError}</pre>
-        <p>Please check your Supabase RLS policies, network connection, and that your user exists in the profiles table.</p>
-        <button onClick={() => window.location.reload()}>Retry</button>
-      </main>
-    );
+    // If profile fails to load, force sign out and redirect to login
+    supabase.auth.signOut().then(() => {
+      window.location.href = '/';
+    });
+    return null;
   }
 
   return (
