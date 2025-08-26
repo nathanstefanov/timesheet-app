@@ -8,43 +8,15 @@ type SortBy = 'name' | 'hours' | 'pay' | 'unpaid';
 type SortDir = 'asc' | 'desc';
 type Profile = { id: string; role: 'admin' | 'employee' } | null;
 
-type ProfRow = {
-  id: string;
-  full_name?: string | null;
-  venmo_handle?: string | null;
-  venmo_url?: string | null;
-};
-
-// ---- Pay computation (kept as-is) ----
+/** Compute pay with Breakdown $50 minimum (uses DB pay_due if present) */
 function payInfo(s: any): { pay: number; minApplied: boolean; base: number } {
-  const rate = Number(s.pay_rate ?? 25);
+  const rate  = Number(s.pay_rate ?? 25);
   const hours = Number(s.hours_worked ?? 0);
-  const base = s.pay_due != null ? Number(s.pay_due) : hours * rate;
+  const base  = s.pay_due != null ? Number(s.pay_due) : hours * rate;
   const isBreakdown = s.shift_type === 'Breakdown';
   const pay = isBreakdown ? Math.max(base, 50) : base;
   const minApplied = isBreakdown && base < 50;
   return { pay, minApplied, base };
-}
-
-// Build Venmo links for a user/amount
-function buildVenmoLinks(
-  p: { venmo_handle?: string | null; venmo_url?: string | null } | undefined,
-  amount: number,
-  note = 'Timesheet'
-) {
-  const handle = (p?.venmo_handle || '')?.replace(/^@/, '').trim();
-  const app =
-    handle
-      ? `venmo://paycharge?txn=pay&recipients=${encodeURIComponent(
-          handle
-        )}&amount=${amount.toFixed(2)}&note=${encodeURIComponent(note)}`
-      : (p?.venmo_url || '') || '';
-  const web =
-    handle
-      ? `https://venmo.com/u/${encodeURIComponent(handle)}`
-      : (p?.venmo_url || '') || '';
-  if (!app && !web) return null;
-  return { app, web };
 }
 
 export default function Admin() {
@@ -54,10 +26,7 @@ export default function Admin() {
   const [checking, setChecking] = useState(true);
 
   const [shifts, setShifts] = useState<any[]>([]);
-  const [profiles, setProfiles] = useState<Record<
-    string,
-    { name: string; venmo_handle?: string | null; venmo_url?: string | null }
-  >>({});
+  const [names, setNames] = useState<Record<string, string>>({});
 
   const [tab, setTab] = useState<Tab>('unpaid');
   const [sortBy, setSortBy] = useState<SortBy>('name');
@@ -111,7 +80,7 @@ export default function Admin() {
     };
   }, [r]);
 
-  // ---- Load shifts ----
+  // ---- Load shifts after we know role ----
   useEffect(() => {
     if (checking) return;
     if (!me || me.role !== 'admin') return;
@@ -123,32 +92,24 @@ export default function Admin() {
         let q = supabase.from('shifts').select('*').order('shift_date', { ascending: false });
         if (tab === 'unpaid') q = q.eq('is_paid', false);
         if (tab === 'paid') q = q.eq('is_paid', true);
-
+c
         const { data, error } = await q;
         if (error) throw error;
 
         const rows = data || [];
         setShifts(rows);
 
-        // Fetch profile info (names + optional venmo)
         const ids = Array.from(new Set(rows.map((s: any) => s.user_id)));
         if (ids.length) {
           const { data: profs } = await supabase
             .from('profiles')
-            .select('id, full_name, venmo_handle, venmo_url')
+            .select('id, full_name')
             .in('id', ids);
-
-          const map: Record<string, { name: string; venmo_handle?: string | null; venmo_url?: string | null }> = {};
-          (profs as ProfRow[] | null || []).forEach((p) => {
-            map[p.id] = {
-              name: p.full_name || '—',
-              venmo_handle: p.venmo_handle || null,
-              venmo_url: p.venmo_url || null,
-            };
-          });
-          setProfiles(map);
+          const map: Record<string, string> = {};
+          (profs || []).forEach((p: any) => { map[p.id] = p.full_name || '—'; });
+          setNames(map);
         } else {
-          setProfiles({});
+          setNames({});
         }
       } catch (e: any) {
         setErr(e.message);
@@ -160,13 +121,10 @@ export default function Admin() {
 
   // ---- Totals by employee ----
   const totals = useMemo(() => {
-    const m: Record<
-      string,
-      { id: string; name: string; hours: number; pay: number; unpaid: number; minCount: number }
-    > = {};
+    const m: Record<string, { id: string; name: string; hours: number; pay: number; unpaid: number; minCount: number }> = {};
     for (const s of shifts) {
       const id = s.user_id;
-      const name = profiles[id]?.name || '—';
+      const name = names[id] || '—';
       m[id] ??= { id, name, hours: 0, pay: 0, unpaid: 0, minCount: 0 };
       const { pay, minApplied } = payInfo(s);
       const h = Number(s.hours_worked || 0);
@@ -176,11 +134,10 @@ export default function Admin() {
       if (!Boolean(s.is_paid)) m[id].unpaid += pay;
     }
     return Object.values(m);
-  }, [shifts, profiles]);
+  }, [shifts, names]);
 
   const unpaidTotal = useMemo(() => totals.reduce((sum, t) => sum + t.unpaid, 0), [totals]);
 
-  // ---- Sort totals table ----
   const sortedTotals = useMemo(() => {
     const a = [...totals];
     if (sortBy === 'name') {
@@ -231,7 +188,7 @@ export default function Admin() {
     const toChange = rows.filter((s) => Boolean(s.is_paid) !== next).map((s) => s.id);
     if (!toChange.length) return;
 
-    const name = profiles[userId]?.name || 'employee';
+    const name = names[userId] || 'employee';
     const verb = next ? 'mark ALL shifts PAID' : 'mark ALL shifts UNPAID';
     if (!confirm(`Are you sure you want to ${verb} for ${name}? (${toChange.length} shift${toChange.length > 1 ? 's' : ''})`)) return;
 
@@ -259,27 +216,10 @@ export default function Admin() {
   function editRow(row: any) { r.push(`/shift/${row.id}`); }
 
   async function deleteRow(row: any) {
-    if (!confirm(`Delete shift for ${profiles[row.user_id]?.name || 'employee'} on ${row.shift_date}?`)) return;
+    if (!confirm(`Delete shift for ${names[row.user_id] || 'employee'} on ${row.shift_date}?`)) return;
     const { error } = await supabase.from('shifts').delete().eq('id', row.id);
     if (error) return alert(error.message);
     setShifts(prev => prev.filter(s => s.id !== row.id));
-  }
-
-  // Attempt Venmo deep-link, then graceful web fallback
-  function openVenmo(userId: string, amount: number) {
-    const p = profiles[userId];
-    const links = buildVenmoLinks(p, amount, 'Timesheet');
-    if (!links) return;
-    const start = Date.now();
-    // Try deep link first
-    window.location.href = links.app;
-    // Fallback after ~800ms (if app didn’t intercept)
-    setTimeout(() => {
-      const elapsed = Date.now() - start;
-      if (elapsed < 1500 && links.web) {
-        window.open(links.web, '_blank');
-      }
-    }, 800);
   }
 
   if (checking) {
@@ -318,7 +258,7 @@ export default function Admin() {
         </div>
       </div>
 
-      {/* Totals by employee */}
+      {/* Totals by Employee */}
       <div className="card card--tight full">
         <div className="card__header">
           <h3>Totals by Employee</h3>
@@ -352,37 +292,21 @@ export default function Admin() {
               </tr>
             </thead>
             <tbody>
-              {sortedTotals.map((t) => {
-                const p = profiles[t.id];
-                const canPay = !!p && t.unpaid > 0 && (p.venmo_handle || p.venmo_url);
-                return (
-                  <tr key={t.id}>
-                    <td data-label="Employee">
-                      {t.name}
-                      {t.minCount > 0 && (
-                        <span className="muted" style={{ marginLeft: 8 }}>
-                          ({t.minCount}× MIN)
-                        </span>
-                      )}
-                    </td>
-                    <td data-label="Hours">{t.hours.toFixed(2)}</td>
-                    <td data-label="Pay">${t.pay.toFixed(2)}</td>
-                    <td data-label="Unpaid">
-                      ${t.unpaid.toFixed(2)}{' '}
-                      {canPay && (
-                        <button
-                          className="topbar-btn"
-                          style={{ marginLeft: 8, whiteSpace: 'nowrap' }}
-                          onClick={() => openVenmo(t.id, t.unpaid)}
-                          title="Pay via Venmo"
-                        >
-                          Venmo now
-                        </button>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
+              {sortedTotals.map((t) => (
+                <tr key={t.id}>
+                  <td data-label="Employee">
+                    {t.name}
+                    {t.minCount > 0 && (
+                      <span className="muted" style={{ marginLeft: 8 }}>
+                        ({t.minCount}× MIN)
+                      </span>
+                    )}
+                  </td>
+                  <td data-label="Hours">{t.hours.toFixed(2)}</td>
+                  <td data-label="Pay">${t.pay.toFixed(2)}</td>
+                  <td data-label="Unpaid">${t.unpaid.toFixed(2)}</td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
@@ -417,7 +341,7 @@ export default function Admin() {
                 const rows = groups[uid] || [];
                 if (!rows.length) return null;
 
-                const name = profiles[uid]?.name || '—';
+                const name = names[uid] || '—';
                 const subtotal = rows.reduce(
                   (acc, s) => {
                     const info = payInfo(s);
