@@ -296,3 +296,87 @@ textarea{ min-height:80px; resize:vertical; }
 /* When the toolbar is centered, don't let anything auto-push to the far right */
 .toolbar--center .link-right{ margin-left: 0; }
 .toolbar--center .btn-primary{ margin-left: 8px; }
+/* =========================
+   Mobile Compact Admin Layout
+   ========================= */
+@media (max-width: 480px){
+
+  /* Make page gutters tighter so content matches table width */
+  .page{
+    max-width: 100%;
+    padding: 8px 10px;
+  }
+
+  /* Top bar compaction */
+  .topbar .shell{
+    padding: 6px 10px;
+    gap: 8px;
+  }
+  .nav .nav-link{ padding:6px 10px; }
+  .topbar-btn{ height:34px; padding:0 10px; }
+
+  /* Headings slightly smaller so they don't push layout down */
+  h1, .page h1{ font-size: 22px; margin: 8px 0 10px; }
+  h3{ font-size: 16px; }
+
+  /* Admin summary strip and tabs – same width and density as table */
+  .admin-summary{
+    width: 100%;
+    padding: 8px 10px;
+    gap: 10px;
+    border-radius: 10px;
+  }
+  .admin-summary .meta{ font-size: 11px; }
+
+  .tabs{
+    margin: 10px 0 12px;
+    gap: 6px;
+  }
+  .tabs button{
+    padding: 6px 10px;
+    border-radius: 9px;
+    font-size: 13px;
+  }
+
+  /* Cards full-width and tighter header */
+  .card{ border-radius: 12px; }
+  .card__header{
+    padding: 8px 10px;
+  }
+
+  /* Sort row controls smaller */
+  #sort-by{ height: 34px; }
+
+  /* Make tables more compact */
+  .table th, .table td{
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+
+  /* Action buttons + chips tighter */
+  .btn-edit, .btn-delete, .topbar-btn{
+    min-width: 72px;
+    height: 36px;
+    padding: 0 12px;
+    border-radius: 10px;
+  }
+  .chip{ padding:6px 10px; font-size: 12px; }
+  .badge{ font-size: 11px; padding: 1px 7px; }
+
+  /* Employee section header: stack neatly and center the counter */
+  .section-controls{
+    gap: 10px;
+  }
+  .section-controls__left{
+    gap: 4px;
+    flex: 1 1 auto;
+  }
+  .section-stat{
+    transform: scale(.95);
+  }
+
+  /* Keep the whole shift table visible without horizontal drag */
+  .table-wrap{
+    overflow-x: visible;   /* let it fit the viewport */
+  }
+}

@@ -43,7 +43,8 @@ export default function Dashboard() {
     (async () => {
       setErr(undefined);
       try {
-        let q = supabase.from('shifts')
+        let q = supabase
+          .from('shifts')
           .select('*')
           .eq('user_id', user.id)
           .order('shift_date', { ascending: false });
@@ -80,13 +81,16 @@ export default function Dashboard() {
   if (!user) return null;
 
   return (
-    <main className="page">
-      <h1>My Shifts ({mode === 'week' ? 'This Week' : mode === 'month' ? 'This Month' : 'All Time'})</h1>
-      {err && <p className="error" role="alert">Error: {err}</p>}
+    <main className="page page--center">
+      <h1 className="page__title">
+        My Shifts ({mode === 'week' ? 'This Week' : mode === 'month' ? 'This Month' : 'All Time'})
+      </h1>
 
-      {/* Range controls */}
-      <div className="row wrap gap-sm between mb-md">
-        <div className="row gap-sm">
+      {err && <p className="error center" role="alert">Error: {err}</p>}
+
+      {/* Centered toolbar */}
+      <div className="toolbar toolbar--center">
+        <div className="toolbar__left">
           <label className="sr-only" htmlFor="range-mode">Range</label>
           <select
             id="range-mode"
@@ -103,19 +107,22 @@ export default function Dashboard() {
               <button onClick={() => setOffset(n => n - 1)} aria-label="Previous range">◀ Prev</button>
               <button onClick={() => setOffset(0)}>{mode === 'week' ? 'This week' : 'This month'}</button>
               <button onClick={() => setOffset(n => n + 1)} disabled={offset >= 0} aria-label="Next range">Next ▶</button>
-              <div className="muted" aria-live="polite" style={{ alignSelf: 'center' }}>{range.label}</div>
+              <div className="muted" aria-live="polite" style={{ alignSelf: 'center' }}>
+                {range.label}
+              </div>
             </>
           )}
         </div>
 
-        <Link href="/new-shift" className="link-right btn-edit" style={{ textDecoration: 'none' }}>+ Log Shift</Link>
+        {/* Primary action button */}
+        <Link href="/new-shift" className="btn-primary">+ Log Shift</Link>
       </div>
 
-      {/* Totals row */}
-      <div className="row gap-md mb-sm">
-        <div className="chip">Hours: <b>{totals.hours.toFixed(2)}</b></div>
-        <div className="chip">Pay: <b>${totals.pay.toFixed(2)}</b></div>
-        <div className="chip">Unpaid: <b>${totals.unpaid.toFixed(2)}</b></div>
+      {/* Centered totals row */}
+      <div className="totals totals--center">
+        <div className="chip chip--xl">Hours: <b>{totals.hours.toFixed(2)}</b></div>
+        <div className="chip chip--xl">Pay: <b>${totals.pay.toFixed(2)}</b></div>
+        <div className="chip chip--xl">Unpaid: <b>${totals.unpaid.toFixed(2)}</b></div>
       </div>
 
       {/* Table */}
