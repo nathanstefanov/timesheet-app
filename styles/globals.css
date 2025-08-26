@@ -396,7 +396,7 @@ textarea{ min-height:80px; resize:vertical; }
 .card.full { margin-top: 8px; }
 
 /* On narrow screens, keep every block width-aligned */
-@media (max-width: 780px){
+@media (max-width: 1280){
   .page { padding: 0 12px; }
   .card--tight .table th,
   .card--tight .table td { padding: 10px; }
