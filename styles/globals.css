@@ -299,7 +299,7 @@ textarea{ min-height:80px; resize:vertical; }
 /* =========================
    Mobile Compact Admin Layout
    ========================= */
-@media (max-width: 520px){
+@media (max-width: auto){
 
   /* Make page gutters tighter so content matches table width */
   .page{
