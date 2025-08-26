@@ -70,77 +70,82 @@ export default function AuthPage() {
     finally { setLoading(false); }
   }
 
-  function onKeyDown(e: React.KeyboardEvent) { if (e.key === 'Enter') submit(); }
+
+  function onFormSubmit(e: React.FormEvent) {
+    e.preventDefault();
+    submit();
+  }
 
   return (
-    <div className="wrap">
-      <div className="card">
-        <div className="title-row">
-          {LOGO_URL ? <img src={LOGO_URL} alt="Logo" className="logo" /> : null}
-          <h1 className="title">Timesheet</h1>
-        </div>
+    <>
+      <div className="wrap">
+        <div className="card">
+          <div className="title-row">
+            {LOGO_URL ? <img src={LOGO_URL} alt="Logo" className="logo" /> : null}
+            <h1 className="title">Timesheet</h1>
+          </div>
 
-        <div className="tabs">
-          <button
-            className={`tab ${mode === 'signin' ? 'active' : ''}`}
-            onClick={() => setMode('signin')}
-            aria-pressed={mode === 'signin'}
-          >
-            Sign In
-          </button>
-          <button
-            className={`tab ${mode === 'signup' ? 'active' : ''}`}
-            onClick={() => setMode('signup')}
-            aria-pressed={mode === 'signup'}
-          >
-            Create Account
-          </button>
-        </div>
+          <div className="tabs">
+            <button
+              className={`tab ${mode === 'signin' ? 'active' : ''}`}
+              onClick={() => setMode('signin')}
+              aria-pressed={mode === 'signin'}
+            >
+              Sign In
+            </button>
+            <button
+              className={`tab ${mode === 'signup' ? 'active' : ''}`}
+              onClick={() => setMode('signup')}
+              aria-pressed={mode === 'signup'}
+            >
+              Create Account
+            </button>
+          </div>
 
-        <label className="label">Email</label>
-        <input
-          ref={emailRef}
-          className="input"
-          type="email"
-          inputMode="email"
-          autoComplete="username"
-          placeholder="you@company.com"
-          value={email}
-          onChange={(e) => setEmail(e.target.value)}
-          onKeyDown={onKeyDown}
-        />
+          <form onSubmit={onFormSubmit} autoComplete="on">
+            <label className="label">Email</label>
+            <input
+              ref={emailRef}
+              className="input"
+              type="email"
+              inputMode="email"
+              autoComplete="username"
+              placeholder="you@company.com"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+            />
 
-        <label className="label">Password {mode === 'signup' ? '(min 8 chars)' : ''}</label>
-        <div className="pwrow">
-          <input
-            className="input"
-            type={showPw ? 'text' : 'password'}
-            autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
-            placeholder={mode === 'signin' ? 'Your password' : 'Create a password'}
-            value={password}
-            onChange={(e) => setPassword(e.target.value)}
-            onKeyDown={onKeyDown}
-          />
-          <label className="show">
-            <input type="checkbox" checked={showPw} onChange={(e) => setShowPw(e.target.checked)} />
-            Show
-          </label>
-        </div>
+            <label className="label">Password {mode === 'signup' ? '(min 8 chars)' : ''}</label>
+            <div className="pwrow">
+              <input
+                className="input"
+                type={showPw ? 'text' : 'password'}
+                autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
+                placeholder={mode === 'signin' ? 'Your password' : 'Create a password'}
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+              <label className="show">
+                <input type="checkbox" checked={showPw} onChange={(e) => setShowPw(e.target.checked)} />
+                Show
+              </label>
+            </div>
 
-        {err && <div className="alert error">{err}</div>}
-        {msg && <div className="alert ok">{msg}</div>}
+            {err && <div className="alert error">{err}</div>}
+            {msg && <div className="alert ok">{msg}</div>}
 
-        <button className="btn primary" onClick={submit} disabled={loading}>
-          {loading ? 'Working…' : mode === 'signin' ? 'Sign In' : 'Create Account'}
-        </button>
+            <button className="btn primary" type="submit" disabled={loading}>
+              {loading ? 'Working…' : mode === 'signin' ? 'Sign In' : 'Create Account'}
+            </button>
+          </form>
 
-        <div className="actions">
-          <button className="link" onClick={sendMagicLink} disabled={loading}>Email me a login link</button>
-          <span className="sep">•</span>
-          <button className="link" onClick={sendReset} disabled={loading}>Forgot password?</button>
+          <div className="actions">
+            <button className="link" onClick={sendMagicLink} disabled={loading}>Email me a login link</button>
+            <span className="sep">•</span>
+            <button className="link" onClick={sendReset} disabled={loading}>Forgot password?</button>
+          </div>
         </div>
       </div>
-
       <style jsx>{`
         /* Viewport-safe centering on iOS Safari */
         .wrap {
@@ -196,6 +201,10 @@ export default function AuthPage() {
 
         .alert { margin-top:10px; padding:10px 12px; border-radius:10px; font-size:14px; }
         .alert.error { background:#fee2e2; color:#991b1b; border:1px solid #fecaca; }
+        
+      `}</style>
+    </>
+  );
         .alert.ok { background:#dcfce7; color:#065f46; border:1px solid #bbf7d0; }
       `}</style>
     </div>
