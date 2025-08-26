@@ -1,7 +1,8 @@
 // pages/_app.tsx
 import type { AppProps } from 'next/app';
+import Head from 'next/head';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
 import '../styles/globals.css';
@@ -13,66 +14,95 @@ export default function App({ Component, pageProps }: AppProps) {
 
   const [profile, setProfile] = useState<Profile>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
+  const lock = useRef(false);
+
+  const safeReplace = (path: string) => {
+    if (lock.current || router.asPath === path) return;
+    lock.current = true;
+    router.replace(path).finally(() => setTimeout(() => (lock.current = false), 120));
+  };
 
   async function fetchProfile(userId: string) {
-    const { data } = await supabase
-      .from('profiles')
-      .select('id, full_name, role')
-      .eq('id', userId)
-      .single();
-    setProfile((data as any) ?? null);
-    setLoadingProfile(false);
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, full_name, role')
+        .eq('id', userId)
+        .single();
+      if (error) throw error;
+      setProfile((data as any) ?? null);
+    } finally {
+      setLoadingProfile(false);
+    }
   }
 
+  // Initial auth + quick redirects
   useEffect(() => {
     let cancelled = false;
 
     (async () => {
-      // Fast path: get current session from local storage (no network).
+      setLoadingProfile(true);
+
+      // Try local session first (fast, no network)
       const { data: { session } } = await supabase.auth.getSession();
       if (cancelled) return;
 
-      if (!session?.user) {
+      const user = session?.user ?? null;
+      if (!user) {
         setProfile(null);
         setLoadingProfile(false);
-        // Kick unauthenticated users off protected pages.
-        if (router.pathname !== '/') router.replace('/');
+        if (router.pathname !== '/') safeReplace('/');
         return;
       }
 
-      // We have a user—fetch their profile.
-      await fetchProfile(session.user.id);
-
-      // If already on the login page, send them to dashboard.
-      if (router.pathname === '/') router.replace('/dashboard');
+      await fetchProfile(user.id);
+      if (router.pathname === '/') safeReplace('/dashboard');
     })();
 
-    // Keep UI in sync with auth changes (sign-in/out, token refresh).
-    const { data: sub } = supabase.auth.onAuthStateChange(async (_evt, session) => {
-      if (!session?.user) {
+    // Subscribe to sign-in/out changes
+    const { data: sub } = supabase.auth.onAuthStateChange(async (event, session) => {
+      const user = session?.user ?? null;
+
+      if (event === 'SIGNED_OUT' || !user) {
         setProfile(null);
         setLoadingProfile(false);
-        router.replace('/'); // always land on sign-in when logged out
-      } else {
-        setLoadingProfile(true);
-        await fetchProfile(session.user.id);
-        if (router.pathname === '/') router.replace('/dashboard');
+        safeReplace('/');
+        return;
       }
+
+      setLoadingProfile(true);
+      await fetchProfile(user.id);
+      if (router.pathname === '/') safeReplace('/dashboard');
     });
 
-    return () => { cancelled = true; sub.subscription.unsubscribe(); };
-  }, [router]);
+    return () => {
+      cancelled = true;
+      sub.subscription.unsubscribe();
+    };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [router.pathname]);
 
   async function handleSignOut() {
-    try { await supabase.auth.signOut(); }
-    finally {
-      // Hard redirect avoids Safari/Chrome cache weirdness after refreshes.
+    try {
+      await supabase.auth.signOut();
+    } finally {
+      // hard reload avoids storage quirks
       window.location.href = '/';
     }
   }
 
   return (
     <>
+      {/* Start slightly zoomed-out on iPhone but still allow pinch-zoom */}
+      <Head>
+        <meta
+          name="viewport"
+          content="width=device-width, initial-scale=0.85, user-scalable=yes, viewport-fit=cover"
+        />
+        <meta name="format-detection" content="telephone=no" />
+        <title>Timesheet</title>
+      </Head>
+
       <header className="topbar">
         <div className="shell">
           <div className="brand-wrap">
@@ -85,7 +115,6 @@ export default function App({ Component, pageProps }: AppProps) {
           </div>
 
           <nav className="nav">
-            {/* Only render app links when a user is loaded */}
             {!loadingProfile && profile && (
               <>
                 <Link href="/dashboard" className="nav-link">Dashboard</Link>
@@ -93,7 +122,7 @@ export default function App({ Component, pageProps }: AppProps) {
                 {profile.role === 'admin' && (
                   <Link href="/admin" className="nav-link">Admin</Link>
                 )}
-                <button className="signout" onClick={handleSignOut}>Sign out</button>
+                <button className="topbar-btn" onClick={handleSignOut}>Sign out</button>
               </>
             )}
           </nav>
