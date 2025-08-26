@@ -17,16 +17,15 @@ export default function App({ Component, pageProps }: AppProps) {
 
   async function fetchProfile(userId: string) {
     setLoadingProfile(true);
-    console.log('[fetchProfile] userId:', userId, 'type:', typeof userId);
+  // ...existing code...
     try {
-      console.log('[fetchProfile] about to call supabase.from("profiles")');
+  // ...existing code...
       const { data, error } = await supabase
         .from('profiles')
         .select('id, full_name, role')
         .eq('id', userId)
         .single();
-      console.log('[fetchProfile] data:', data);
-      console.log('[fetchProfile] error:', error);
+  // ...existing code...
       if (error) {
         setProfileError('Failed to fetch profile: ' + error.message);
         setProfile(null);
@@ -35,7 +34,7 @@ export default function App({ Component, pageProps }: AppProps) {
         setProfileError(null);
       }
     } catch (err) {
-      console.error('[fetchProfile] unexpected error:', err);
+  // ...existing code...
       setProfileError('Unexpected error: ' + (err instanceof Error ? err.message : String(err)));
       setProfile(null);
     }
@@ -54,7 +53,7 @@ export default function App({ Component, pageProps }: AppProps) {
 
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      console.log('[useEffect] session after getSession:', session);
+  // ...existing code...
       if (cancelled) return;
 
       if (!session?.user) {
@@ -79,7 +78,7 @@ export default function App({ Component, pageProps }: AppProps) {
     })();
 
     const { data: sub } = supabase.auth.onAuthStateChange(async (event, session) => {
-      console.log('[onAuthStateChange] event:', event, 'session:', session);
+  // ...existing code...
       if (cancelled) return;
       if (!session?.user) {
         setProfile(null);
