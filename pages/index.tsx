@@ -70,6 +70,18 @@ export default function AuthPage() {
     finally { setLoading(false); }
   }
 
+  async function signInWithGoogle() {
+    setLoading(true);
+    setErr(undefined);
+    try {
+      const { error } = await supabase.auth.signInWithOAuth({ provider: 'google' });
+      if (error) throw error;
+    } catch (e: any) {
+      setErr(e.message || 'Google sign-in failed');
+    } finally {
+      setLoading(false);
+    }
+  }
 
   function onFormSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -142,6 +154,16 @@ export default function AuthPage() {
               {loading ? 'Working…' : mode === 'signin' ? 'Sign In' : 'Create Account'}
             </button>
           </form>
+
+          <button
+            className="btn primary"
+            type="button"
+            style={{ marginTop: 8, background: '#fff', color: '#111', border: '1px solid #d1d5db' }}
+            onClick={signInWithGoogle}
+            disabled={loading}
+          >
+            {loading ? 'Working…' : 'Sign in with Google'}
+          </button>
 
           <div className="actions">
             <button className="link" onClick={sendMagicLink} disabled={loading}>Email me a login link</button>
