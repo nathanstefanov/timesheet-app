@@ -401,3 +401,16 @@ textarea{ min-height:80px; resize:vertical; }
   .card--tight .table th,
   .card--tight .table td { padding: 10px; }
 }
+/* Make summary/tabs/tables use the exact same full-width card container */
+.full { width: 100%; }
+.card.full { width: 100%; margin: 10px 0; }
+
+/* Tighten admin page spacing slightly so blocks visually line up */
+.page__title { margin-bottom: 12px; }
+.card--tight .table th, .card--tight .table td { padding: 10px; }
+
+/* Ensure no horizontal scroll; let tables shrink nicely */
+.table { table-layout: auto; }
+
+/* iOS sometimes expands text; keep it consistent with our scale */
+html { -webkit-text-size-adjust: 100%; }

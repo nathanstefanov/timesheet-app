@@ -79,7 +79,7 @@ export default function Admin() {
     };
   }, [r]);
 
-  // ---- Load shifts after role is known ----
+  // ---- Load shifts ----
   useEffect(() => {
     if (checking) return;
     if (!me || me.role !== 'admin') return;
@@ -98,7 +98,6 @@ export default function Admin() {
         const rows = data || [];
         setShifts(rows);
 
-        // names for employees
         const ids = Array.from(new Set(rows.map((s: any) => s.user_id)));
         if (ids.length) {
           const { data: profs } = await supabase
@@ -138,7 +137,6 @@ export default function Admin() {
 
   const unpaidTotal = useMemo(() => totals.reduce((sum, t) => sum + t.unpaid, 0), [totals]);
 
-  // ---- Sort totals table ----
   const sortedTotals = useMemo(() => {
     const a = [...totals];
     if (sortBy === 'name') {
@@ -153,7 +151,6 @@ export default function Admin() {
     return a;
   }, [totals, sortBy, sortDir]);
 
-  // ---- Group shifts by employee ----
   const groups = useMemo(() => {
     const m: Record<string, any[]> = {};
     for (const s of shifts) (m[s.user_id] ??= []).push(s);
@@ -169,7 +166,6 @@ export default function Admin() {
 
   const sectionOrder = useMemo(() => sortedTotals.map(t => t.id), [sortedTotals]);
 
-  // ---- Actions ----
   async function togglePaid(row: any, next: boolean) {
     const patch = {
       is_paid: next,
@@ -238,24 +234,28 @@ export default function Admin() {
       <h1 className="page__title">Admin Dashboard</h1>
       {err && <p className="error" role="alert">Error: {err}</p>}
 
-      {/* SUMMARY (full width block to match tables) */}
-      <div className="card card--tight full admin-summary admin-summary--center">
-        <span className="chip chip--xl">Total Unpaid: ${unpaidTotal.toFixed(2)}</span>
-        <span className="meta">Employees with Unpaid: {totals.filter(t => t.unpaid > 0).length}</span>
-        <span className="inline">
-          <span className="badge badge-min">MIN $50</span>
-          <span className="muted">Breakdown boosted to minimum</span>
-        </span>
+      {/* === TOP SUMMARY — styled exactly like a card to match tables === */}
+      <div className="card card--tight full">
+        <div className="admin-summary admin-summary--center" style={{ margin: 0, border: 0, boxShadow: 'none' }}>
+          <span className="chip chip--xl">Total Unpaid: ${unpaidTotal.toFixed(2)}</span>
+          <span className="meta">Employees with Unpaid: {totals.filter(t => t.unpaid > 0).length}</span>
+          <span className="inline">
+            <span className="badge badge-min">MIN $50</span>
+            <span className="muted">Breakdown boosted to minimum</span>
+          </span>
+        </div>
       </div>
 
-      {/* TABS (full width, centered) */}
-      <div className="tabs tabs--center full">
-        <button className={tab === 'unpaid' ? 'active' : ''} onClick={() => setTab('unpaid')}>Unpaid</button>
-        <button className={tab === 'paid' ? 'active' : ''} onClick={() => setTab('paid')}>Paid</button>
-        <button className={tab === 'all' ? 'active' : ''} onClick={() => setTab('all')}>All</button>
+      {/* Tabs — full width */}
+      <div className="card card--tight full" style={{ marginTop: 10, padding: 10 }}>
+        <div className="tabs tabs--center" style={{ margin: 0 }}>
+          <button className={tab === 'unpaid' ? 'active' : ''} onClick={() => setTab('unpaid')}>Unpaid</button>
+          <button className={tab === 'paid' ? 'active' : ''} onClick={() => setTab('paid')}>Paid</button>
+          <button className={tab === 'all' ? 'active' : ''} onClick={() => setTab('all')}>All</button>
+        </div>
       </div>
 
-      {/* TOTALS BY EMPLOYEE (card, same width/feel as the shifts table) */}
+      {/* Totals by employee — same card width as shifts */}
       <div className="card card--tight full">
         <div className="card__header">
           <h3>Totals by Employee</h3>
@@ -309,8 +309,8 @@ export default function Admin() {
         </div>
       </div>
 
-      {/* SHIFTS (also inside a full-width card so everything matches) */}
-      <div className="card card--tight full mt-lg">
+      {/* Shifts — same full card wrapper */}
+      <div className="card card--tight full" style={{ marginTop: 12 }}>
         <div className="card__header">
           <h3>Shifts</h3>
         </div>
