@@ -47,7 +47,7 @@ export default function Admin() {
   const [err, setErr] = useState<string | undefined>();
   const [bulkBusy, setBulkBusy] = useState<Record<string, boolean>>({});
 
-  // ---- Auth + role check (extracted so we can call it on pageshow) ----
+  // ---- Auth + role check (extract so we can call on pageshow) ----
   const loadProfile = useCallback(async () => {
     const { data: { user } } = await supabase.auth.getUser();
 
@@ -73,8 +73,6 @@ export default function Admin() {
   }, [r]);
 
   useEffect(() => {
-    let active = true;
-
     (async () => {
       setChecking(true);
       await loadProfile();
@@ -86,7 +84,6 @@ export default function Admin() {
     });
 
     return () => {
-      active = false;
       sub.subscription.unsubscribe();
     };
   }, [loadProfile]);
