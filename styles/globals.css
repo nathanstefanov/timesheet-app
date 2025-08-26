@@ -262,7 +262,7 @@ textarea{ min-height:80px; resize:vertical; }
 /* ======================================================
    Mobile Stacked Tables
 ====================================================== */
-@media (max-width: 680px){
+@media (max-width: auto){
   .table--stack{ border:0; }
   .table--stack thead{ display:none; }
   .table--stack tbody, .table--stack tr, .table--stack td{ display:block; width:100%; }
@@ -283,3 +283,16 @@ textarea{ min-height:80px; resize:vertical; }
   .section-bar{ flex-direction:column; align-items:center; gap:8px; }
   .section-bar__right{ justify-content:center; }
 }
+/* Primary button used for "+ Log Shift" */
+.btn-primary{
+  display:inline-flex; align-items:center; justify-content:center;
+  height:40px; padding:0 16px; border-radius:12px;
+  background:#3b5bfd; color:#fff; font-weight:800; text-decoration:none;
+  border:0; box-shadow: var(--shadow-md); transition: filter .15s, transform .02s;
+}
+.btn-primary:hover{ filter: brightness(0.98); }
+.btn-primary:active{ transform: translateY(1px); }
+
+/* When the toolbar is centered, don't let anything auto-push to the far right */
+.toolbar--center .link-right{ margin-left: 0; }
+.toolbar--center .btn-primary{ margin-left: 8px; }

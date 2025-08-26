@@ -109,7 +109,8 @@ export default function Dashboard() {
           )}
         </div>
 
-        <Link href="/new-shift" className="btn-edit" style={{ textDecoration: 'none' }}>
+        <Link href="/new-shift" className="btn-primary">+ Log Shift</Link>
+
           + Log Shift
         </Link>
       </div>
