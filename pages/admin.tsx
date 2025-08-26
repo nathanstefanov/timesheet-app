@@ -1,5 +1,5 @@
 // pages/admin.tsx
-import React, { useEffect, useMemo, useState, useCallback } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
 
@@ -19,16 +19,6 @@ function payInfo(s: any): { pay: number; minApplied: boolean; base: number } {
   return { pay, minApplied, base };
 }
 
-/** Build a clickable Venmo URL from either a full URL or a @handle */
-function venmoHref(raw?: string | null): string | null {
-  if (!raw) return null;
-  const v = raw.trim();
-  if (!v) return null;
-  if (/^https?:\/\//i.test(v)) return v;  // already a URL
-  const handle = v.startsWith('@') ? v.slice(1) : v;
-  return `https://venmo.com/u/${encodeURIComponent(handle)}`;
-}
-
 export default function Admin() {
   const r = useRouter();
 
@@ -37,7 +27,6 @@ export default function Admin() {
 
   const [shifts, setShifts] = useState<any[]>([]);
   const [names, setNames] = useState<Record<string, string>>({});
-  const [venmo, setVenmo] = useState<Record<string, string>>({});
 
   const [tab, setTab] = useState<Tab>('unpaid');
   const [sortBy, setSortBy] = useState<SortBy>('name');
@@ -46,6 +35,19 @@ export default function Admin() {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | undefined>();
   const [bulkBusy, setBulkBusy] = useState<Record<string, boolean>>({});
+
+  // --- NEW: reload if page is restored from bfcache (returning from Venmo) ---
+  useEffect(() => {
+    function onPageShow(e: PageTransitionEvent) {
+      // If page is restored from cache, force a reload to refetch Supabase data
+      if ((e as any).persisted) {
+        window.location.reload();
+      }
+    }
+    window.addEventListener('pageshow', onPageShow as any);
+    return () => window.removeEventListener('pageshow', onPageShow as any);
+  }, []);
+  // ---------------------------------------------------------------------------
 
   // ---- Auth + role check ----
   useEffect(() => {
@@ -91,66 +93,44 @@ export default function Admin() {
     };
   }, [r]);
 
-  // ---- Shared loader so we can call it on first mount AND on focus/visibility ----
-  const loadShifts = useCallback(async () => {
+  // ---- Load shifts after we know role ----
+  useEffect(() => {
     if (checking) return;
     if (!me || me.role !== 'admin') return;
 
-    setLoading(true);
-    setErr(undefined);
-    try {
-      let q = supabase.from('shifts').select('*').order('shift_date', { ascending: false });
-      if (tab === 'unpaid') q = q.eq('is_paid', false);
-      if (tab === 'paid') q = q.eq('is_paid', true);
+    (async () => {
+      setLoading(true);
+      setErr(undefined);
+      try {
+        let q = supabase.from('shifts').select('*').order('shift_date', { ascending: false });
+        if (tab === 'unpaid') q = q.eq('is_paid', false);
+        if (tab === 'paid') q = q.eq('is_paid', true);
 
-      const { data, error } = await q;
-      if (error) throw error;
+        const { data, error } = await q;
+        if (error) throw error;
 
-      const rows = data || [];
-      setShifts(rows);
+        const rows = data || [];
+        setShifts(rows);
 
-      const ids = Array.from(new Set(rows.map((s: any) => s.user_id)));
-      if (ids.length) {
-        const { data: profs } = await supabase
-          .from('profiles')
-          .select('id, full_name, venmo_url')
-          .in('id', ids);
-
-        const nameMap: Record<string, string> = {};
-        const venmoMap: Record<string, string> = {};
-        (profs || []).forEach((p: any) => {
-          nameMap[p.id] = p.full_name || '—';
-          if (p.venmo_url) venmoMap[p.id] = p.venmo_url;
-        });
-        setNames(nameMap);
-        setVenmo(venmoMap);
-      } else {
-        setNames({});
-        setVenmo({});
+        const ids = Array.from(new Set(rows.map((s: any) => s.user_id)));
+        if (ids.length) {
+          const { data: profs } = await supabase
+            .from('profiles')
+            .select('id, full_name, venmo_handle') // ok if column doesn't exist; it'll be undefined
+            .in('id', ids);
+          const map: Record<string, string> = {};
+          (profs || []).forEach((p: any) => { map[p.id] = p.full_name || '—'; });
+          setNames(map);
+        } else {
+          setNames({});
+        }
+      } catch (e: any) {
+        setErr(e.message);
+      } finally {
+        setLoading(false);
       }
-    } catch (e: any) {
-      setErr(e.message);
-    } finally {
-      setLoading(false);
-    }
+    })();
   }, [checking, me, tab]);
-
-  // ---- Initial load + when tab/me changes ----
-  useEffect(() => { loadShifts(); }, [loadShifts]);
-
-  // ---- Refetch when you come back from Venmo (tab focus / visibility) ----
-  useEffect(() => {
-    const onFocus = () => loadShifts();
-    const onVisible = () => {
-      if (document.visibilityState === 'visible') loadShifts();
-    };
-    window.addEventListener('focus', onFocus);
-    document.addEventListener('visibilitychange', onVisible);
-    return () => {
-      window.removeEventListener('focus', onFocus);
-      document.removeEventListener('visibilitychange', onVisible);
-    };
-  }, [loadShifts]);
 
   // ---- Totals by employee ----
   const totals = useMemo(() => {
@@ -325,39 +305,21 @@ export default function Admin() {
               </tr>
             </thead>
             <tbody>
-              {sortedTotals.map((t) => {
-                const vHref = venmoHref(venmo[t.id]);
-                const hasUnpaid = t.unpaid > 0.0001;
-                return (
-                  <tr key={t.id}>
-                    <td data-label="Employee">
-                      {t.name}
-                      {t.minCount > 0 && (
-                        <span className="muted" style={{ marginLeft: 8 }}>
-                          ({t.minCount}× MIN)
-                        </span>
-                      )}
-                    </td>
-                    <td data-label="Hours">{t.hours.toFixed(2)}</td>
-                    <td data-label="Pay">${t.pay.toFixed(2)}</td>
-                    <td data-label="Unpaid">
-                      ${t.unpaid.toFixed(2)}
-                      {hasUnpaid && vHref && (
-                        <a
-                          className="btn-venmo"
-                          href={vHref}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{ marginLeft: 8 }}
-                          title={`Pay ${t.name} on Venmo`}
-                        >
-                          Venmo
-                        </a>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
+              {sortedTotals.map((t) => (
+                <tr key={t.id}>
+                  <td data-label="Employee">
+                    {t.name}
+                    {t.minCount > 0 && (
+                      <span className="muted" style={{ marginLeft: 8 }}>
+                        ({t.minCount}× MIN)
+                      </span>
+                    )}
+                  </td>
+                  <td data-label="Hours">{t.hours.toFixed(2)}</td>
+                  <td data-label="Pay">${t.pay.toFixed(2)}</td>
+                  <td data-label="Unpaid">${t.unpaid.toFixed(2)}</td>
+                </tr>
+              ))}
             </tbody>
           </table>
         </div>
@@ -505,17 +467,6 @@ export default function Admin() {
           </table>
         </div>
       </div>
-
-      <style jsx>{`
-        .btn-venmo{
-          display:inline-flex; align-items:center; justify-content:center;
-          height:28px; padding:0 10px; border-radius:999px;
-          font-weight:800; text-decoration:none; border:1px solid var(--border);
-          background:#f8fafc; color:#1f2937; box-shadow: var(--shadow-sm);
-        }
-        .btn-venmo:hover{ filter:brightness(0.98); }
-        .btn-venmo:active{ transform: translateY(1px); }
-      `}</style>
     </main>
   );
 }
