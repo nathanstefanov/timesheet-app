@@ -34,7 +34,6 @@ export default function Admin() {
 
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | undefined>();
-
   const [bulkBusy, setBulkBusy] = useState<Record<string, boolean>>({});
 
   // ---- Auth + role check ----
@@ -238,7 +237,7 @@ export default function Admin() {
   return (
     <main className="page">
       <h1 className="page__title">Admin Dashboard</h1>
-      {err && <p className="error" role="alert">Error: {err}</p>}
+      {err && <p className="error center" role="alert">Error: {err}</p>}
 
       {/* Summary bar */}
       <div className="admin-summary admin-summary--center">
@@ -307,25 +306,11 @@ export default function Admin() {
       </div>
 
       {/* Shifts grouped by employee */}
-      <h3 className="mt-lg mb-sm" style={{ textAlign: 'center' }}>Shifts</h3>
+      <h3 className="mt-lg mb-sm center">Shifts</h3>
       {loading && <p className="center">Loading…</p>}
 
       <div className="table-wrap">
         <table className="table table--center table--admin table--compact">
-          {/* Fixed column widths for clean layout */}
-          <colgroup>
-            <col className="col-employee" />
-            <col className="col-date" />
-            <col className="col-type" />
-            <col className="col-time" />
-            <col className="col-time" />
-            <col className="col-num" />
-            <col className="col-money" />
-            <col className="col-paid" />
-            <col className="col-paidat" />
-            <col className="col-actions" />
-          </colgroup>
-
           <thead>
             <tr>
               <th>Employee</th>
@@ -336,7 +321,7 @@ export default function Admin() {
               <th>Hours</th>
               <th>Pay</th>
               <th>Paid?</th>
-              <th>Paid at</th>
+              <th className="col-hide-md">Paid at</th>
               <th>Actions</th>
             </tr>
           </thead>
@@ -361,19 +346,19 @@ export default function Admin() {
 
               return (
                 <React.Fragment key={uid}>
-                  {/* Section header — compact and centered */}
+                  {/* Clean centered section header bar */}
                   <tr className="section-head">
-                    <td colSpan={10} className="section-controls section-controls--center">
-                      <div className="section-controls__grid">
-                        <div className="section-controls__id">
+                    <td colSpan={10}>
+                      <div className="section-bar">
+                        <div className="section-bar__left">
                           <strong className="employee-name">{name}</strong>
-                          <div className="section-stat" aria-label="Unpaid shifts">
-                            <div className="section-stat__num">{unpaidCount}</div>
-                            <div className="section-stat__label">unpaid<br />shifts</div>
-                          </div>
+                          <span className="pill">
+                            <span className="pill__num">{unpaidCount}</span>
+                            <span className="pill__label">unpaid shifts</span>
+                          </span>
                         </div>
 
-                        <div className="section-controls__btns">
+                        <div className="section-bar__right">
                           <button
                             className="topbar-btn"
                             disabled={bulkBusy[uid] || allPaid}
@@ -434,7 +419,7 @@ export default function Admin() {
                             </span>
                           </label>
                         </td>
-                        <td data-label="Paid at">
+                        <td data-label="Paid at" className="col-hide-md">
                           {s.paid_at ? new Date(s.paid_at).toLocaleString() : '—'}
                         </td>
                         <td data-label="Actions">
