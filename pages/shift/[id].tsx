@@ -1,3 +1,7 @@
+// Force SSR so Vercel does not emit static HTML for dynamic route
+export async function getServerSideProps() {
+  return { props: {} };
+}
 // pages/shift/[id].tsx
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';

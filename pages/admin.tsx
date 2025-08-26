@@ -24,7 +24,7 @@ function venmoHref(raw?: string | null): string | null {
   if (!raw) return null;
   const v = raw.trim();
   if (!v) return null;
-  if (/^https?:\/\//i.test(v)) return v; // already full URL
+  if (/^https?:\/\//i.test(v)) return v;
   const handle = v.startsWith('@') ? v.slice(1) : v;
   return `https://venmo.com/u/${encodeURIComponent(handle)}`;
 }
@@ -40,7 +40,7 @@ export default function Admin() {
   const [venmo, setVenmo] = useState<Record<string, string>>({});
 
   const [tab, setTab] = useState<Tab>('unpaid');
-  const [sortBy, setSortBy] = useState<SortBy>('name');
+  const [sortBy, setSortBy] = useState<SortBy>('name');   // ← keep ONLY this one
   const [sortDir, setSortDir] = useState<SortDir>('asc');
 
   const [loading, setLoading] = useState(false);
@@ -91,7 +91,7 @@ export default function Admin() {
     };
   }, [r]);
 
-  // ---- Loader (callable on mount + when coming back from Venmo) ----
+  // ---- Loader (mount + on return) ----
   const loadShifts = useCallback(async () => {
     if (checking) return;
     if (!me || me.role !== 'admin') return;
@@ -109,7 +109,6 @@ export default function Admin() {
       const rows = data || [];
       setShifts(rows);
 
-      // names + venmo
       const ids = Array.from(new Set(rows.map((s: any) => s.user_id)));
       if (ids.length) {
         const { data: profs } = await supabase
@@ -136,10 +135,8 @@ export default function Admin() {
     }
   }, [checking, me, tab]);
 
-  // initial + on tab/me change
   useEffect(() => { loadShifts(); }, [loadShifts]);
 
-  // refetch when returning to the tab/app
   useEffect(() => {
     const onFocus = () => loadShifts();
     const onVisible = () => {
@@ -172,7 +169,6 @@ export default function Admin() {
 
   const unpaidTotal = useMemo(() => totals.reduce((sum, t) => sum + t.unpaid, 0), [totals]);
 
-  const [sortBy, setSortByState] = useState<SortBy>('name'); // keep your UI behavior
   const sortedTotals = useMemo(() => {
     const a = [...totals];
     if (sortBy === 'name') {
@@ -293,13 +289,13 @@ export default function Admin() {
         </div>
       </div>
 
-      {/* Totals by Employee (Venmo button inside Unpaid cell) */}
+      {/* Totals by Employee */}
       <div className="card card--tight full">
         <div className="card__header">
           <h3>Totals by Employee</h3>
           <div className="row">
             <label className="sr-only" htmlFor="sort-by">Sort by</label>
-            <select id="sort-by" value={sortBy} onChange={(e) => setSortByState(e.target.value as SortBy)}>
+            <select id="sort-by" value={sortBy} onChange={(e) => setSortBy(e.target.value as SortBy)}>
               <option value="name">Name</option>
               <option value="hours">Hours</option>
               <option value="pay">Pay</option>
@@ -365,7 +361,7 @@ export default function Admin() {
         </div>
       </div>
 
-      {/* Shifts (unchanged UI) */}
+      {/* Shifts */}
       <div className="card card--tight full" style={{ marginTop: 12 }}>
         <div className="card__header">
           <h3>Shifts</h3>
@@ -391,12 +387,12 @@ export default function Admin() {
             </thead>
             <tbody>
               {sectionOrder.map((uid) => {
-                const rows = groups[uid] || [];
+                const rows = (groups as any)[uid] || [];
                 if (!rows.length) return null;
 
                 const name = names[uid] || '—';
                 const subtotal = rows.reduce(
-                  (acc, s) => {
+                  (acc: any, s: any) => {
                     const info = payInfo(s);
                     acc.hours += Number(s.hours_worked || 0);
                     acc.pay += info.pay;
@@ -405,7 +401,7 @@ export default function Admin() {
                   { hours: 0, pay: 0 }
                 );
 
-                const unpaidCount = rows.filter((s) => !s.is_paid).length;
+                const unpaidCount = rows.filter((s: any) => !s.is_paid).length;
                 const allPaid = unpaidCount === 0;
 
                 return (
@@ -440,7 +436,7 @@ export default function Admin() {
                       </td>
                     </tr>
 
-                    {rows.map((s) => {
+                    {rows.map((s: any) => {
                       const { pay, minApplied, base } = payInfo(s);
                       const paid = Boolean(s.is_paid);
                       return (
