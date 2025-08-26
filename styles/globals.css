@@ -299,7 +299,7 @@ textarea{ min-height:80px; resize:vertical; }
 /* =========================
    Mobile Compact Admin Layout
    ========================= */
-@media (max-width: auto){
+@media (max-width: 480px){
 
   /* Make page gutters tighter so content matches table width */
   .page{
@@ -379,4 +379,25 @@ textarea{ min-height:80px; resize:vertical; }
   .table-wrap{
     overflow-x: visible;   /* let it fit the viewport */
   }
+}
+/* Utility: make blocks span the same width as tables/cards */
+.full { width: 100%; }
+
+/* Ensure the two admin cards and tables visually match */
+.card.full,
+.card.full .table {
+  width: 100%;
+}
+
+/* Tighter header title on admin to visually match tables */
+.page__title { margin-bottom: 12px; }
+
+/* Slightly reduce top/bottom whitespace on admin full blocks */
+.card.full { margin-top: 8px; }
+
+/* On narrow screens, keep every block width-aligned */
+@media (max-width: 780px){
+  .page { padding: 0 12px; }
+  .card--tight .table th,
+  .card--tight .table td { padding: 10px; }
 }
