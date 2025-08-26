@@ -8,7 +8,7 @@ type SortBy = 'name' | 'hours' | 'pay' | 'unpaid';
 type SortDir = 'asc' | 'desc';
 type Profile = { id: string; role: 'admin' | 'employee' } | null;
 
-/** Compute pay with Breakdown $50 minimum (uses DB pay_due if present). */
+/** Compute pay info with Breakdown $50 minimum (uses DB pay_due if present). */
 function payInfo(s: any): { pay: number; minApplied: boolean; base: number } {
   const rate = Number(s.pay_rate ?? 25);
   const hours = Number(s.hours_worked ?? 0);
@@ -34,6 +34,7 @@ export default function Admin() {
 
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | undefined>();
+
   const [bulkBusy, setBulkBusy] = useState<Record<string, boolean>>({});
 
   // ---- Auth + role check ----
@@ -226,8 +227,8 @@ export default function Admin() {
 
   if (checking) {
     return (
-      <main className="page center">
-        <h1>Admin</h1>
+      <main className="page page--center">
+        <h1>Admin Dashboard</h1>
         <p>Loading…</p>
       </main>
     );
@@ -235,13 +236,13 @@ export default function Admin() {
   if (!me || me.role !== 'admin') return null;
 
   return (
-    <main className="page center">
-      <h1>Admin Dashboard</h1>
+    <main className="page">
+      <h1 className="page__title">Admin Dashboard</h1>
       {err && <p className="error" role="alert">Error: {err}</p>}
 
       {/* Summary bar */}
-      <div className="admin-summary center-block">
-        <span className="summary-pill">Total Unpaid: <b>${unpaidTotal.toFixed(2)}</b></span>
+      <div className="admin-summary admin-summary--center">
+        <span className="chip chip--xl">Total Unpaid: ${unpaidTotal.toFixed(2)}</span>
         <span className="meta">Employees with Unpaid: {totals.filter(t => t.unpaid > 0).length}</span>
         <span className="meta inline">
           <span className="badge badge-min">MIN $50</span>
@@ -250,14 +251,14 @@ export default function Admin() {
       </div>
 
       {/* Tabs */}
-      <div className="tabs centered" role="tablist" aria-label="Filter by paid status">
+      <div className="tabs tabs--center" role="tablist" aria-label="Filter by paid status">
         <button role="tab" aria-selected={tab === 'unpaid'} className={tab === 'unpaid' ? 'active' : ''} onClick={() => setTab('unpaid')}>Unpaid</button>
         <button role="tab" aria-selected={tab === 'paid'}   className={tab === 'paid'   ? 'active' : ''} onClick={() => setTab('paid')}>Paid</button>
         <button role="tab" aria-selected={tab === 'all'}    className={tab === 'all'    ? 'active' : ''} onClick={() => setTab('all')}>All</button>
       </div>
 
       {/* Totals by employee */}
-      <div className="card center-block">
+      <div className="card card--tight">
         <div className="card__header">
           <h3>Totals by Employee</h3>
           <div className="row">
@@ -268,7 +269,7 @@ export default function Admin() {
               <option value="pay">Pay</option>
               <option value="unpaid">Unpaid</option>
             </select>
-            <button className="topbar-btn" onClick={() => setSortDir(d => (d === 'asc' ? 'desc' : 'asc'))}>
+            <button className="topbar-btn" onClick={() => setSortDir(d => (d === 'asc' ? 'desc' : 'asc'))} aria-label="Toggle sort direction" title="Toggle sort direction">
               {sortDir === 'asc' ? 'Asc ↑' : 'Desc ↓'}
             </button>
           </div>
@@ -306,10 +307,25 @@ export default function Admin() {
       </div>
 
       {/* Shifts grouped by employee */}
-      <h3>Shifts</h3>
-      {loading && <p>Loading…</p>}
+      <h3 className="mt-lg mb-sm" style={{ textAlign: 'center' }}>Shifts</h3>
+      {loading && <p className="center">Loading…</p>}
+
       <div className="table-wrap">
-        <table className="table table--center table--stack">
+        <table className="table table--center table--admin table--compact">
+          {/* Fixed column widths for clean layout */}
+          <colgroup>
+            <col className="col-employee" />
+            <col className="col-date" />
+            <col className="col-type" />
+            <col className="col-time" />
+            <col className="col-time" />
+            <col className="col-num" />
+            <col className="col-money" />
+            <col className="col-paid" />
+            <col className="col-paidat" />
+            <col className="col-actions" />
+          </colgroup>
+
           <thead>
             <tr>
               <th>Employee</th>
@@ -345,31 +361,34 @@ export default function Admin() {
 
               return (
                 <React.Fragment key={uid}>
+                  {/* Section header — compact and centered */}
                   <tr className="section-head">
                     <td colSpan={10} className="section-controls section-controls--center">
-                      <div className="section-controls__left">
-                        <strong className="emp-name">{name}</strong>
-                        <div className="section-stat" aria-label="Unpaid shifts">
-                          <div className="section-stat__num">{unpaidCount}</div>
-                          <div className="section-stat__label">unpaid<br/>shifts</div>
+                      <div className="section-controls__grid">
+                        <div className="section-controls__id">
+                          <strong className="employee-name">{name}</strong>
+                          <div className="section-stat" aria-label="Unpaid shifts">
+                            <div className="section-stat__num">{unpaidCount}</div>
+                            <div className="section-stat__label">unpaid<br />shifts</div>
+                          </div>
                         </div>
-                      </div>
 
-                      <div className="section-controls__right">
-                        <button
-                          className="topbar-btn"
-                          disabled={bulkBusy[uid] || allPaid}
-                          onClick={() => bulkTogglePaidForEmployee(uid, true)}
-                        >
-                          Mark ALL Paid
-                        </button>
-                        <button
-                          className="topbar-btn"
-                          disabled={bulkBusy[uid] || rows.length === unpaidCount}
-                          onClick={() => bulkTogglePaidForEmployee(uid, false)}
-                        >
-                          Mark ALL Unpaid
-                        </button>
+                        <div className="section-controls__btns">
+                          <button
+                            className="topbar-btn"
+                            disabled={bulkBusy[uid] || allPaid}
+                            onClick={() => bulkTogglePaidForEmployee(uid, true)}
+                          >
+                            Mark ALL Paid
+                          </button>
+                          <button
+                            className="topbar-btn"
+                            disabled={bulkBusy[uid] || rows.length === unpaidCount}
+                            onClick={() => bulkTogglePaidForEmployee(uid, false)}
+                          >
+                            Mark ALL Unpaid
+                          </button>
+                        </div>
                       </div>
                     </td>
                   </tr>

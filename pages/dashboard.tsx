@@ -43,7 +43,8 @@ export default function Dashboard() {
     (async () => {
       setErr(undefined);
       try {
-        let q = supabase.from('shifts')
+        let q = supabase
+          .from('shifts')
           .select('*')
           .eq('user_id', user.id)
           .order('shift_date', { ascending: false });
@@ -80,13 +81,13 @@ export default function Dashboard() {
   if (!user) return null;
 
   return (
-    <main className="page center">
-      <h1>My Shifts ({mode === 'week' ? 'This Week' : mode === 'month' ? 'This Month' : 'All Time'})</h1>
-      {err && <p className="error" role="alert">Error: {err}</p>}
+    <main className="page">
+      <h1 className="page__title">My Shifts</h1>
+      {err && <p className="error center" role="alert">Error: {err}</p>}
 
       {/* Range controls */}
-      <div className="toolbar">
-        <div className="toolbar__row">
+      <div className="toolbar toolbar--center">
+        <div className="toolbar__left">
           <label className="sr-only" htmlFor="range-mode">Range</label>
           <select
             id="range-mode"
@@ -100,82 +101,82 @@ export default function Dashboard() {
 
           {mode !== 'all' && (
             <>
-              <button onClick={() => setOffset(n => n - 1)} aria-label="Previous range">◀ Prev</button>
-              <button onClick={() => setOffset(0)}>{mode === 'week' ? 'This week' : 'This month'}</button>
-              <button onClick={() => setOffset(n => n + 1)} disabled={offset >= 0} aria-label="Next range">Next ▶</button>
-              <div className="muted" aria-live="polite">{range.label}</div>
+              <button className="topbar-btn" onClick={() => setOffset(n => n - 1)} aria-label="Previous range">◀ Prev</button>
+              <button className="topbar-btn" onClick={() => setOffset(0)}>{mode === 'week' ? 'This week' : 'This month'}</button>
+              <button className="topbar-btn" onClick={() => setOffset(n => n + 1)} disabled={offset >= 0} aria-label="Next range">Next ▶</button>
+              <div className="muted" aria-live="polite" style={{ alignSelf: 'center' }}>{range.label}</div>
             </>
           )}
         </div>
 
-        <Link href="/new-shift" className="btn-edit" style={{ textDecoration: 'none' }}>+ Log Shift</Link>
+        <Link href="/new-shift" className="btn-edit" style={{ textDecoration: 'none' }}>
+          + Log Shift
+        </Link>
       </div>
 
       {/* Totals row */}
-      <div className="metrics">
+      <div className="totals totals--center">
         <div className="chip">Hours: <b>{totals.hours.toFixed(2)}</b></div>
         <div className="chip">Pay: <b>${totals.pay.toFixed(2)}</b></div>
         <div className="chip">Unpaid: <b>${totals.unpaid.toFixed(2)}</b></div>
       </div>
 
       {/* Table */}
-      <div className="table-card">
-        <div className="table-wrap">
-          <table className="table table--center table--stack">
-            <thead>
-              <tr>
-                <th>Date</th>
-                <th>Type</th>
-                <th>In</th>
-                <th>Out</th>
-                <th>Hours</th>
-                <th>Pay</th>
-                <th>Status</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {shifts.map((s) => {
-                const paid = Boolean((s as any).is_paid);
-                return (
-                  <tr key={s.id}>
-                    <td data-label="Date">{s.shift_date}</td>
-                    <td data-label="Type">{s.shift_type}</td>
-                    <td data-label="In">
-                      {new Date(s.time_in).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </td>
-                    <td data-label="Out">
-                      {new Date(s.time_out).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
-                    </td>
-                    <td data-label="Hours">{Number(s.hours_worked).toFixed(2)}</td>
-                    <td data-label="Pay">${Number(s.pay_due).toFixed(2)}</td>
-                    <td data-label="Status">
-                      <span className={paid ? 'badge badge-paid' : 'badge badge-unpaid'}>
-                        {paid ? 'PAID' : 'NOT PAID'}
-                      </span>
-                      {(s as any).paid_at
-                        ? <span className="muted" style={{ marginLeft: 8 }}>
-                            ({new Date((s as any).paid_at).toLocaleDateString()})
-                          </span>
-                        : null}
-                    </td>
-                    <td data-label="Actions">
-                      <div className="actions">
-                        <Link href={`/shift/${s.id}`} className="btn-edit">Edit</Link>
-                        <button className="btn-delete" onClick={() => delShift(s.id)}>Delete</button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-              {shifts.length === 0 && (
-                <tr>
-                  <td colSpan={8} style={{ textAlign: 'center' }} className="muted">No shifts in this range.</td>
+      <div className="table-wrap">
+        <table className="table table--center table--compact">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Type</th>
+              <th>In</th>
+              <th>Out</th>
+              <th>Hours</th>
+              <th>Pay</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {shifts.map((s) => {
+              const paid = Boolean((s as any).is_paid);
+              return (
+                <tr key={s.id}>
+                  <td data-label="Date">{s.shift_date}</td>
+                  <td data-label="Type">{s.shift_type}</td>
+                  <td data-label="In">
+                    {new Date(s.time_in).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </td>
+                  <td data-label="Out">
+                    {new Date(s.time_out).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                  </td>
+                  <td data-label="Hours">{Number(s.hours_worked).toFixed(2)}</td>
+                  <td data-label="Pay">${Number(s.pay_due).toFixed(2)}</td>
+                  <td data-label="Status">
+                    <span className={paid ? 'badge badge-paid' : 'badge badge-unpaid'}>
+                      {paid ? 'PAID' : 'NOT PAID'}
+                    </span>
+                    {(s as any).paid_at
+                      ? <span className="muted" style={{ marginLeft: 8 }}>
+                          ({new Date((s as any).paid_at).toLocaleDateString()})
+                        </span>
+                      : null}
+                  </td>
+                  <td data-label="Actions">
+                    <div className="actions">
+                      <Link href={`/shift/${s.id}`} className="btn-edit">Edit</Link>
+                      <button className="btn-delete" onClick={() => delShift(s.id)}>Delete</button>
+                    </div>
+                  </td>
                 </tr>
-              )}
-            </tbody>
-          </table>
-        </div>
+              );
+            })}
+            {shifts.length === 0 && (
+              <tr>
+                <td colSpan={8} style={{ textAlign: 'center' }} className="muted">No shifts in this range.</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
       </div>
     </main>
   );
