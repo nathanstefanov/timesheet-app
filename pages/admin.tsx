@@ -19,6 +19,17 @@ function payInfo(s: any): { pay: number; minApplied: boolean; base: number } {
   return { pay, minApplied, base };
 }
 
+/** Turn venmo_url/venmo_handle/venmo into a usable URL */
+function venmoHref(row: { venmo_url?: string | null; venmo_handle?: string | null; venmo?: string | null } | null | undefined) {
+  if (!row) return null;
+  const url = row.venmo_url?.trim();
+  if (url) return url;
+  const handleRaw = (row.venmo_handle || row.venmo || '').trim();
+  if (!handleRaw) return null;
+  const handle = handleRaw.replace(/^@/, '');
+  return `https://venmo.com/u/${encodeURIComponent(handle)}`;
+}
+
 export default function Admin() {
   const r = useRouter();
 
@@ -27,6 +38,7 @@ export default function Admin() {
 
   const [shifts, setShifts] = useState<any[]>([]);
   const [names, setNames] = useState<Record<string, string>>({});
+  const [venmoLinks, setVenmoLinks] = useState<Record<string, string | null>>({}); // <-- NEW
 
   const [tab, setTab] = useState<Tab>('unpaid');
   const [sortBy, setSortBy] = useState<SortBy>('name');
@@ -101,15 +113,23 @@ export default function Admin() {
 
         const ids = Array.from(new Set(rows.map((s: any) => s.user_id)));
         if (ids.length) {
+          // NOTE: pull venmo_url / venmo_handle / venmo along with full_name
           const { data: profs } = await supabase
             .from('profiles')
-            .select('id, full_name')
+            .select('id, full_name, venmo_url, venmo_handle, venmo')
             .in('id', ids);
-          const map: Record<string, string> = {};
-          (profs || []).forEach((p: any) => { map[p.id] = p.full_name || '—'; });
-          setNames(map);
+
+          const nameMap: Record<string, string> = {};
+          const venmoMap: Record<string, string | null> = {};
+          (profs || []).forEach((p: any) => {
+            nameMap[p.id] = p.full_name || '—';
+            venmoMap[p.id] = venmoHref(p);
+          });
+          setNames(nameMap);
+          setVenmoLinks(venmoMap);
         } else {
           setNames({});
+          setVenmoLinks({});
         }
       } catch (e: any) {
         setErr(e.message);
@@ -292,21 +312,39 @@ export default function Admin() {
               </tr>
             </thead>
             <tbody>
-              {sortedTotals.map((t) => (
-                <tr key={t.id}>
-                  <td data-label="Employee">
-                    {t.name}
-                    {t.minCount > 0 && (
-                      <span className="muted" style={{ marginLeft: 8 }}>
-                        ({t.minCount}× MIN)
-                      </span>
-                    )}
-                  </td>
-                  <td data-label="Hours">{t.hours.toFixed(2)}</td>
-                  <td data-label="Pay">${t.pay.toFixed(2)}</td>
-                  <td data-label="Unpaid">${t.unpaid.toFixed(2)}</td>
-                </tr>
-              ))}
+              {sortedTotals.map((t) => {
+                const v = venmoLinks[t.id] || null;
+                const showVenmo = v && t.unpaid > 0;
+                return (
+                  <tr key={t.id}>
+                    <td data-label="Employee">
+                      {t.name}
+                      {t.minCount > 0 && (
+                        <span className="muted" style={{ marginLeft: 8 }}>
+                          ({t.minCount}× MIN)
+                        </span>
+                      )}
+                    </td>
+                    <td data-label="Hours">{t.hours.toFixed(2)}</td>
+                    <td data-label="Pay">${t.pay.toFixed(2)}</td>
+                    <td data-label="Unpaid">
+                      ${t.unpaid.toFixed(2)}
+                      {showVenmo && (
+                        <a
+                          href={v!}
+                          target="_blank"
+                          rel="noopener"
+                          className="topbar-btn"
+                          style={{ marginLeft: 8, whiteSpace: 'nowrap' }}
+                          title={`Open ${t.name}'s Venmo`}
+                        >
+                          Venmo
+                        </a>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
@@ -338,7 +376,7 @@ export default function Admin() {
             </thead>
             <tbody>
               {sectionOrder.map((uid) => {
-                const rows = groups[uid] || [];
+                const rows = (groups[uid] || []);
                 if (!rows.length) return null;
 
                 const name = names[uid] || '—';
