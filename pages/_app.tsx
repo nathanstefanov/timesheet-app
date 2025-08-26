@@ -1,7 +1,7 @@
 // pages/_app.tsx
 import type { AppProps } from 'next/app';
 import Link from 'next/link';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
 import '../styles/globals.css';
@@ -10,82 +10,63 @@ type Profile = { id: string; full_name?: string | null; role: 'employee' | 'admi
 
 export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();
-  const [profile, setProfile] = useState<Profile>(null);
-  const [authError, setAuthError] = useState<string | null>(null);
-  const navLock = useRef(false);
 
-  const safeReplace = (path: string) => {
-    if (navLock.current || router.asPath === path) return;
-    navLock.current = true;
-    router.replace(path).finally(() => setTimeout(() => (navLock.current = false), 120));
-  };
+  const [profile, setProfile] = useState<Profile>(null);
+  const [loadingProfile, setLoadingProfile] = useState(true);
 
   async function fetchProfile(userId: string) {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, full_name, role')
-        .eq('id', userId)
-        .single();
-      if (error) throw error;
-      setProfile((data as any) ?? null);
-    } catch (e: any) {
-      setProfile(null);
-      setAuthError(e.message || 'Failed to load profile');
-    }
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, full_name, role')
+      .eq('id', userId)
+      .single();
+    setProfile((data as any) ?? null);
+    setLoadingProfile(false);
   }
 
   useEffect(() => {
     let cancelled = false;
 
     (async () => {
-      setAuthError(null);
+      // Fast path: get current session from local storage (no network).
+      const { data: { session } } = await supabase.auth.getSession();
+      if (cancelled) return;
 
-      // Fast path: any existing session in our cookie?
-      try {
-        const { data } = await supabase.auth.getSession();
-        if (cancelled) return;
-        const user = data?.session?.user ?? null;
-
-        if (user) {
-          await fetchProfile(user.id);
-          if (router.pathname === '/') safeReplace('/dashboard');
-          return;
-        }
-      } catch { /* continue */ }
-
-      // No session -> if we’re not on login, go there.
-      if (router.pathname !== '/') {
+      if (!session?.user) {
         setProfile(null);
-        safeReplace('/');
+        setLoadingProfile(false);
+        // Kick unauthenticated users off protected pages.
+        if (router.pathname !== '/') router.replace('/');
+        return;
       }
+
+      // We have a user—fetch their profile.
+      await fetchProfile(session.user.id);
+
+      // If already on the login page, send them to dashboard.
+      if (router.pathname === '/') router.replace('/dashboard');
     })();
 
-    const { data: sub } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
-        if (session?.user) {
-          await fetchProfile(session.user.id);
-          if (router.pathname === '/') safeReplace('/dashboard');
-        }
-      } else if (event === 'SIGNED_OUT') {
+    // Keep UI in sync with auth changes (sign-in/out, token refresh).
+    const { data: sub } = supabase.auth.onAuthStateChange(async (_evt, session) => {
+      if (!session?.user) {
         setProfile(null);
-        if (router.pathname !== '/') safeReplace('/');
+        setLoadingProfile(false);
+        router.replace('/'); // always land on sign-in when logged out
+      } else {
+        setLoadingProfile(true);
+        await fetchProfile(session.user.id);
+        if (router.pathname === '/') router.replace('/dashboard');
       }
     });
 
-    return () => {
-      cancelled = true;
-      sub.subscription.unsubscribe();
-    };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [router.pathname]);
+    return () => { cancelled = true; sub.subscription.unsubscribe(); };
+  }, [router]);
 
   async function handleSignOut() {
-    try {
-      await supabase.auth.signOut();
-    } finally {
-      // also clear our cookie fast-path
-      document.cookie = 'gg_timesheet_auth=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax';
+    try { await supabase.auth.signOut(); }
+    finally {
+      // Hard redirect avoids Safari/Chrome cache weirdness after refreshes.
       window.location.href = '/';
     }
   }
@@ -102,25 +83,22 @@ export default function App({ Component, pageProps }: AppProps) {
             />
             <span className="brand">Timesheet</span>
           </div>
+
           <nav className="nav">
-            {profile && (
+            {/* Only render app links when a user is loaded */}
+            {!loadingProfile && profile && (
               <>
                 <Link href="/dashboard" className="nav-link">Dashboard</Link>
                 <Link href="/new-shift" className="nav-link">Log Shift</Link>
-                {profile.role === 'admin' && <Link href="/admin" className="nav-link">Admin</Link>}
-                <button className="topbar-btn" onClick={handleSignOut}>Sign out</button>
+                {profile.role === 'admin' && (
+                  <Link href="/admin" className="nav-link">Admin</Link>
+                )}
+                <button className="signout" onClick={handleSignOut}>Sign out</button>
               </>
             )}
           </nav>
         </div>
       </header>
-
-      {authError && (
-        <div className="toast toast--error">
-          <span>Auth error: {authError}</span>
-          <button className="toast__dismiss" onClick={() => setAuthError(null)}>Dismiss</button>
-        </div>
-      )}
 
       <Component {...pageProps} />
     </>
