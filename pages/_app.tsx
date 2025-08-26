@@ -71,7 +71,8 @@ export default function App({ Component, pageProps }: AppProps) {
       }
     })();
 
-    const { data: sub } = supabase.auth.onAuthStateChange(async (_evt, session) => {
+    const { data: sub } = supabase.auth.onAuthStateChange(async (event, session) => {
+      console.log('[onAuthStateChange] event:', event, 'session:', session);
       if (cancelled) return;
       if (!session?.user) {
         setProfile(null);
