@@ -17,12 +17,12 @@ export default function App({ Component, pageProps }: AppProps) {
 
   async function fetchProfile(userId: string) {
     setLoadingProfile(true);
+    console.log('[fetchProfile] userId:', userId, 'type:', typeof userId);
     const { data, error } = await supabase
       .from('profiles')
       .select('id, full_name, role')
       .eq('id', userId)
       .single();
-    console.log('[fetchProfile] userId:', userId);
     console.log('[fetchProfile] data:', data);
     console.log('[fetchProfile] error:', error);
     if (error) {
