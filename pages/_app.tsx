@@ -16,11 +16,16 @@ export default function App({ Component, pageProps }: AppProps) {
   const initialSessionChecked = useRef(false);
 
   async function fetchProfile(userId: string) {
-    const { data } = await supabase
+    console.log('[fetchProfile] Fetching profile for user:', userId);
+    const { data, error } = await supabase
       .from('profiles')
       .select('id, full_name, role')
       .eq('id', userId)
       .single();
+    if (error) {
+      console.error('[fetchProfile] Error fetching profile:', error);
+    }
+    console.log('[fetchProfile] Profile data:', data);
     setProfile((data as any) ?? null);
     setLoadingProfile(false);
   }
@@ -29,14 +34,17 @@ export default function App({ Component, pageProps }: AppProps) {
     let cancelled = false;
 
     // Wait for Supabase to restore session before rendering
-    const { data: sub } = supabase.auth.onAuthStateChange(async (_evt, session) => {
+    const { data: sub } = supabase.auth.onAuthStateChange(async (evt, session) => {
+      console.log('[onAuthStateChange]', evt, session);
       if (cancelled) return;
       initialSessionChecked.current = true;
       if (!session?.user) {
+        console.log('[onAuthStateChange] No session user');
         setProfile(null);
         setLoadingProfile(false);
         if (router.pathname !== '/') router.replace('/');
       } else {
+        console.log('[onAuthStateChange] Session user:', session.user);
         setLoadingProfile(true);
         await fetchProfile(session.user.id);
         if (router.pathname === '/') router.replace('/dashboard');
@@ -45,13 +53,16 @@ export default function App({ Component, pageProps }: AppProps) {
 
     // On mount, check session (in case already available)
     (async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const { data: { session }, error } = await supabase.auth.getSession();
+      console.log('[getSession] Session:', session, 'Error:', error);
       if (cancelled) return;
       if (!session?.user) {
+        console.log('[getSession] No session user');
         setProfile(null);
         setLoadingProfile(false);
         if (router.pathname !== '/') router.replace('/');
       } else {
+        console.log('[getSession] Session user:', session.user);
         setLoadingProfile(true);
         await fetchProfile(session.user.id);
         if (router.pathname === '/') router.replace('/dashboard');
