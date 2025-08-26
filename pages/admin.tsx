@@ -8,11 +8,11 @@ type SortBy = 'name' | 'hours' | 'pay' | 'unpaid';
 type SortDir = 'asc' | 'desc';
 type Profile = { id: string; role: 'admin' | 'employee' } | null;
 
-/** Compute pay info with Breakdown $50 minimum (uses DB pay_due if present). */
+/** Compute pay with Breakdown $50 minimum (uses DB pay_due if present). */
 function payInfo(s: any): { pay: number; minApplied: boolean; base: number } {
-  const rate  = Number(s.pay_rate ?? 25);
+  const rate = Number(s.pay_rate ?? 25);
   const hours = Number(s.hours_worked ?? 0);
-  const base  = s.pay_due != null ? Number(s.pay_due) : hours * rate;
+  const base = s.pay_due != null ? Number(s.pay_due) : hours * rate;
   const isBreakdown = s.shift_type === 'Breakdown';
   const pay = isBreakdown ? Math.max(base, 50) : base;
   const minApplied = isBreakdown && base < 50;
@@ -34,7 +34,6 @@ export default function Admin() {
 
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | undefined>();
-
   const [bulkBusy, setBulkBusy] = useState<Record<string, boolean>>({});
 
   // ---- Auth + role check ----
@@ -227,7 +226,7 @@ export default function Admin() {
 
   if (checking) {
     return (
-      <main className="page">
+      <main className="page center">
         <h1>Admin</h1>
         <p>Loading…</p>
       </main>
@@ -236,70 +235,40 @@ export default function Admin() {
   if (!me || me.role !== 'admin') return null;
 
   return (
-    <main className="page">
+    <main className="page center">
       <h1>Admin Dashboard</h1>
       {err && <p className="error" role="alert">Error: {err}</p>}
 
       {/* Summary bar */}
-      <div className="admin-summary">
-        <span>Total Unpaid: ${unpaidTotal.toFixed(2)}</span>
+      <div className="admin-summary center-block">
+        <span className="summary-pill">Total Unpaid: <b>${unpaidTotal.toFixed(2)}</b></span>
         <span className="meta">Employees with Unpaid: {totals.filter(t => t.unpaid > 0).length}</span>
         <span className="meta inline">
           <span className="badge badge-min">MIN $50</span>
-          <span className="muted">Breakdown shifts boosted to minimum</span>
+          <span className="muted">Breakdown boosted to minimum</span>
         </span>
       </div>
 
       {/* Tabs */}
-      <div className="tabs" role="tablist" aria-label="Filter by paid status">
-        <button
-          role="tab"
-          aria-selected={tab === 'unpaid'}
-          className={tab === 'unpaid' ? 'active' : ''}
-          onClick={() => setTab('unpaid')}
-        >
-          Unpaid
-        </button>
-        <button
-          role="tab"
-          aria-selected={tab === 'paid'}
-          className={tab === 'paid' ? 'active' : ''}
-          onClick={() => setTab('paid')}
-        >
-          Paid
-        </button>
-        <button
-          role="tab"
-          aria-selected={tab === 'all'}
-          className={tab === 'all' ? 'active' : ''}
-          onClick={() => setTab('all')}
-        >
-          All
-        </button>
+      <div className="tabs centered" role="tablist" aria-label="Filter by paid status">
+        <button role="tab" aria-selected={tab === 'unpaid'} className={tab === 'unpaid' ? 'active' : ''} onClick={() => setTab('unpaid')}>Unpaid</button>
+        <button role="tab" aria-selected={tab === 'paid'}   className={tab === 'paid'   ? 'active' : ''} onClick={() => setTab('paid')}>Paid</button>
+        <button role="tab" aria-selected={tab === 'all'}    className={tab === 'all'    ? 'active' : ''} onClick={() => setTab('all')}>All</button>
       </div>
 
       {/* Totals by employee */}
-      <div className="card">
+      <div className="card center-block">
         <div className="card__header">
           <h3>Totals by Employee</h3>
           <div className="row">
             <label className="sr-only" htmlFor="sort-by">Sort by</label>
-            <select
-              id="sort-by"
-              value={sortBy}
-              onChange={(e) => setSortBy(e.target.value as SortBy)}
-            >
+            <select id="sort-by" value={sortBy} onChange={(e) => setSortBy(e.target.value as SortBy)}>
               <option value="name">Name</option>
               <option value="hours">Hours</option>
               <option value="pay">Pay</option>
               <option value="unpaid">Unpaid</option>
             </select>
-            <button
-              className="topbar-btn"
-              onClick={() => setSortDir(d => (d === 'asc' ? 'desc' : 'asc'))}
-              aria-label="Toggle sort direction"
-              title="Toggle sort direction"
-            >
+            <button className="topbar-btn" onClick={() => setSortDir(d => (d === 'asc' ? 'desc' : 'asc'))}>
               {sortDir === 'asc' ? 'Asc ↑' : 'Desc ↓'}
             </button>
           </div>
@@ -377,10 +346,9 @@ export default function Admin() {
               return (
                 <React.Fragment key={uid}>
                   <tr className="section-head">
-                    <td colSpan={10} className="section-controls">
+                    <td colSpan={10} className="section-controls section-controls--center">
                       <div className="section-controls__left">
-                        <strong>{name}</strong>
-                        {/* Centered unpaid shifts counter */}
+                        <strong className="emp-name">{name}</strong>
                         <div className="section-stat" aria-label="Unpaid shifts">
                           <div className="section-stat__num">{unpaidCount}</div>
                           <div className="section-stat__label">unpaid<br/>shifts</div>
