@@ -136,19 +136,21 @@ export default function App({ Component, pageProps }: AppProps) {
             <span className="brand">Timesheet</span>
           </div>
 
-          <nav className="nav">
-            {/* Only render app links when a user is loaded */}
-            {!loadingProfile && profile && (
-              <>
-                <Link href="/dashboard" className="nav-link">Dashboard</Link>
-                <Link href="/new-shift" className="nav-link">Log Shift</Link>
-                {profile.role === 'admin' && (
-                  <Link href="/admin" className="nav-link">Admin</Link>
-                )}
-                <button className="signout" onClick={handleSignOut}>Sign out</button>
-              </>
-            )}
-          </nav>
+          {/* Only render nav after loadingProfile is false to prevent flicker */}
+          {!loadingProfile && (
+            <nav className="nav">
+              {profile && (
+                <>
+                  <Link href="/dashboard" className="nav-link">Dashboard</Link>
+                  <Link href="/new-shift" className="nav-link">Log Shift</Link>
+                  {profile.role === 'admin' && (
+                    <Link href="/admin" className="nav-link">Admin</Link>
+                  )}
+                  <button className="signout" onClick={handleSignOut}>Sign out</button>
+                </>
+              )}
+            </nav>
+          )}
         </div>
       </header>
 
