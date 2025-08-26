@@ -414,3 +414,33 @@ textarea{ min-height:80px; resize:vertical; }
 
 /* iOS sometimes expands text; keep it consistent with our scale */
 html { -webkit-text-size-adjust: 100%; }
+/* Make all admin blocks the exact same width and spacing */
+.admin-wrap {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;              /* same vertical rhythm for all blocks */
+}
+
+/* Cards & tables should visually line up exactly */
+.admin-wrap > .card {
+  margin: 0;              /* remove stray margins so edges align */
+  width: 100%;
+}
+
+/* Ensure inner tables actually stretch */
+.admin-wrap .table-wrap,
+.admin-wrap .table {
+  width: 100%;
+}
+
+/* Remove accidental max-widths from nested elements (if any) */
+.admin-wrap .card__header,
+.admin-wrap .admin-summary,
+.admin-wrap .tabs { max-width: none; }
+
+/* Keep page padding consistent so top and bottom edges match */
+.page { max-width: 1100px; margin: 28px auto; padding: 0 16px; }
+
+/* Allow pinch zoom while we start at 0.85 scale */
+html { -webkit-text-size-adjust: 100%; }
