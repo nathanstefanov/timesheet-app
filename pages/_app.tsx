@@ -16,16 +16,12 @@ export default function App({ Component, pageProps }: AppProps) {
   const [profileError, setProfileError] = useState<string | null>(null);
 
   async function fetchProfile(userId: string) {
-    setLoadingProfile(true);
-  // ...existing code...
     try {
-  // ...existing code...
       const { data, error } = await supabase
         .from('profiles')
         .select('id, full_name, role')
         .eq('id', userId)
         .single();
-  // ...existing code...
       if (error) {
         setProfileError('Failed to fetch profile: ' + error.message);
         setProfile(null);
@@ -34,7 +30,6 @@ export default function App({ Component, pageProps }: AppProps) {
         setProfileError(null);
       }
     } catch (err) {
-  // ...existing code...
       setProfileError('Unexpected error: ' + (err instanceof Error ? err.message : String(err)));
       setProfile(null);
     }
@@ -53,7 +48,6 @@ export default function App({ Component, pageProps }: AppProps) {
 
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
-  // ...existing code...
       if (cancelled) return;
 
       if (!session?.user) {
@@ -67,6 +61,7 @@ export default function App({ Component, pageProps }: AppProps) {
       }
 
       try {
+        setLoadingProfile(true);
         await fetchProfile(session.user.id);
       } catch (e) {
         setProfileError('Error fetching profile.');
@@ -78,7 +73,6 @@ export default function App({ Component, pageProps }: AppProps) {
     })();
 
     const { data: sub } = supabase.auth.onAuthStateChange(async (event, session) => {
-  // ...existing code...
       if (cancelled) return;
       if (!session?.user) {
         setProfile(null);
