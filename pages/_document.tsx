@@ -5,18 +5,9 @@ export default class MyDocument extends Document {
   render() {
     return (
       <Html lang="en">
-        <Head>
-          {/* Start a bit zoomed out on mobile so more fits on screen */}
-          <meta
-            name="viewport"
-            content="width=device-width, initial-scale=0.85, minimum-scale=0.85, maximum-scale=1, viewport-fit=cover"
-          />
-          {/* Optional: disable auto text-size adjust on iOS so columns don't get squished */}
-          <meta name="apple-mobile-web-app-capable" content="yes" />
-          <meta name="format-detection" content="telephone=no" />
-          <style>{`html{-webkit-text-size-adjust:100%;}`}</style>
-        </Head>
+        <Head />
         <body>
+          {/* Important: put the viewport *before* scripts so Safari applies it */}
           <Main />
           <NextScript />
         </body>
@@ -24,3 +15,12 @@ export default class MyDocument extends Document {
     );
   }
 }
+// inside pages/_app.tsx, above the return:
+import Head from 'next/head';
+
+// …inside your App component's return, at the very top:
+<Head>
+  {/* Start a little zoomed-out, but DO NOT lock the zoom */}
+  <meta name="viewport" content="width=device-width, initial-scale=0.85, user-scalable=yes, viewport-fit=cover" />
+  <meta name="format-detection" content="telephone=no" />
+</Head>
