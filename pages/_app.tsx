@@ -16,7 +16,8 @@ export default function App({ Component, pageProps }: AppProps) {
   const [profileError, setProfileError] = useState<string | null>(null);
 
   async function fetchProfile(userId: string) {
-    const { data } = await supabase
+    setLoadingProfile(true);
+    const { data, error } = await supabase
       .from('profiles')
       .select('id, full_name, role')
       .eq('id', userId)
@@ -24,7 +25,13 @@ export default function App({ Component, pageProps }: AppProps) {
     console.log('[fetchProfile] userId:', userId);
     console.log('[fetchProfile] data:', data);
     console.log('[fetchProfile] error:', error);
-    setProfile((data as any) ?? null);
+    if (error) {
+      setProfileError('Failed to fetch profile: ' + error.message);
+      setProfile(null);
+    } else {
+      setProfile((data as any) ?? null);
+      setProfileError(null);
+    }
     setLoadingProfile(false);
   }
 
