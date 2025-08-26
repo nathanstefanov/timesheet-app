@@ -9,7 +9,7 @@ export default class MyDocument extends Document {
           {/* Start a bit zoomed out on mobile so more fits on screen */}
           <meta
             name="viewport"
-            content="width=device-width, initial-scale=0.85, minimum-scale=0.85, maximum-scale=0.85, viewport-fit=cover"
+            content="width=device-width, initial-scale=0.85, minimum-scale=0.85, maximum-scale=1, viewport-fit=cover"
           />
           {/* Optional: disable auto text-size adjust on iOS so columns don't get squished */}
           <meta name="apple-mobile-web-app-capable" content="yes" />
