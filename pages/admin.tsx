@@ -92,7 +92,7 @@ export default function Admin() {
         let q = supabase.from('shifts').select('*').order('shift_date', { ascending: false });
         if (tab === 'unpaid') q = q.eq('is_paid', false);
         if (tab === 'paid') q = q.eq('is_paid', true);
-c
+
         const { data, error } = await q;
         if (error) throw error;
 
