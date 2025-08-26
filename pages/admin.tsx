@@ -47,49 +47,49 @@ export default function Admin() {
   const [err, setErr] = useState<string | undefined>();
   const [bulkBusy, setBulkBusy] = useState<Record<string, boolean>>({});
 
-  // ---- Auth + role check ----
+  // ---- Auth + role check (extracted so we can call it on pageshow) ----
+  const loadProfile = useCallback(async () => {
+    const { data: { user } } = await supabase.auth.getUser();
+
+    if (!user) {
+      setMe(null);
+      setChecking(false);
+      r.replace('/');
+      return;
+    }
+
+    const { data: prof } = await supabase
+      .from('profiles')
+      .select('id, role')
+      .eq('id', user.id)
+      .single();
+
+    setMe((prof as any) ?? null);
+    setChecking(false);
+
+    if (!prof || prof.role !== 'admin') {
+      r.replace('/dashboard?msg=not_admin');
+    }
+  }, [r]);
+
   useEffect(() => {
     let active = true;
 
-    async function loadProfile() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!active) return;
-
-      if (!user) {
-        setMe(null);
-        setChecking(false);
-        r.replace('/');
-        return;
-      }
-
-      const { data: prof } = await supabase
-        .from('profiles')
-        .select('id, role')
-        .eq('id', user.id)
-        .single();
-
-      if (!active) return;
-      setMe((prof as any) ?? null);
-      setChecking(false);
-
-      if (!prof || prof.role !== 'admin') {
-        r.replace('/dashboard?msg=not_admin');
-      }
-    }
-
-    setChecking(true);
-    loadProfile();
-
-    const { data: sub } = supabase.auth.onAuthStateChange(() => {
+    (async () => {
       setChecking(true);
-      loadProfile();
+      await loadProfile();
+    })();
+
+    const { data: sub } = supabase.auth.onAuthStateChange(async () => {
+      setChecking(true);
+      await loadProfile();
     });
 
     return () => {
       active = false;
       sub.subscription.unsubscribe();
     };
-  }, [r]);
+  }, [loadProfile]);
 
   // ---- Loader we can call on mount + on focus/visibility/pageshow ----
   const loadShifts = useCallback(async () => {
@@ -140,9 +140,9 @@ export default function Admin() {
 
   // Refetch when returning from Venmo (focus/visibility)
   useEffect(() => {
-    const onFocus = () => loadShifts();
+    const onFocus = () => { loadProfile(); loadShifts(); };
     const onVisible = () => {
-      if (document.visibilityState === 'visible') loadShifts();
+      if (document.visibilityState === 'visible') { loadProfile(); loadShifts(); }
     };
     window.addEventListener('focus', onFocus);
     document.addEventListener('visibilitychange', onVisible);
@@ -150,17 +150,16 @@ export default function Admin() {
       window.removeEventListener('focus', onFocus);
       document.removeEventListener('visibilitychange', onVisible);
     };
-  }, [loadShifts]);
+  }, [loadProfile, loadShifts]);
 
   // Refetch when page is restored from the back-forward cache (iOS back swipe)
   useEffect(() => {
     function onPageShow(e: PageTransitionEvent) {
-      // When restored from bfcache, persisted is true — refresh data
-      if ((e as any).persisted) loadShifts();
+      if ((e as any).persisted) { loadProfile(); loadShifts(); }
     }
     window.addEventListener('pageshow', onPageShow as any);
     return () => window.removeEventListener('pageshow', onPageShow as any);
-  }, [loadShifts]);
+  }, [loadProfile, loadShifts]);
 
   // ---- Totals by employee ----
   const totals = useMemo(() => {
@@ -228,7 +227,7 @@ export default function Admin() {
 
   async function bulkTogglePaidForEmployee(userId: string, next: boolean) {
     const rows = groups[userId] || [];
-    const toChange = rows.filter((s) => Boolean(s.is_paid) !== next).map((s) => s.id);
+    anconst toChange = rows.filter((s) => Boolean(s.is_paid) !== next).map((s) => s.id);
     if (!toChange.length) return;
 
     const name = names[userId] || 'employee';

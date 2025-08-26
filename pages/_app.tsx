@@ -1,8 +1,7 @@
 // pages/_app.tsx
 import type { AppProps } from 'next/app';
-import Head from 'next/head';
 import Link from 'next/link';
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useState, useCallback, useRef } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
 import '../styles/globals.css';
@@ -14,95 +13,88 @@ export default function App({ Component, pageProps }: AppProps) {
 
   const [profile, setProfile] = useState<Profile>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
-  const lock = useRef(false);
+  const mountedRef = useRef(false);
 
-  const safeReplace = (path: string) => {
-    if (lock.current || router.asPath === path) return;
-    lock.current = true;
-    router.replace(path).finally(() => setTimeout(() => (lock.current = false), 120));
-  };
+  const fetchProfile = useCallback(async (userId: string) => {
+    const { data } = await supabase
+      .from('profiles')
+      .select('id, full_name, role')
+      .eq('id', userId)
+      .single();
+    setProfile((data as any) ?? null);
+    setLoadingProfile(false);
+  }, []);
 
-  async function fetchProfile(userId: string) {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, full_name, role')
-        .eq('id', userId)
-        .single();
-      if (error) throw error;
-      setProfile((data as any) ?? null);
-    } finally {
+  const hydrateAuthThenProfile = useCallback(async () => {
+    // Always re-pull session on resume (works after bfcache restore too)
+    const { data: { session } } = await supabase.auth.getSession();
+    if (!session?.user) {
+      setProfile(null);
       setLoadingProfile(false);
+      if (router.pathname !== '/') router.replace('/');
+      return;
     }
-  }
+    setLoadingProfile(true);
+    await fetchProfile(session.user.id);
+    if (router.pathname === '/') router.replace('/dashboard');
+  }, [fetchProfile, router]);
 
-  // Initial auth + quick redirects
   useEffect(() => {
     let cancelled = false;
 
     (async () => {
-      setLoadingProfile(true);
-
-      // Try local session first (fast, no network)
-      const { data: { session } } = await supabase.auth.getSession();
       if (cancelled) return;
-
-      const user = session?.user ?? null;
-      if (!user) {
-        setProfile(null);
-        setLoadingProfile(false);
-        if (router.pathname !== '/') safeReplace('/');
-        return;
-      }
-
-      await fetchProfile(user.id);
-      if (router.pathname === '/') safeReplace('/dashboard');
+      await hydrateAuthThenProfile();
+      mountedRef.current = true;
     })();
 
-    // Subscribe to sign-in/out changes
-    const { data: sub } = supabase.auth.onAuthStateChange(async (event, session) => {
-      const user = session?.user ?? null;
-
-      if (event === 'SIGNED_OUT' || !user) {
+    const { data: sub } = supabase.auth.onAuthStateChange(async (_evt, session) => {
+      if (!session?.user) {
         setProfile(null);
         setLoadingProfile(false);
-        safeReplace('/');
-        return;
+        router.replace('/');
+      } else {
+        setLoadingProfile(true);
+        await fetchProfile(session.user.id);
+        if (router.pathname === '/') router.replace('/dashboard');
       }
-
-      setLoadingProfile(true);
-      await fetchProfile(user.id);
-      if (router.pathname === '/') safeReplace('/dashboard');
     });
 
     return () => {
       cancelled = true;
       sub.subscription.unsubscribe();
     };
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [router.pathname]);
+  }, [fetchProfile, hydrateAuthThenProfile, router]);
+
+  // Rehydrate when returning to the tab / navigating back (bfcache)
+  useEffect(() => {
+    const onFocus = () => hydrateAuthThenProfile();
+    const onVisible = () => {
+      if (document.visibilityState === 'visible') hydrateAuthThenProfile();
+    };
+    const onPageShow = (e: PageTransitionEvent) => {
+      // If the page was restored from the back/forward cache, rehydrate
+      if ((e as any).persisted) hydrateAuthThenProfile();
+    };
+
+    window.addEventListener('focus', onFocus);
+    document.addEventListener('visibilitychange', onVisible);
+    window.addEventListener('pageshow', onPageShow as any);
+
+    return () => {
+      window.removeEventListener('focus', onFocus);
+      document.removeEventListener('visibilitychange', onVisible);
+      window.removeEventListener('pageshow', onPageShow as any);
+    };
+  }, [hydrateAuthThenProfile]);
 
   async function handleSignOut() {
-    try {
-      await supabase.auth.signOut();
-    } finally {
-      // hard reload avoids storage quirks
-      window.location.href = '/';
-    }
+    try { await supabase.auth.signOut(); }
+    finally { window.location.href = '/'; }
   }
 
   return (
     <>
-      {/* Start slightly zoomed-out on iPhone but still allow pinch-zoom */}
-      <Head>
-        <meta
-          name="viewport"
-          content="width=device-width, initial-scale=0.85, user-scalable=yes, viewport-fit=cover"
-        />
-        <meta name="format-detection" content="telephone=no" />
-        <title>Timesheet</title>
-      </Head>
-
       <header className="topbar">
         <div className="shell">
           <div className="brand-wrap">
@@ -122,7 +114,7 @@ export default function App({ Component, pageProps }: AppProps) {
                 {profile.role === 'admin' && (
                   <Link href="/admin" className="nav-link">Admin</Link>
                 )}
-                <button className="topbar-btn" onClick={handleSignOut}>Sign out</button>
+                <button className="signout" onClick={handleSignOut}>Sign out</button>
               </>
             )}
           </nav>
