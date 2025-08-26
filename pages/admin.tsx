@@ -19,6 +19,18 @@ function payInfo(s: any): { pay: number; minApplied: boolean; base: number } {
   return { pay, minApplied, base };
 }
 
+/** Build a clickable Venmo URL from either a full URL or a @handle */
+function venmoHref(raw?: string | null): string | null {
+  if (!raw) return null;
+  const v = raw.trim();
+  if (!v) return null;
+  // full URL already
+  if (/^https?:\/\//i.test(v)) return v;
+  // @handle -> turn into https://venmo.com/u/handle (strip leading @)
+  const handle = v.startsWith('@') ? v.slice(1) : v;
+  return `https://venmo.com/u/${encodeURIComponent(handle)}`;
+}
+
 export default function Admin() {
   const r = useRouter();
 
@@ -27,6 +39,7 @@ export default function Admin() {
 
   const [shifts, setShifts] = useState<any[]>([]);
   const [names, setNames] = useState<Record<string, string>>({});
+  const [venmo, setVenmo] = useState<Record<string, string>>({}); // user_id -> venmo_url/handle
 
   const [tab, setTab] = useState<Tab>('unpaid');
   const [sortBy, setSortBy] = useState<SortBy>('name');
@@ -99,17 +112,25 @@ export default function Admin() {
         const rows = data || [];
         setShifts(rows);
 
+        // Fetch names + venmo for display
         const ids = Array.from(new Set(rows.map((s: any) => s.user_id)));
         if (ids.length) {
           const { data: profs } = await supabase
             .from('profiles')
-            .select('id, full_name')
+            .select('id, full_name, venmo_url')   // <-- make sure this column exists
             .in('id', ids);
-          const map: Record<string, string> = {};
-          (profs || []).forEach((p: any) => { map[p.id] = p.full_name || '—'; });
-          setNames(map);
+
+          const nameMap: Record<string, string> = {};
+          const venmoMap: Record<string, string> = {};
+          (profs || []).forEach((p: any) => {
+            nameMap[p.id] = p.full_name || '—';
+            if (p.venmo_url) venmoMap[p.id] = p.venmo_url;
+          });
+          setNames(nameMap);
+          setVenmo(venmoMap);
         } else {
           setNames({});
+          setVenmo({});
         }
       } catch (e: any) {
         setErr(e.message);
@@ -237,7 +258,7 @@ export default function Admin() {
       <h1 className="page__title">Admin Dashboard</h1>
       {err && <p className="error" role="alert">Error: {err}</p>}
 
-      {/* Summary */}
+      {/* Summary (unchanged) */}
       <div className="card card--tight full">
         <div className="admin-summary admin-summary--center" style={{ margin: 0, border: 0, boxShadow: 'none' }}>
           <span className="chip chip--xl">Total Unpaid: ${unpaidTotal.toFixed(2)}</span>
@@ -249,7 +270,7 @@ export default function Admin() {
         </div>
       </div>
 
-      {/* Tabs */}
+      {/* Tabs (unchanged) */}
       <div className="card card--tight full" style={{ marginTop: 10, padding: 10 }}>
         <div className="tabs tabs--center" style={{ margin: 0 }}>
           <button className={tab === 'unpaid' ? 'active' : ''} onClick={() => setTab('unpaid')}>Unpaid</button>
@@ -258,7 +279,7 @@ export default function Admin() {
         </div>
       </div>
 
-      {/* Totals by Employee */}
+      {/* Totals by Employee (only change is Venmo button rendered inside Unpaid cell) */}
       <div className="card card--tight full">
         <div className="card__header">
           <h3>Totals by Employee</h3>
@@ -292,27 +313,45 @@ export default function Admin() {
               </tr>
             </thead>
             <tbody>
-              {sortedTotals.map((t) => (
-                <tr key={t.id}>
-                  <td data-label="Employee">
-                    {t.name}
-                    {t.minCount > 0 && (
-                      <span className="muted" style={{ marginLeft: 8 }}>
-                        ({t.minCount}× MIN)
-                      </span>
-                    )}
-                  </td>
-                  <td data-label="Hours">{t.hours.toFixed(2)}</td>
-                  <td data-label="Pay">${t.pay.toFixed(2)}</td>
-                  <td data-label="Unpaid">${t.unpaid.toFixed(2)}</td>
-                </tr>
-              ))}
+              {sortedTotals.map((t) => {
+                const vHref = venmoHref(venmo[t.id]);
+                const hasUnpaid = t.unpaid > 0.0001;
+                return (
+                  <tr key={t.id}>
+                    <td data-label="Employee">
+                      {t.name}
+                      {t.minCount > 0 && (
+                        <span className="muted" style={{ marginLeft: 8 }}>
+                          ({t.minCount}× MIN)
+                        </span>
+                      )}
+                    </td>
+                    <td data-label="Hours">{t.hours.toFixed(2)}</td>
+                    <td data-label="Pay">${t.pay.toFixed(2)}</td>
+                    <td data-label="Unpaid">
+                      ${t.unpaid.toFixed(2)}
+                      {hasUnpaid && vHref && (
+                        <a
+                          className="btn-venmo"
+                          href={vHref}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ marginLeft: 8 }}
+                          title={`Pay ${t.name} on Venmo`}
+                        >
+                          Venmo
+                        </a>
+                      )}
+                    </td>
+                  </tr>
+                );
+              })}
             </tbody>
           </table>
         </div>
       </div>
 
-      {/* Shifts */}
+      {/* Shifts (unchanged) */}
       <div className="card card--tight full" style={{ marginTop: 12 }}>
         <div className="card__header">
           <h3>Shifts</h3>
@@ -454,6 +493,18 @@ export default function Admin() {
           </table>
         </div>
       </div>
+
+      {/* Tiny style for the Venmo button (keeps your existing look) */}
+      <style jsx>{`
+        .btn-venmo{
+          display:inline-flex; align-items:center; justify-content:center;
+          height:28px; padding:0 10px; border-radius:999px;
+          font-weight:800; text-decoration:none; border:1px solid var(--border);
+          background:#f8fafc; color:#1f2937; box-shadow: var(--shadow-sm);
+        }
+        .btn-venmo:hover{ filter:brightness(0.98); }
+        .btn-venmo:active{ transform: translateY(1px); }
+      `}</style>
     </main>
   );
 }
