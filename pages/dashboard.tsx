@@ -1,8 +1,6 @@
 // pages/dashboard.tsx
-import dynamic from 'next/dynamic';
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
 import {
   startOfWeek, endOfWeek, addWeeks,
@@ -12,56 +10,17 @@ import {
 
 type Mode = 'week' | 'month' | 'all';
 
-function DashboardInner() {
-  const r = useRouter();
-
+export default function Dashboard() {
   const [user, setUser] = useState<any>(null);
-  const [loadingUser, setLoadingUser] = useState(true);
-
   const [shifts, setShifts] = useState<any[]>([]);
   const [mode, setMode] = useState<Mode>('week');
   const [offset, setOffset] = useState(0);
   const [err, setErr] = useState<string>();
 
-  // ---- tolerant getUser with timeout (handles slow storage/cold loads) ----
-  const withTimeout = <T,>(p: Promise<T>, ms = 12000) =>
-    Promise.race([
-      p,
-      new Promise<T>((_, rej) => setTimeout(() => rej(new Error('auth timeout')), ms)),
-    ]);
-
   useEffect(() => {
-    let cancelled = false;
+    supabase.auth.getUser().then(({ data }) => setUser(data.user));
+  }, []);
 
-    (async () => {
-      setErr(undefined);
-      setLoadingUser(true);
-      try {
-        // try twice quickly; handles occasional delay on first call after hard refresh
-        const tryOnce = async () => (await withTimeout(supabase.auth.getUser(), 12000)).data?.user ?? null;
-        let u = await tryOnce();
-        if (!u) u = await tryOnce();
-        if (cancelled) return;
-
-        if (!u) {
-          // no session: bounce to login so we don't leave a blank shell
-          r.replace('/');
-          return;
-        }
-        setUser(u);
-      } catch (e: any) {
-        if (cancelled) return;
-        setErr(e?.message || 'Failed to read session');
-        r.replace('/'); // conservative bounce on error
-      } finally {
-        if (!cancelled) setLoadingUser(false);
-      }
-    })();
-
-    return () => { cancelled = true; };
-  }, [r]);
-
-  // ---- date range calc ----
   const range = useMemo(() => {
     const now = new Date();
     if (mode === 'week') {
@@ -79,14 +38,12 @@ function DashboardInner() {
     return { start: null as any, end: null as any, label: 'All time' };
   }, [mode, offset]);
 
-  // ---- fetch shifts when we have a user + range ----
   useEffect(() => {
     if (!user) return;
     (async () => {
       setErr(undefined);
       try {
-        let q = supabase
-          .from('shifts')
+        let q = supabase.from('shifts')
           .select('*')
           .eq('user_id', user.id)
           .order('shift_date', { ascending: false });
@@ -101,12 +58,11 @@ function DashboardInner() {
         if (error) throw error;
         setShifts(data || []);
       } catch (e: any) {
-        setErr(e.message || 'Failed to load shifts');
+        setErr(e.message);
       }
     })();
   }, [user, mode, offset, range]);
 
-  // ---- totals ----
   const totals = useMemo(() => {
     const hours = shifts.reduce((s, x) => s + Number(x.hours_worked || 0), 0);
     const pay = shifts.reduce((s, x) => s + Number(x.pay_due || 0), 0);
@@ -121,20 +77,10 @@ function DashboardInner() {
     setShifts(prev => prev.filter(x => x.id !== id));
   }
 
-  // ---- UX while determining session ----
-  if (loadingUser) {
-    return (
-      <main className="page">
-        <div className="toast" role="status" aria-live="polite">Loading…</div>
-      </main>
-    );
-  }
-
-  // If we got here without a user, we already redirected; render nothing.
   if (!user) return null;
 
   return (
-    <>
+    <main className="page">
       <h1>My Shifts ({mode === 'week' ? 'This Week' : mode === 'month' ? 'This Month' : 'All Time'})</h1>
       {err && <p className="error" role="alert">Error: {err}</p>}
 
@@ -162,9 +108,7 @@ function DashboardInner() {
           )}
         </div>
 
-        <Link href="/new-shift" className="link-right btn-edit" style={{ textDecoration: 'none' }}>
-          + Log Shift
-        </Link>
+        <Link href="/new-shift" className="link-right btn-edit" style={{ textDecoration: 'none' }}>+ Log Shift</Link>
       </div>
 
       {/* Totals row */}
@@ -192,21 +136,18 @@ function DashboardInner() {
           <tbody>
             {shifts.map((s) => {
               const paid = Boolean((s as any).is_paid);
-              const timeIn = s.time_in ? new Date(s.time_in) : null;
-              const timeOut = s.time_out ? new Date(s.time_out) : null;
-
               return (
                 <tr key={s.id}>
                   <td data-label="Date">{s.shift_date}</td>
                   <td data-label="Type">{s.shift_type}</td>
                   <td data-label="In">
-                    {timeIn ? timeIn.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
+                    {new Date(s.time_in).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </td>
                   <td data-label="Out">
-                    {timeOut ? timeOut.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
+                    {new Date(s.time_out).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                   </td>
-                  <td data-label="Hours">{Number(s.hours_worked ?? 0).toFixed(2)}</td>
-                  <td data-label="Pay">${Number(s.pay_due ?? 0).toFixed(2)}</td>
+                  <td data-label="Hours">{Number(s.hours_worked).toFixed(2)}</td>
+                  <td data-label="Pay">${Number(s.pay_due).toFixed(2)}</td>
                   <td data-label="Status">
                     <span className={paid ? 'badge badge-paid' : 'badge badge-unpaid'}>
                       {paid ? 'PAID' : 'NOT PAID'}
@@ -234,9 +175,6 @@ function DashboardInner() {
           </tbody>
         </table>
       </div>
-    </>
+    </main>
   );
 }
-
-// Export as client-only to avoid SSR/hydration blank after hard refresh on Vercel
-export default dynamic(() => Promise.resolve(DashboardInner), { ssr: false });
