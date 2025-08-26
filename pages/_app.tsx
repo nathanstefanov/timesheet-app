@@ -96,7 +96,7 @@ export default function App({ Component, pageProps }: AppProps) {
     });
 
     return () => { cancelled = true; sub.subscription.unsubscribe(); clearTimeout(timeout); };
-  }, [router, loadingProfile]);
+  }, [router]);
 
   async function handleSignOut() {
     try { await supabase.auth.signOut(); }
