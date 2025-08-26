@@ -201,12 +201,8 @@ export default function AuthPage() {
 
         .alert { margin-top:10px; padding:10px 12px; border-radius:10px; font-size:14px; }
         .alert.error { background:#fee2e2; color:#991b1b; border:1px solid #fecaca; }
-        
-      `}</style>
-    </>
-  );
         .alert.ok { background:#dcfce7; color:#065f46; border:1px solid #bbf7d0; }
       `}</style>
-    </div>
+    </>
   );
 }
