@@ -26,37 +26,46 @@ export default function App({ Component, pageProps }: AppProps) {
 
   useEffect(() => {
     let cancelled = false;
+    let hasRedirected = false;
 
     (async () => {
-      // Fast path: get current session from local storage (no network).
       const { data: { session } } = await supabase.auth.getSession();
       if (cancelled) return;
 
       if (!session?.user) {
         setProfile(null);
         setLoadingProfile(false);
-        // Kick unauthenticated users off protected pages.
-        if (router.pathname !== '/') router.replace('/');
+        // Only redirect once
+        if (!hasRedirected && router.pathname !== '/') {
+          hasRedirected = true;
+          router.replace('/');
+        }
         return;
       }
 
-      // We have a user—fetch their profile.
       await fetchProfile(session.user.id);
-
-      // If already on the login page, send them to dashboard.
-      if (router.pathname === '/') router.replace('/dashboard');
+      if (!hasRedirected && router.pathname === '/') {
+        hasRedirected = true;
+        router.replace('/dashboard');
+      }
     })();
 
-    // Keep UI in sync with auth changes (sign-in/out, token refresh).
     const { data: sub } = supabase.auth.onAuthStateChange(async (_evt, session) => {
+      if (cancelled) return;
       if (!session?.user) {
         setProfile(null);
         setLoadingProfile(false);
-        router.replace('/'); // always land on sign-in when logged out
+        if (!hasRedirected && router.pathname !== '/') {
+          hasRedirected = true;
+          router.replace('/');
+        }
       } else {
         setLoadingProfile(true);
         await fetchProfile(session.user.id);
-        if (router.pathname === '/') router.replace('/dashboard');
+        if (!hasRedirected && router.pathname === '/') {
+          hasRedirected = true;
+          router.replace('/dashboard');
+        }
       }
     });
 
