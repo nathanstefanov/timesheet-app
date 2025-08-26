@@ -12,10 +12,7 @@ export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();
   const [profile, setProfile] = useState<Profile>(null);
   const [authError, setAuthError] = useState<string | null>(null);
-
-  // avoid competing redirects
   const navLock = useRef(false);
-  const isLogin = router.pathname === '/';
 
   const safeReplace = (path: string) => {
     if (navLock.current || router.asPath === path) return;
@@ -23,80 +20,51 @@ export default function App({ Component, pageProps }: AppProps) {
     router.replace(path).finally(() => setTimeout(() => (navLock.current = false), 120));
   };
 
-  // ------- helpers
-  async function fetchProfileSoft(userId: string) {
-    // IMPORTANT: “no row found” should NOT be fatal — many prod loops are this.
-    const { data, error, status } = await supabase
-      .from('profiles')
-      .select('id, full_name, role')
-      .eq('id', userId)
-      .maybeSingle(); // <-- doesn't throw on 0 rows
-
-    if (error && status !== 406) { // 406 = no rows; ignore
-      throw error;
+  async function fetchProfile(userId: string) {
+    try {
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, full_name, role')
+        .eq('id', userId)
+        .single();
+      if (error) throw error;
+      setProfile((data as any) ?? null);
+    } catch (e: any) {
+      setProfile(null);
+      setAuthError(e.message || 'Failed to load profile');
     }
-    // allow null profile; navbar will still show
-    setProfile((data as any) ?? { id: userId, role: 'employee' });
   }
 
-  // ------- init (non-blocking)
   useEffect(() => {
     let cancelled = false;
 
     (async () => {
       setAuthError(null);
 
-      // Try local session quickly
-      let sessionUser = null as any;
+      // Fast path: any existing session in our cookie?
       try {
-        const { data } = await supabase.auth.getUser();
-        sessionUser = data?.user ?? null;
-      } catch (e: any) {
-        // ignore; we’ll try getSession next
-      }
+        const { data } = await supabase.auth.getSession();
+        if (cancelled) return;
+        const user = data?.session?.user ?? null;
 
-      // If still no user, try slower path with a timeout guard
-      if (!sessionUser) {
-        try {
-          const { data } = await Promise.race([
-            supabase.auth.getSession(),
-            new Promise<never>((_, rej) => setTimeout(() => rej(new Error('auth timeout')), 15000)),
-          ]);
-          sessionUser = data?.session?.user ?? null;
-        } catch (e: any) {
-          // don’t crash UI; just route to login if we’re not on it
-          if (!isLogin) safeReplace('/');
-          setAuthError(e?.message || 'Auth timeout');
+        if (user) {
+          await fetchProfile(user.id);
+          if (router.pathname === '/') safeReplace('/dashboard');
           return;
         }
-      }
+      } catch { /* continue */ }
 
-      if (cancelled) return;
-
-      if (!sessionUser) {
-        // logged out
+      // No session -> if we’re not on login, go there.
+      if (router.pathname !== '/') {
         setProfile(null);
-        if (!isLogin) safeReplace('/');
-        return;
+        safeReplace('/');
       }
-
-      // logged in — never redirect back to login if profile fetch fails
-      try {
-        await fetchProfileSoft(sessionUser.id);
-      } catch (e: any) {
-        setProfile({ id: sessionUser.id, role: 'employee' }); // fall back
-        setAuthError(e?.message || 'Profile load failed');
-      }
-      if (isLogin) safeReplace('/dashboard');
     })();
 
     const { data: sub } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (event === 'SIGNED_IN' || event === 'USER_UPDATED') {
-        const u = session?.user;
-        if (u) {
-          try {
-            await fetchProfileSoft(u.id);
-          } catch { /* ignore */ }
+        if (session?.user) {
+          await fetchProfile(session.user.id);
           if (router.pathname === '/') safeReplace('/dashboard');
         }
       } else if (event === 'SIGNED_OUT') {
@@ -116,6 +84,8 @@ export default function App({ Component, pageProps }: AppProps) {
     try {
       await supabase.auth.signOut();
     } finally {
+      // also clear our cookie fast-path
+      document.cookie = 'gg_timesheet_auth=; expires=Thu, 01 Jan 1970 00:00:00 GMT; path=/; SameSite=Lax';
       window.location.href = '/';
     }
   }
@@ -132,7 +102,6 @@ export default function App({ Component, pageProps }: AppProps) {
             />
             <span className="brand">Timesheet</span>
           </div>
-
           <nav className="nav">
             {profile && (
               <>
@@ -148,7 +117,7 @@ export default function App({ Component, pageProps }: AppProps) {
 
       {authError && (
         <div className="toast toast--error">
-          <span>{authError}</span>
+          <span>Auth error: {authError}</span>
           <button className="toast__dismiss" onClick={() => setAuthError(null)}>Dismiss</button>
         </div>
       )}

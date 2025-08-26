@@ -35,28 +35,10 @@ export default function AuthPage() {
         return;
       }
 
-      // ---- SIGN IN ----
-      const { data, error } = await supabase.auth.signInWithPassword({ email, password });
+      const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
 
-      // If for any reason the client didn't persist the session, set it manually.
-      if (data?.session?.access_token && data?.session?.refresh_token) {
-        await supabase.auth.setSession({
-          access_token: data.session.access_token,
-          refresh_token: data.session.refresh_token,
-        });
-      } else {
-        // Fallback loop: wait a moment for storage to populate
-        let ok = false;
-        for (let i = 0; i < 12; i++) {
-          const { data: s } = await supabase.auth.getSession();
-          if (s?.session?.access_token) { ok = true; break; }
-          await new Promise(r => setTimeout(r, 150));
-        }
-        if (!ok) throw new Error('Signed in, but no session was created.');
-      }
-
-      // Hard navigation (avoids any Next.js/router stalling)
+      // Force a clean navigation so the cookie-backed session is read immediately
       window.location.replace('/dashboard');
     } catch (e: any) {
       setErr(e?.message || 'Sign-in failed');
@@ -150,7 +132,7 @@ export default function AuthPage() {
 
       <style jsx>{`
         .wrap { min-height: 100svh; display:flex; align-items:center; justify-content:center; padding: clamp(16px,4vw,32px); background:#f7f8fc; }
-        .card { width: min(520px, 94vw); background:#fff; border:1px solid #e6e8ee; border-radius:16px; padding:22px 18px; box-shadow:0 10px 30px rgba(0,0,0,.05); }
+        .card { width:min(520px,94vw); background:#fff; border:1px solid #e6e8ee; border-radius:16px; padding:22px 18px; box-shadow:0 10px 30px rgba(0,0,0,.05); }
         .title-row { display:flex; align-items:center; gap:10px; margin-bottom:8px; }
         .logo { width:28px; height:28px; object-fit:contain; }
         .title { margin:0; font-size:22px; font-weight:700; }
