@@ -21,6 +21,9 @@ export default function App({ Component, pageProps }: AppProps) {
       .select('id, full_name, role')
       .eq('id', userId)
       .single();
+    console.log('[fetchProfile] userId:', userId);
+    console.log('[fetchProfile] data:', data);
+    console.log('[fetchProfile] error:', error);
     setProfile((data as any) ?? null);
     setLoadingProfile(false);
   }
