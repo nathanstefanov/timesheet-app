@@ -156,3 +156,7 @@ export default function AuthPage() {
     </div>
   );
 }
+// inside submit()
+const { error } = await supabase.auth.signInWithPassword({ email, password });
+if (error) throw error;
+window.location.href = '/dashboard'; // full reload on success
