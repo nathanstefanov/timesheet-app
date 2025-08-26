@@ -103,8 +103,10 @@ export default function AuthPage() {
           </div>
 
           <form onSubmit={onFormSubmit} autoComplete="on">
-            <label className="label">Email</label>
+            <label className="label" htmlFor="email">Email</label>
             <input
+              id="email"
+              name="email"
               ref={emailRef}
               className="input"
               type="email"
@@ -115,9 +117,11 @@ export default function AuthPage() {
               onChange={(e) => setEmail(e.target.value)}
             />
 
-            <label className="label">Password {mode === 'signup' ? '(min 8 chars)' : ''}</label>
+            <label className="label" htmlFor="password">Password {mode === 'signup' ? '(min 8 chars)' : ''}</label>
             <div className="pwrow">
               <input
+                id="password"
+                name="password"
                 className="input"
                 type={showPw ? 'text' : 'password'}
                 autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
@@ -125,8 +129,8 @@ export default function AuthPage() {
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
-              <label className="show">
-                <input type="checkbox" checked={showPw} onChange={(e) => setShowPw(e.target.checked)} />
+              <label className="show" htmlFor="showPw">
+                <input id="showPw" type="checkbox" checked={showPw} onChange={(e) => setShowPw(e.target.checked)} />
                 Show
               </label>
             </div>
