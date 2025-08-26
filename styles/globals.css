@@ -19,24 +19,17 @@
 
   --shadow-sm: 0 1px 2px rgba(0,0,0,.06);
   --shadow-md: 0 4px 14px rgba(0,0,0,.06);
-
   --radius-sm: 8px;
   --radius:    12px;
   --radius-lg: 16px;
 
-  /* one gutter / container so everything aligns */
-  --container: 1100px;
-  --gutter: clamp(12px, 4vw, 16px);
   --gap: 10px;
-
-  --cell-pad: 12px; /* table & section-bar internal padding */
 }
 
 /* ======================================================
    Base
 ====================================================== */
 *{ box-sizing: border-box; }
-html { -webkit-text-size-adjust: 100%; } /* keep text scale sane on iOS */
 html, body{ margin:0; padding:0; }
 body{
   font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
@@ -46,8 +39,7 @@ body{
   -moz-osx-font-smoothing: grayscale;
 }
 
-/* Single source of layout truth */
-.page{ max-width: var(--container); margin: 28px auto; padding-inline: var(--gutter); }
+.page{ max-width: 1100px; margin: 28px auto; padding: 0 16px; }
 .page__title{ text-align:center; margin: 0 0 16px; font-size: 32px; }
 .page--center{ display:flex; flex-direction:column; align-items:center; }
 
@@ -61,6 +53,11 @@ body{
 .mt-lg{ margin-top: 24px; }
 .link-right{ margin-left:auto; text-decoration:none; color:#2563eb; font-weight:600; }
 .center{ text-align:center; }
+
+/* Toolbar + totals (dashboard) */
+.toolbar{ display:flex; align-items:center; justify-content:space-between; gap:12px; margin:12px 0 10px; }
+.toolbar--center{ justify-content: center; gap: 16px; flex-wrap: wrap; }
+.toolbar__left{ display:flex; align-items:center; gap:8px; flex-wrap:wrap; }
 
 .totals{ display:flex; gap:12px; margin: 4px 0 14px; }
 .totals--center{ justify-content:center; flex-wrap:wrap; }
@@ -80,18 +77,10 @@ body{
 }
 
 /* ======================================================
-   Topbar (shares container & gutter with .page)
+   Topbar
 ====================================================== */
-.topbar{
-  position: sticky; top:0; z-index:20; background:var(--card);
-  border-bottom:1px solid #eaecef;
-}
-.shell{
-  max-width: var(--container);
-  margin-inline: auto;
-  padding:10px var(--gutter);
-  display:flex; align-items:center; gap:12px;
-}
+.topbar{ position: sticky; top:0; z-index:20; background:var(--card); border-bottom:1px solid #eaecef; }
+.shell{ max-width:1100px; margin:0 auto; padding:10px 16px; display:flex; align-items:center; gap:12px; }
 .brand-wrap{ display:inline-flex; align-items:center; gap:10px; margin-right:6px; }
 .logo{ height:60px; width:auto; display:block; object-fit:contain; }
 .brand{ font-weight:800; letter-spacing:.2px; color:#111827; }
@@ -129,62 +118,54 @@ body{
    Cards
 ====================================================== */
 .card{
-  width: 100%;
-  background: var(--card);
-  border:1px solid var(--border);
-  border-radius: var(--radius);
+  background: var(--card); border:1px solid var(--border); border-radius: var(--radius);
   box-shadow: var(--shadow-sm);
-  margin: 10px 0;
 }
 .card--tight .table th,
 .card--tight .table td { padding:10px; }
 .card__header{
-  padding: 12px 14px;
-  display:flex; align-items:center; justify-content: space-between;
+  padding: 12px 14px; display:flex; align-items:center; justify-content: space-between;
   border-bottom: 1px solid var(--border-soft);
 }
 
 /* ======================================================
-   Tables (same width as cards; align perfectly)
+   Tables
 ====================================================== */
-.table-wrap{ width:100%; }
 .table{
-  width:100%;
-  border-collapse: separate;     /* better radius rendering on iOS */
-  border-spacing: 0;
-  background:var(--card);
-  border:1px solid var(--border);
-  border-radius: var(--radius);
-  overflow: hidden;
+  width:100%; border-collapse: collapse; background:var(--card);
+  border:1px solid var(--border); border-radius: var(--radius); overflow: hidden;
   box-shadow: var(--shadow-sm);
-  table-layout: auto;            /* allow columns to shrink to fit viewport */
+  table-layout: auto;                 /* let browser size columns so it fits */
 }
-.table th, .table td{ padding:var(--cell-pad); border-top:1px solid var(--border-soft); }
+.table th, .table td{ padding:12px; border-top:1px solid var(--border-soft); }
 .table thead th{
   background:#f8fafc; border-top:0; text-align:left; font-weight:700; color: var(--ink-subtle);
 }
 .table tbody tr:hover{ background: #fdfdfd; }
 .table--compact th, .table--compact td{ padding:9px; }
 .table--admin{ font-size:14px; }
-.table--center th, .table--center td{ text-align:center; vertical-align: middle; }
-.table--center th:first-child, .table--center td:first-child{ text-align:left; }
-.table--center td .actions{ display:inline-flex; gap:10px; justify-content:center; align-items:center; }
 
-/* hide 'Paid at' on mid-size screens to avoid squeeze */
+/* Fit better on medium desktop: hide 'Paid at' column */
 @media (max-width: 1100px){
   .col-hide-md{ display:none; }
 }
 
+.table--center th, .table--center td{ text-align:center; vertical-align: middle; }
+.table--center th:first-child, .table--center td:first-child{ text-align:left; }
+.table--center td .actions{ display:inline-flex; gap:10px; justify-content:center; align-items:center; }
+
+.table-wrap{ width:100%; }
+
 /* ======================================================
-   Section header (employee) — same inner padding as table
+   Section header (employee) — clean centered bar
 ====================================================== */
 .section-head td{
   font-weight:800; background:#f8fafc; color:#111827; border-top:2px solid var(--border);
-  padding: 0;
+  padding: 0;       /* the bar has its own padding */
 }
 .section-bar{
   display:flex; align-items:center; justify-content:space-between;
-  gap:16px; padding:var(--cell-pad);
+  gap:16px; padding:10px 12px;
 }
 .section-bar__left{ display:flex; align-items:center; gap:12px; }
 .section-bar__right{ display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
@@ -227,7 +208,7 @@ body{
 .admin-summary .inline{ display:inline-flex; align-items:center; gap:8px; }
 
 /* ======================================================
-   Badges, Chips & Buttons
+   Badges & Chips
 ====================================================== */
 .badge{
   display:inline-flex; align-items:center; justify-content:center; padding:2px 8px; border-radius:999px;
@@ -244,6 +225,9 @@ body{
 .chip--xl{ font-size: 15px; padding:10px 14px; }
 .muted{ color: var(--muted); font-size: 12px; }
 
+/* ======================================================
+   Actions
+====================================================== */
 .actions{ display:flex; gap:12px; }
 .btn-edit, .btn-delete{
   display:inline-flex; align-items:center; justify-content:center;
@@ -258,16 +242,6 @@ body{
 .btn-delete{ background:var(--danger-bg); color:var(--danger-ink); border:1px solid var(--danger-brd); }
 .btn-delete:hover{ background:#fecaca; }
 .btn-delete:active{ transform: translateY(1px); }
-
-/* Primary button (e.g. + Log Shift) */
-.btn-primary{
-  display:inline-flex; align-items:center; justify-content:center;
-  height:40px; padding:0 16px; border-radius:12px;
-  background:#3b5bfd; color:#fff; font-weight:800; text-decoration:none;
-  border:0; box-shadow: var(--shadow-md); transition: filter .15s, transform .02s;
-}
-.btn-primary:hover{ filter: brightness(0.98); }
-.btn-primary:active{ transform: translateY(1px); }
 
 /* ======================================================
    Forms
@@ -286,12 +260,9 @@ textarea{ min-height:80px; resize:vertical; }
 .inline-check{ display:inline-flex; align-items:center; gap:6px; }
 
 /* ======================================================
-   Mobile Stacked Tables (FIXED: proper breakpoint)
+   Mobile Stacked Tables
 ====================================================== */
-@media (max-width: 680px){
-  .page{ padding-inline: clamp(8px, 3vw, 12px); }
-  .shell{ padding-inline: clamp(8px, 3vw, 12px); }
-
+@media (max-width: auto){
   .table--stack{ border:0; }
   .table--stack thead{ display:none; }
   .table--stack tbody, .table--stack tr, .table--stack td{ display:block; width:100%; }
@@ -308,19 +279,168 @@ textarea{ min-height:80px; resize:vertical; }
   .table--stack td .actions{ justify-content:flex-start; gap:10px; }
   .btn-edit, .btn-delete{ min-width:0; height:38px; padding:0 12px; border-radius:10px; box-shadow:none; }
 
-  /* Section header bar stacks & matches table padding */
-  .section-bar{ flex-direction:column; align-items:center; gap:8px; padding:10px 12px; }
+  /* Section header bar stacked on small screens */
+  .section-bar{ flex-direction:column; align-items:center; gap:8px; }
   .section-bar__right{ justify-content:center; }
-  .employee-name{ font-size:15px; }
+}
+/* Primary button used for "+ Log Shift" */
+.btn-primary{
+  display:inline-flex; align-items:center; justify-content:center;
+  height:40px; padding:0 16px; border-radius:12px;
+  background:#3b5bfd; color:#fff; font-weight:800; text-decoration:none;
+  border:0; box-shadow: var(--shadow-md); transition: filter .15s, transform .02s;
+}
+.btn-primary:hover{ filter: brightness(0.98); }
+.btn-primary:active{ transform: translateY(1px); }
 
-  .card__header{ padding:10px 12px; }
-  .tabs button{ padding:6px 10px; border-radius:9px; font-size:13px; }
-  h1,.page__title{ font-size:24px; }
+/* When the toolbar is centered, don't let anything auto-push to the far right */
+.toolbar--center .link-right{ margin-left: 0; }
+.toolbar--center .btn-primary{ margin-left: 8px; }
+/* =========================
+   Mobile Compact Admin Layout
+   ========================= */
+@media (max-width: 480px){
+
+  /* Make page gutters tighter so content matches table width */
+  .page{
+    max-width: 100%;
+    padding: 8px 10px;
+  }
+
+  /* Top bar compaction */
+  .topbar .shell{
+    padding: 6px 10px;
+    gap: 8px;
+  }
+  .nav .nav-link{ padding:6px 10px; }
+  .topbar-btn{ height:34px; padding:0 10px; }
+
+  /* Headings slightly smaller so they don't push layout down */
+  h1, .page h1{ font-size: 22px; margin: 8px 0 10px; }
+  h3{ font-size: 16px; }
+
+  /* Admin summary strip and tabs – same width and density as table */
+  .admin-summary{
+    width: 100%;
+    padding: 8px 10px;
+    gap: 10px;
+    border-radius: 10px;
+  }
+  .admin-summary .meta{ font-size: 11px; }
+
+  .tabs{
+    margin: 10px 0 12px;
+    gap: 6px;
+  }
+  .tabs button{
+    padding: 6px 10px;
+    border-radius: 9px;
+    font-size: 13px;
+  }
+
+  /* Cards full-width and tighter header */
+  .card{ border-radius: 12px; }
+  .card__header{
+    padding: 8px 10px;
+  }
+
+  /* Sort row controls smaller */
+  #sort-by{ height: 34px; }
+
+  /* Make tables more compact */
+  .table th, .table td{
+    padding: 8px 10px;
+    font-size: 13px;
+  }
+
+  /* Action buttons + chips tighter */
+  .btn-edit, .btn-delete, .topbar-btn{
+    min-width: 72px;
+    height: 36px;
+    padding: 0 12px;
+    border-radius: 10px;
+  }
+  .chip{ padding:6px 10px; font-size: 12px; }
+  .badge{ font-size: 11px; padding: 1px 7px; }
+
+  /* Employee section header: stack neatly and center the counter */
+  .section-controls{
+    gap: 10px;
+  }
+  .section-controls__left{
+    gap: 4px;
+    flex: 1 1 auto;
+  }
+  .section-stat{
+    transform: scale(.95);
+  }
+
+  /* Keep the whole shift table visible without horizontal drag */
+  .table-wrap{
+    overflow-x: visible;   /* let it fit the viewport */
+  }
+}
+/* Utility: make blocks span the same width as tables/cards */
+.full { width: 100%; }
+
+/* Ensure the two admin cards and tables visually match */
+.card.full,
+.card.full .table {
+  width: 100%;
 }
 
-/* Utility to ensure blocks span same width as cards/tables */
-.full{ width:100%; }
-
-/* Slightly tighter rhythm so blocks visually line up */
-.card--tight .table th, .card--tight .table td { padding: 10px; }
+/* Tighter header title on admin to visually match tables */
 .page__title { margin-bottom: 12px; }
+
+/* Slightly reduce top/bottom whitespace on admin full blocks */
+.card.full { margin-top: 8px; }
+
+/* On narrow screens, keep every block width-aligned */
+@media (max-width: 780px){
+  .page { padding: 0 12px; }
+  .card--tight .table th,
+  .card--tight .table td { padding: 10px; }
+}
+/* Make summary/tabs/tables use the exact same full-width card container */
+.full { width: 100%; }
+.card.full { width: 100%; margin: 10px 0; }
+
+/* Tighten admin page spacing slightly so blocks visually line up */
+.page__title { margin-bottom: 12px; }
+.card--tight .table th, .card--tight .table td { padding: 10px; }
+
+/* Ensure no horizontal scroll; let tables shrink nicely */
+.table { table-layout: auto; }
+
+/* iOS sometimes expands text; keep it consistent with our scale */
+html { -webkit-text-size-adjust: 100%; }
+/* Make all admin blocks the exact same width and spacing */
+.admin-wrap {
+  width: 100%;
+  display: grid;
+  grid-template-columns: 1fr;
+  gap: 12px;              /* same vertical rhythm for all blocks */
+}
+
+/* Cards & tables should visually line up exactly */
+.admin-wrap > .card {
+  margin: 0;              /* remove stray margins so edges align */
+  width: 100%;
+}
+
+/* Ensure inner tables actually stretch */
+.admin-wrap .table-wrap,
+.admin-wrap .table {
+  width: 100%;
+}
+
+/* Remove accidental max-widths from nested elements (if any) */
+.admin-wrap .card__header,
+.admin-wrap .admin-summary,
+.admin-wrap .tabs { max-width: none; }
+
+/* Keep page padding consistent so top and bottom edges match */
+.page { max-width: 1100px; margin: 28px auto; padding: 0 16px; }
+
+/* Allow pinch zoom while we start at 0.85 scale */
+html { -webkit-text-size-adjust: 100%; }
