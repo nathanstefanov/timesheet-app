@@ -18,19 +18,26 @@ export default function App({ Component, pageProps }: AppProps) {
   async function fetchProfile(userId: string) {
     setLoadingProfile(true);
     console.log('[fetchProfile] userId:', userId, 'type:', typeof userId);
-    const { data, error } = await supabase
-      .from('profiles')
-      .select('id, full_name, role')
-      .eq('id', userId)
-      .single();
-    console.log('[fetchProfile] data:', data);
-    console.log('[fetchProfile] error:', error);
-    if (error) {
-      setProfileError('Failed to fetch profile: ' + error.message);
+    try {
+      console.log('[fetchProfile] about to call supabase.from("profiles")');
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, full_name, role')
+        .eq('id', userId)
+        .single();
+      console.log('[fetchProfile] data:', data);
+      console.log('[fetchProfile] error:', error);
+      if (error) {
+        setProfileError('Failed to fetch profile: ' + error.message);
+        setProfile(null);
+      } else {
+        setProfile((data as any) ?? null);
+        setProfileError(null);
+      }
+    } catch (err) {
+      console.error('[fetchProfile] unexpected error:', err);
+      setProfileError('Unexpected error: ' + (err instanceof Error ? err.message : String(err)));
       setProfile(null);
-    } else {
-      setProfile((data as any) ?? null);
-      setProfileError(null);
     }
     setLoadingProfile(false);
   }
