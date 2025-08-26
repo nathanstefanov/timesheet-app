@@ -21,6 +21,15 @@ export default function AuthPage() {
 
   useEffect(() => { emailRef.current?.focus(); }, [mode]);
 
+  useEffect(() => {
+    // Redirect to dashboard if already logged in
+    supabase.auth.getSession().then(({ data: { session } }) => {
+      if (session?.user) {
+        r.replace('/dashboard');
+      }
+    });
+  }, []);
+
   function clearAlerts() { setErr(undefined); setMsg(undefined); }
 
   async function submit() {
