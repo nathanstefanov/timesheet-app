@@ -1,6 +1,7 @@
 // pages/dashboard.tsx
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
 import {
   startOfWeek, endOfWeek, addWeeks,
@@ -10,38 +11,73 @@ import {
 
 type Mode = 'week' | 'month' | 'all';
 
+type Shift = {
+  id: string;
+  user_id: string;
+  shift_date: string;          // 'YYYY-MM-DD'
+  shift_type: string;          // 'Setup' | 'Breakdown' | 'Shop' | ...
+  time_in: string;             // ISO
+  time_out: string;            // ISO
+  hours_worked: number;
+  pay_due: number;
+  is_paid?: boolean;
+  paid_at?: string | null;     // ISO
+};
+
 export default function Dashboard() {
-  const [user, setUser] = useState<any>(null);
-  const [shifts, setShifts] = useState<any[]>([]);
+  const router = useRouter();
+  const [user, setUser] = useState<{ id: string } | null>(null);
+  const [shifts, setShifts] = useState<Shift[]>([]);
+  const [loading, setLoading] = useState(true);
   const [mode, setMode] = useState<Mode>('week');
   const [offset, setOffset] = useState(0);
-  const [err, setErr] = useState<string>();
+  const [err, setErr] = useState<string | undefined>();
 
+  // Get current user once
   useEffect(() => {
-    supabase.auth.getUser().then(({ data }) => setUser(data.user));
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!session?.user) {
+        setUser(null);
+        setLoading(false);
+        // let _app.tsx handle redirect; do nothing here
+        return;
+      }
+      setUser({ id: session.user.id });
+    })();
   }, []);
 
+  // Compute the date range + label
   const range = useMemo(() => {
     const now = new Date();
     if (mode === 'week') {
       const base = addWeeks(now, offset);
       const start = startOfWeek(base, { weekStartsOn: 1 });
       const end = endOfWeek(base, { weekStartsOn: 1 });
-      return { start, end, label: `${format(start, 'MMM d')} – ${format(end, 'MMM d, yyyy')}` };
+      return {
+        start,
+        end,
+        label: `${format(start, 'MMM d')} – ${format(end, 'MMM d, yyyy')}`,
+        kind: 'week' as const,
+      };
     }
     if (mode === 'month') {
       const base = addMonths(now, offset);
       const start = startOfMonth(base);
       const end = endOfMonth(base);
-      return { start, end, label: format(start, 'MMMM yyyy') };
+      return { start, end, label: format(start, 'MMMM yyyy'), kind: 'month' as const };
     }
-    return { start: null as any, end: null as any, label: 'All time' };
+    return { start: null as any, end: null as any, label: 'All time', kind: 'all' as const };
   }, [mode, offset]);
 
+  // Load shifts when user/range changes
   useEffect(() => {
     if (!user) return;
+    let alive = true;
+
     (async () => {
       setErr(undefined);
+      setLoading(true);
       try {
         let q = supabase
           .from('shifts')
@@ -57,24 +93,33 @@ export default function Dashboard() {
 
         const { data, error } = await q;
         if (error) throw error;
-        setShifts(data || []);
+        if (!alive) return;
+        setShifts((data ?? []) as Shift[]);
       } catch (e: any) {
-        setErr(e.message);
+        if (!alive) return;
+        setErr(e?.message || 'Failed to load shifts.');
+      } finally {
+        if (alive) setLoading(false);
       }
     })();
-  }, [user, mode, offset, range]);
+
+    return () => { alive = false; };
+  }, [user, mode, offset, range.start, range.end]);
 
   const totals = useMemo(() => {
     const hours = shifts.reduce((s, x) => s + Number(x.hours_worked || 0), 0);
     const pay = shifts.reduce((s, x) => s + Number(x.pay_due || 0), 0);
-    const unpaid = shifts.reduce((s, x) => s + ((x as any).is_paid ? 0 : Number(x.pay_due || 0)), 0);
+    const unpaid = shifts.reduce((s, x) => s + (x.is_paid ? 0 : Number(x.pay_due || 0)), 0);
     return { hours, pay, unpaid };
   }, [shifts]);
 
   async function delShift(id: string) {
     if (!confirm('Delete this shift?')) return;
     const { error } = await supabase.from('shifts').delete().eq('id', id);
-    if (error) return alert(error.message);
+    if (error) {
+      alert(error.message);
+      return;
+    }
     setShifts(prev => prev.filter(x => x.id !== id));
   }
 
@@ -86,10 +131,15 @@ export default function Dashboard() {
         My Shifts ({mode === 'week' ? 'This Week' : mode === 'month' ? 'This Month' : 'All Time'})
       </h1>
 
-      {err && <p className="error center" role="alert">Error: {err}</p>}
+      {err && (
+        <div className="alert error" role="alert">
+          Error: {err}
+        </div>
+      )}
 
-      <div className="toolbar toolbar--center">
-        <div className="toolbar__left">
+      {/* Toolbar */}
+      <div className="toolbar toolbar--center full">
+        <div className="toolbar__left row wrap">
           <label className="sr-only" htmlFor="range-mode">Range</label>
           <select
             id="range-mode"
@@ -103,9 +153,19 @@ export default function Dashboard() {
 
           {mode !== 'all' && (
             <>
-              <button onClick={() => setOffset(n => n - 1)} aria-label="Previous range">◀ Prev</button>
-              <button onClick={() => setOffset(0)}>{mode === 'week' ? 'This week' : 'This month'}</button>
-              <button onClick={() => setOffset(n => n + 1)} disabled={offset >= 0} aria-label="Next range">Next ▶</button>
+              <button className="topbar-btn" onClick={() => setOffset(n => n - 1)} aria-label="Previous range">◀ Prev</button>
+              <button className="topbar-btn" onClick={() => setOffset(0)}>
+                {mode === 'week' ? 'This week' : 'This month'}
+              </button>
+              <button
+                className="topbar-btn"
+                onClick={() => setOffset(n => n + 1)}
+                disabled={offset >= 0}
+                aria-label="Next range"
+                title={offset >= 0 ? 'Cannot view future range' : 'Next'}
+              >
+                Next ▶
+              </button>
               <div className="muted" aria-live="polite" style={{ alignSelf: 'center' }}>
                 {range.label}
               </div>
@@ -116,14 +176,16 @@ export default function Dashboard() {
         <Link href="/new-shift" className="btn-primary">+ Log Shift</Link>
       </div>
 
+      {/* Totals */}
       <div className="totals totals--center">
-        <div className="chip chip--xl">Hours: <b>{totals.hours.toFixed(2)}</b></div>
-        <div className="chip chip--xl">Pay: <b>${totals.pay.toFixed(2)}</b></div>
-        <div className="chip chip--xl">Unpaid: <b>${totals.unpaid.toFixed(2)}</b></div>
+        <div className="chip chip--xl">Hours:&nbsp;<b>{totals.hours.toFixed(2)}</b></div>
+        <div className="chip chip--xl">Pay:&nbsp;<b>${totals.pay.toFixed(2)}</b></div>
+        <div className="chip chip--xl">Unpaid:&nbsp;<b>${totals.unpaid.toFixed(2)}</b></div>
       </div>
 
+      {/* Shifts table */}
       <div className="table-wrap">
-        <table className="table table--center table--stack">
+        <table className="table table--admin table--center table--stack">
           <thead>
             <tr>
               <th>Date</th>
@@ -133,33 +195,32 @@ export default function Dashboard() {
               <th>Hours</th>
               <th>Pay</th>
               <th>Status</th>
+              <th className="col-hide-md">Paid at</th>
               <th>Actions</th>
             </tr>
           </thead>
           <tbody>
-            {shifts.map((s) => {
-              const paid = Boolean((s as any).is_paid);
+            {!loading && shifts.map((s) => {
+              const paid = Boolean(s.is_paid);
               return (
                 <tr key={s.id}>
                   <td data-label="Date">{s.shift_date}</td>
                   <td data-label="Type">{s.shift_type}</td>
                   <td data-label="In">
-                    {new Date(s.time_in).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    {s.time_in ? new Date(s.time_in).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
                   </td>
                   <td data-label="Out">
-                    {new Date(s.time_out).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                    {s.time_out ? new Date(s.time_out).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
                   </td>
-                  <td data-label="Hours">{Number(s.hours_worked).toFixed(2)}</td>
-                  <td data-label="Pay">${Number(s.pay_due).toFixed(2)}</td>
+                  <td data-label="Hours">{Number(s.hours_worked ?? 0).toFixed(2)}</td>
+                  <td data-label="Pay">${Number(s.pay_due ?? 0).toFixed(2)}</td>
                   <td data-label="Status">
                     <span className={paid ? 'badge badge-paid' : 'badge badge-unpaid'}>
                       {paid ? 'PAID' : 'NOT PAID'}
                     </span>
-                    {(s as any).paid_at
-                      ? <span className="muted" style={{ marginLeft: 8 }}>
-                          ({new Date((s as any).paid_at).toLocaleDateString()})
-                        </span>
-                      : null}
+                  </td>
+                  <td data-label="Paid at" className="col-hide-md">
+                    {s.paid_at ? new Date(s.paid_at).toLocaleDateString() : '—'}
                   </td>
                   <td data-label="Actions">
                     <div className="actions">
@@ -170,9 +231,16 @@ export default function Dashboard() {
                 </tr>
               );
             })}
-            {shifts.length === 0 && (
+
+            {!loading && shifts.length === 0 && (
               <tr>
-                <td colSpan={8} style={{ textAlign: 'center' }} className="muted">No shifts in this range.</td>
+                <td colSpan={9} className="muted center">No shifts in this range.</td>
+              </tr>
+            )}
+
+            {loading && (
+              <tr>
+                <td colSpan={9} className="center">Loading…</td>
               </tr>
             )}
           </tbody>
@@ -182,7 +250,7 @@ export default function Dashboard() {
   );
 }
 
-/** Force SSR so Vercel does not emit /dashboard/index static HTML */
+// Force SSR to avoid static HTML emission on /dashboard
 export async function getServerSideProps() {
   return { props: {} };
 }
