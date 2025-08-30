@@ -33,18 +33,11 @@ export default function App({ Component, pageProps }: AppProps) {
       setProfileError('Unexpected error: ' + (err instanceof Error ? err.message : String(err)));
       setProfile(null);
     }
-    setLoadingProfile(false);
   }
 
   useEffect(() => {
     let cancelled = false;
     let hasRedirected = false;
-    const timeout = setTimeout(() => {
-      if (loadingProfile) {
-        setProfileError('Session/profile load timed out. This may be a Supabase RLS or network issue.');
-        setLoadingProfile(false);
-      }
-    }, 8000); // 8 seconds
 
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
@@ -60,34 +53,35 @@ export default function App({ Component, pageProps }: AppProps) {
         return;
       }
 
-      try {
-        setLoadingProfile(true);
-        await fetchProfile(session.user.id);
-      } catch (e) {
-        setProfileError('Error fetching profile.');
-      }
+      setLoadingProfile(true);
+      await fetchProfile(session.user.id);
+      if (!cancelled) setLoadingProfile(false);
+
       if (!hasRedirected && router.pathname === '/') {
         hasRedirected = true;
         router.replace('/dashboard');
       }
     })();
 
+    // ✅ Only handle SIGNED_IN / SIGNED_OUT. Ignore TOKEN_REFRESHED/USER_UPDATED.
     const { data: sub } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (cancelled) return;
-      if (!session?.user) {
+
+      if (event === 'SIGNED_OUT') {
         setProfile(null);
         setLoadingProfile(false);
         if (!hasRedirected && router.pathname !== '/') {
           hasRedirected = true;
           router.replace('/');
         }
-      } else {
+        return;
+      }
+
+      if (event === 'SIGNED_IN' && session?.user) {
         setLoadingProfile(true);
-        try {
-          await fetchProfile(session.user.id);
-        } catch (e) {
-          setProfileError('Error fetching profile.');
-        }
+        await fetchProfile(session.user.id);
+        if (!cancelled) setLoadingProfile(false);
+
         if (!hasRedirected && router.pathname === '/') {
           hasRedirected = true;
           router.replace('/dashboard');
@@ -95,24 +89,22 @@ export default function App({ Component, pageProps }: AppProps) {
       }
     });
 
-    return () => { cancelled = true; sub.subscription.unsubscribe(); clearTimeout(timeout); };
+    return () => { cancelled = true; sub.subscription.unsubscribe(); };
   }, [router]);
 
   async function handleSignOut() {
     try { await supabase.auth.signOut(); }
     finally {
-      // Hard redirect avoids Safari/Chrome cache weirdness after refreshes.
-      window.location.href = '/';
+      // SPA navigation (no full document reload)
+      router.replace('/');
     }
   }
 
-  if (profileError) {
-    // If profile fails to load, force sign out and redirect to login
-    supabase.auth.signOut().then(() => {
-      window.location.href = '/';
-    });
-    return null;
-  }
+  // ❌ Do NOT auto sign-out + reload on profileError.
+  // Show a non-blocking banner instead.
+  const errorBanner = profileError ? (
+    <div className="alert error">Profile error: {profileError}. You can try again or sign out.</div>
+  ) : null;
 
   return (
     <>
@@ -127,7 +119,6 @@ export default function App({ Component, pageProps }: AppProps) {
             <span className="brand">Timesheet</span>
           </div>
 
-          {/* Only render nav after loadingProfile is false to prevent flicker */}
           {!loadingProfile && (
             <nav className="nav">
               {profile && (
@@ -144,6 +135,8 @@ export default function App({ Component, pageProps }: AppProps) {
           )}
         </div>
       </header>
+
+      {errorBanner}
 
       <Component {...pageProps} />
     </>
