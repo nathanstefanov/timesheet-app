@@ -4,6 +4,7 @@ import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
+import type { Session, AuthChangeEvent } from '@supabase/supabase-js';
 import '../styles/globals.css';
 
 type Profile = { id: string; full_name?: string | null; role: 'employee' | 'admin' } | null;
@@ -45,7 +46,10 @@ export default function App({ Component, pageProps }: AppProps) {
     hasRedirectedRef.current = false;
 
     (async () => {
-      const { data: { session) } } = await supabase.auth.getSession();
+      // ✅ simple, typed 2-step read (avoids destructure typo & implicit any)
+      const { data } = await supabase.auth.getSession();
+      const session: Session | null = data?.session ?? null;
+
       if (cancelledRef.current) return;
 
       if (!session?.user) {
@@ -68,53 +72,55 @@ export default function App({ Component, pageProps }: AppProps) {
       }
     })();
 
-    const { data: sub } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (cancelledRef.current) return;
+    const { data: sub } = supabase.auth.onAuthStateChange(
+      async (event: AuthChangeEvent, session: Session | null) => {
+        if (cancelledRef.current) return;
 
-      // Only act on the two important events
-      if (event !== 'SIGNED_IN' && event !== 'SIGNED_OUT') return;
+        // Only act on the two important events
+        if (event !== 'SIGNED_IN' && event !== 'SIGNED_OUT') return;
 
-      // Fire-and-forget cookie sync so UI never blocks (prevents Chrome “freeze”)
-      if (!syncingRef.current) {
-        syncingRef.current = true;
-        void fetch('/api/auth/set', {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ event, session }),
-        }).finally(() => {
-          syncingRef.current = false;
-        });
-      }
-
-      if (event === 'SIGNED_OUT') {
-        setProfile(null);
-        setLoadingProfile(false);
-        if (!hasRedirectedRef.current && router.pathname !== '/') {
-          hasRedirectedRef.current = true;
-          router.replace('/');
-        }
-        return;
-      }
-
-      if (event === 'SIGNED_IN' && session?.user) {
-        setLoadingProfile(true);
-        await fetchProfile(session.user.id);
-        if (!cancelledRef.current) setLoadingProfile(false);
-
-        if (!hasRedirectedRef.current && router.pathname === '/') {
-          hasRedirectedRef.current = true;
-          router.replace('/dashboard');
+        // Fire-and-forget cookie sync so UI never blocks (prevents Chrome “freeze”)
+        if (!syncingRef.current) {
+          syncingRef.current = true;
+          void fetch('/api/auth/set', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ event, session }),
+          }).finally(() => {
+            syncingRef.current = false;
+          });
         }
 
-        // Safety net: if for any reason we didn't navigate, push to dashboard
-        setTimeout(() => {
+        if (event === 'SIGNED_OUT') {
+          setProfile(null);
+          setLoadingProfile(false);
+          if (!hasRedirectedRef.current && router.pathname !== '/') {
+            hasRedirectedRef.current = true;
+            router.replace('/');
+          }
+          return;
+        }
+
+        if (event === 'SIGNED_IN' && session?.user) {
+          setLoadingProfile(true);
+          await fetchProfile(session.user.id);
+          if (!cancelledRef.current) setLoadingProfile(false);
+
           if (!hasRedirectedRef.current && router.pathname === '/') {
             hasRedirectedRef.current = true;
             router.replace('/dashboard');
           }
-        }, 3000);
+
+          // Safety net in case navigation didn’t happen for some reason
+          setTimeout(() => {
+            if (!hasRedirectedRef.current && router.pathname === '/') {
+              hasRedirectedRef.current = true;
+              router.replace('/dashboard');
+            }
+          }, 3000);
+        }
       }
-    });
+    );
 
     return () => {
       cancelledRef.current = true;
