@@ -1,9 +1,8 @@
 // pages/admin.tsx
-import React, { useEffect, useMemo, useState, useCallback } from 'react';
-import { useRouter } from 'next/router';
-import { supabase } from '../lib/supabaseClient';
-import type { GetServerSidePropsContext } from 'next';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
+import type { GetServerSidePropsContext, GetServerSidePropsResult } from 'next';
 import { createServerSupabaseClient } from '@supabase/auth-helpers-nextjs';
+import { supabase } from '../lib/supabaseClient';
 
 type Tab = 'unpaid' | 'paid' | 'all';
 type SortBy = 'name' | 'hours' | 'pay' | 'unpaid';
@@ -13,18 +12,17 @@ type Profile = { id: string; role: 'admin' | 'employee' } | null;
 type Shift = {
   id: string;
   user_id: string;
-  shift_date: string;       // YYYY-MM-DD
+  shift_date: string;
   shift_type: string;
-  time_in?: string | null;  // ISO
-  time_out?: string | null; // ISO
+  time_in?: string | null;
+  time_out?: string | null;
   hours_worked?: number | null;
   pay_due?: number | null;
   is_paid?: boolean | null;
-  paid_at?: string | null;  // ISO
+  paid_at?: string | null;
   paid_by?: string | null;
 };
 
-// ---- Helpers ----
 function payInfo(s: Shift): { pay: number; minApplied: boolean; base: number } {
   const rate = Number((s as any).pay_rate ?? 25);
   const hours = Number(s.hours_worked ?? 0);
@@ -43,19 +41,17 @@ function venmoHref(raw?: string | null): string | null {
   return `https://venmo.com/u/${encodeURIComponent(handle)}`;
 }
 
-export default function Admin() {
-  const router = useRouter();
+type PageProps = {
+  initialSession: any;
+  initialProfile: { id: string; full_name?: string | null; role: 'admin' | 'employee' };
+};
 
-  // auth / role
-  const [me, setMe] = useState<Profile>(null);
-  const [checking, setChecking] = useState(true);
-
-  // data
+export default function Admin(_props: PageProps) {
+  // We already know the user is admin (SSR enforced), so no client role check.
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [names, setNames] = useState<Record<string, string>>({});
   const [venmo, setVenmo] = useState<Record<string, string>>({});
 
-  // ui state
   const [tab, setTab] = useState<Tab>('unpaid');
   const [sortBy, setSortBy] = useState<SortBy>('name');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
@@ -63,59 +59,7 @@ export default function Admin() {
   const [err, setErr] = useState<string | undefined>();
   const [bulkBusy, setBulkBusy] = useState<Record<string, boolean>>({});
 
-  // ---- Auth + role check (react only to sign-in/out) ----
-  useEffect(() => {
-    let alive = true;
-
-    async function loadProfile() {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!alive) return;
-
-      if (!session?.user) {
-        setMe(null);
-        setChecking(false);
-        router.replace('/');
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, role')
-        .eq('id', session.user.id)
-        .single();
-
-      if (!alive) return;
-      if (error || !data) {
-        setMe(null);
-        setChecking(false);
-        router.replace('/dashboard?msg=not_admin');
-        return;
-      }
-
-      setMe(data as any);
-      setChecking(false);
-      if ((data as any).role !== 'admin') {
-        router.replace('/dashboard?msg=not_admin');
-      }
-    }
-
-    loadProfile();
-
-    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
-        setChecking(true);
-        loadProfile();
-      }
-    });
-
-    return () => { alive = false; sub.subscription.unsubscribe(); };
-  }, [router]);
-
-  // ---- Load shifts (+ related profile info) ----
   const loadShifts = useCallback(async () => {
-    if (checking) return;
-    if (!me || me.role !== 'admin') return;
-
     setLoading(true);
     setErr(undefined);
     try {
@@ -153,11 +97,10 @@ export default function Admin() {
     } finally {
       setLoading(false);
     }
-  }, [checking, me, tab]);
+  }, [tab]);
 
   useEffect(() => { loadShifts(); }, [loadShifts]);
 
-  // refresh on focus/visibility
   useEffect(() => {
     const onFocus = () => loadShifts();
     const onVisible = () => document.visibilityState === 'visible' && loadShifts();
@@ -169,7 +112,6 @@ export default function Admin() {
     };
   }, [loadShifts]);
 
-  // ---- Totals by employee ----
   const totals = useMemo(() => {
     const m: Record<string, { id: string; name: string; hours: number; pay: number; unpaid: number; minCount: number }> = {};
     for (const s of shifts) {
@@ -186,10 +128,7 @@ export default function Admin() {
     return Object.values(m);
   }, [shifts, names]);
 
-  const unpaidTotal = useMemo(
-    () => totals.reduce((sum, t) => sum + t.unpaid, 0),
-    [totals]
-  );
+  const unpaidTotal = useMemo(() => totals.reduce((sum, t) => sum + t.unpaid, 0), [totals]);
 
   const sortedTotals = useMemo(() => {
     const a = [...totals];
@@ -205,7 +144,6 @@ export default function Admin() {
     return a;
   }, [totals, sortBy, sortDir]);
 
-  // ---- Group shifts by employee ----
   const groups = useMemo(() => {
     const m: Record<string, Shift[]> = {};
     for (const s of shifts) (m[s.user_id] ??= []).push(s);
@@ -221,12 +159,11 @@ export default function Admin() {
 
   const sectionOrder = useMemo(() => sortedTotals.map(t => t.id), [sortedTotals]);
 
-  // ---- Actions ----
   async function togglePaid(row: Shift, next: boolean) {
     const patch = {
       is_paid: next,
       paid_at: next ? new Date().toISOString() : null,
-      paid_by: next ? (me as any)!.id : null,
+      paid_by: next ? 'admin' : null,
     };
     setShifts(prev => prev.map(s => (s.id === row.id ? { ...s, ...patch } : s)));
     const { error } = await supabase.from('shifts').update(patch).eq('id', row.id);
@@ -248,7 +185,7 @@ export default function Admin() {
     const patch = {
       is_paid: next,
       paid_at: next ? new Date().toISOString() : null,
-      paid_by: next ? (me as any)!.id : null,
+      paid_by: next ? 'admin' : null,
     };
 
     setBulkBusy(b => ({ ...b, [userId]: true }));
@@ -263,7 +200,7 @@ export default function Admin() {
     setBulkBusy(b => ({ ...b, [userId]: false }));
   }
 
-  function editRow(row: Shift) { router.push(`/shift/${row.id}`); }
+  function editRow(row: Shift) { window.location.href = `/shift/${row.id}`; }
 
   async function deleteRow(row: Shift) {
     const name = names[row.user_id] || 'employee';
@@ -272,16 +209,6 @@ export default function Admin() {
     if (error) return alert(error.message);
     setShifts(prev => prev.filter(s => s.id !== row.id));
   }
-
-  if (checking) {
-    return (
-      <main className="page page--center">
-        <h1 className="page__title">Admin Dashboard</h1>
-        <p>Loading…</p>
-      </main>
-    );
-  }
-  if (!me || me.role !== 'admin') return null;
 
   return (
     <main className="page page--center">
@@ -527,32 +454,35 @@ export default function Admin() {
   );
 }
 
-/** SSR: ensure user is admin; pass initial session/profile */
-export async function getServerSideProps(ctx: GetServerSidePropsContext) {
+// --- SSR: only allow admins in, and seed _app with initialProfile ---
+export async function getServerSideProps(
+  ctx: GetServerSidePropsContext
+): Promise<GetServerSidePropsResult<PageProps>> {
   const supa = createServerSupabaseClient(ctx, {
     supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
     supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
   });
 
-  const { data: { user } } = await supa.auth.getUser();
+  const { data: userData } = await supa.auth.getUser();
+  const user = userData.user;
   if (!user) {
     return { redirect: { destination: '/', permanent: false } };
   }
 
-  const { data: prof } = await supa
+  const { data: profile } = await supa
     .from('profiles')
-    .select('id, role, full_name')
+    .select('id, full_name, role')
     .eq('id', user.id)
     .single();
 
-  if (!prof || prof.role !== 'admin') {
+  if (!profile || profile.role !== 'admin') {
     return { redirect: { destination: '/dashboard?msg=not_admin', permanent: false } };
   }
 
   return {
     props: {
-      initialSession: { user },
-      initialProfile: prof,
+      initialSession: userData,     // not strictly needed by our _app, but harmless
+      initialProfile: profile,      // this is what _app.tsx consumes
     },
   };
 }

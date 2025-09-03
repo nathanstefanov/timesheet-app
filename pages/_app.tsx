@@ -3,36 +3,26 @@ import type { AppProps } from 'next/app';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/router';
-import { SessionContextProvider } from '@supabase/auth-helpers-react';
-import type { Session, AuthChangeEvent } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabaseClient';
 import '../styles/globals.css';
 
-type Profile =
-  | {
-      id: string;
-      full_name?: string | null;
-      role: 'employee' | 'admin';
-    }
-  | null;
+type Profile = { id: string; full_name?: string | null; role: 'employee' | 'admin' } | null;
 
-function AppShell({
-  Component,
-  pageProps,
-}: AppProps & { pageProps: { initialSession?: Session | null; initialProfile?: Profile } }) {
+type MyPageProps = {
+  initialSession?: any | null;
+  initialProfile?: Profile;
+};
+
+export default function App({ Component, pageProps }: AppProps<MyPageProps>) {
   const router = useRouter();
 
-  // If you later pass profile via SSR, it will seed here. Otherwise null.
-  const { initialSession, initialProfile } = pageProps;
-
-  const [profile, setProfile] = useState<Profile>(initialProfile ?? null);
-  const [loadingProfile, setLoadingProfile] = useState<boolean>(!initialProfile);
+  // Seed from SSR so the nav renders correctly immediately
+  const [profile, setProfile] = useState<Profile>(pageProps.initialProfile ?? null);
+  const [loadingProfile, setLoadingProfile] = useState<boolean>(!pageProps.initialProfile);
   const [profileError, setProfileError] = useState<string | null>(null);
 
-  // guards for effects
-  const cancelledRef = useRef(false);
-  const hasRedirectedRef = useRef(false);
-  const syncingRef = useRef(false);
+  const cancelled = useRef(false);
+  const hasRedirected = useRef(false);
 
   async function fetchProfile(userId: string) {
     try {
@@ -41,7 +31,6 @@ function AppShell({
         .select('id, full_name, role')
         .eq('id', userId)
         .single();
-
       if (error) {
         setProfileError('Failed to fetch profile: ' + error.message);
         setProfile(null);
@@ -50,121 +39,85 @@ function AppShell({
         setProfileError(null);
       }
     } catch (err) {
-      setProfileError(
-        'Unexpected error: ' + (err instanceof Error ? err.message : String(err))
-      );
+      setProfileError('Unexpected error: ' + (err instanceof Error ? err.message : String(err)));
       setProfile(null);
     }
   }
 
   useEffect(() => {
-    cancelledRef.current = false;
-    hasRedirectedRef.current = false;
+    cancelled.current = false;
 
     (async () => {
-      // Prefer current client session; fall back to any SSR-provided one
-      const { data } = await supabase.auth.getSession();
-      const session: Session | null = data?.session ?? initialSession ?? null;
+      // If SSR already gave us a profile, don’t refetch on mount.
+      if (pageProps.initialProfile) {
+        setLoadingProfile(false);
+        return;
+      }
 
-      if (cancelledRef.current) return;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (cancelled.current) return;
 
       if (!session?.user) {
         setProfile(null);
         setLoadingProfile(false);
-        if (!hasRedirectedRef.current && router.pathname !== '/') {
-          hasRedirectedRef.current = true;
+        // Only redirect off the login page if needed
+        if (!hasRedirected.current && router.pathname !== '/') {
+          hasRedirected.current = true;
           router.replace('/');
         }
         return;
       }
 
-      // We have a user. Load profile if not provided by SSR.
-      if (!initialProfile) {
-        setLoadingProfile(true);
-        await fetchProfile(session.user.id);
-        if (!cancelledRef.current) setLoadingProfile(false);
-      } else {
-        setLoadingProfile(false);
-      }
+      setLoadingProfile(true);
+      await fetchProfile(session.user.id);
+      if (!cancelled.current) setLoadingProfile(false);
 
-      // If user is on the login page, move them to the app
-      if (!hasRedirectedRef.current && router.pathname === '/') {
-        hasRedirectedRef.current = true;
+      if (!hasRedirected.current && router.pathname === '/') {
+        hasRedirected.current = true;
         router.replace('/dashboard');
       }
     })();
 
-    // Subscribe only to sign-in/out (ignore token refresh noise)
-    const { data: sub } = supabase.auth.onAuthStateChange(
-      (event: AuthChangeEvent, session: Session | null) => {
-        if (cancelledRef.current) return;
-        if (event !== 'SIGNED_IN' && event !== 'SIGNED_OUT') return;
+    // Only care about explicit sign-in/out events (ignore token refresh)
+    const { data: sub } = supabase.auth.onAuthStateChange(async (event, session) => {
+      if (cancelled.current) return;
+      if (event !== 'SIGNED_IN' && event !== 'SIGNED_OUT') return;
 
-        // Mirror auth to httpOnly cookies for SSR APIs/pages
-        if (!syncingRef.current) {
-          syncingRef.current = true;
-          fetch('/api/auth/callback', {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ event, session }),
-          })
-            .catch(() => {
-              /* ignore */
-            })
-            .finally(() => {
-              syncingRef.current = false;
-            });
+      if (event === 'SIGNED_OUT') {
+        setProfile(null);
+        setLoadingProfile(false);
+        if (!hasRedirected.current && router.pathname !== '/') {
+          hasRedirected.current = true;
+          router.replace('/');
         }
+        return;
+      }
 
-        if (event === 'SIGNED_OUT') {
-          setProfile(null);
-          setLoadingProfile(false);
-          if (!hasRedirectedRef.current && router.pathname !== '/') {
-            hasRedirectedRef.current = true;
-            router.replace('/');
-          }
-          return;
-        }
-
-        if (event === 'SIGNED_IN' && session?.user) {
-          setLoadingProfile(true);
-          fetchProfile(session.user.id)
-            .catch(() => {
-              /* already handled in fetchProfile */
-            })
-            .finally(() => {
-              if (!cancelledRef.current) setLoadingProfile(false);
-            });
-
-          // If we’re on the login page, push into app
-          if (!hasRedirectedRef.current && router.pathname === '/') {
-            hasRedirectedRef.current = true;
-            router.replace('/dashboard');
-          }
+      if (event === 'SIGNED_IN' && session?.user) {
+        setLoadingProfile(true);
+        await fetchProfile(session.user.id);
+        if (!cancelled.current) setLoadingProfile(false);
+        if (!hasRedirected.current && router.pathname === '/') {
+          hasRedirected.current = true;
+          router.replace('/dashboard');
         }
       }
-    );
+    });
 
     return () => {
-      cancelledRef.current = true;
+      cancelled.current = true;
       sub.subscription.unsubscribe();
     };
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [router, initialSession, initialProfile]);
+  }, [router.pathname]);
 
   async function handleSignOut() {
-    try {
-      await supabase.auth.signOut();
-    } finally {
-      // SPA navigation keeps things smooth
-      router.replace('/');
-    }
+    try { await supabase.auth.signOut(); }
+    finally { router.replace('/'); }
   }
 
   const errorBanner = profileError ? (
-    <div className="alert error">
-      Profile error: {profileError}. You can keep using the app, or sign out and back in.
-    </div>
+    <div className="alert error">Profile error: {profileError}. You can try again or sign out.</div>
   ) : null;
 
   return (
@@ -180,24 +133,17 @@ function AppShell({
             <span className="brand">Timesheet</span>
           </div>
 
+          {/* Render nav only once we’ve decided the profile state */}
           {!loadingProfile && (
             <nav className="nav">
               {profile && (
                 <>
-                  <Link href="/dashboard" className="nav-link">
-                    Dashboard
-                  </Link>
-                  <Link href="/new-shift" className="nav-link">
-                    Log Shift
-                  </Link>
+                  <Link href="/dashboard" className="nav-link">Dashboard</Link>
+                  <Link href="/new-shift" className="nav-link">Log Shift</Link>
                   {profile.role === 'admin' && (
-                    <Link href="/admin" className="nav-link">
-                      Admin
-                    </Link>
+                    <Link href="/admin" className="nav-link">Admin</Link>
                   )}
-                  <button className="signout" onClick={handleSignOut}>
-                    Sign out
-                  </button>
+                  <button className="signout" onClick={handleSignOut}>Sign out</button>
                 </>
               )}
             </nav>
@@ -206,17 +152,7 @@ function AppShell({
       </header>
 
       {errorBanner}
-
       <Component {...pageProps} />
     </>
-  );
-}
-
-export default function App(props: AppProps & { pageProps: { initialSession?: Session | null; initialProfile?: Profile } }) {
-  // Provide Supabase client + (optional) SSR session to the app
-  return (
-    <SessionContextProvider supabaseClient={supabase} initialSession={props.pageProps.initialSession ?? null}>
-      <AppShell {...props} />
-    </SessionContextProvider>
   );
 }
