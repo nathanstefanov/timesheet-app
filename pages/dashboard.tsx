@@ -43,22 +43,22 @@ export default function Dashboard() {
     return () => { alive = false; };
   }, []);
 
-  // Compute date range label
-  const range = useMemo(() => {
+  // ✅ Give range a concrete type and drop the `as const` casts.
+  const range = useMemo<{ start: Date | null; end: Date | null; label: string }>(() => {
     const now = new Date();
     if (mode === 'week') {
       const base = addWeeks(now, offset);
       const start = startOfWeek(base, { weekStartsOn: 1 });
       const end = endOfWeek(base, { weekStartsOn: 1 });
-      return { start, end, label: `${format(start, 'MMM d')} – ${format(end, 'MMM d, yyyy')}` as const };
+      return { start, end, label: `${format(start, 'MMM d')} – ${format(end, 'MMM d, yyyy')}` };
     }
     if (mode === 'month') {
       const base = addMonths(now, offset);
       const start = startOfMonth(base);
       const end = endOfMonth(base);
-      return { start, end, label: format(start, 'MMMM yyyy') as const };
+      return { start, end, label: format(start, 'MMMM yyyy') };
     }
-    return { start: null as any, end: null as any, label: 'All time' as const };
+    return { start: null, end: null, label: 'All time' };
   }, [mode, offset]);
 
   // Load shifts on user/range changes
@@ -75,7 +75,7 @@ export default function Dashboard() {
           .eq('user_id', userId)
           .order('shift_date', { ascending: false });
 
-        if (mode !== 'all') {
+        if (mode !== 'all' && range.start && range.end) {
           q = q
             .gte('shift_date', format(range.start, 'yyyy-MM-dd'))
             .lte('shift_date', format(range.end, 'yyyy-MM-dd'));
@@ -109,7 +109,6 @@ export default function Dashboard() {
     setShifts(prev => prev.filter(x => x.id !== id));
   }
 
-  // Render (SSR already ensured user is present)
   return (
     <main className="page page--center">
       <h1 className="page__title">
