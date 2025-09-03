@@ -1,10 +1,12 @@
 // pages/dashboard.tsx
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
+import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
 import {
   startOfWeek, endOfWeek, addWeeks,
-  startOfMonth, endOfMonth, addMonths, format,
+  startOfMonth, endOfMonth, addMonths,
+  format
 } from 'date-fns';
 
 type Mode = 'week' | 'month' | 'all';
@@ -12,69 +14,74 @@ type Mode = 'week' | 'month' | 'all';
 type Shift = {
   id: string;
   user_id: string;
-  shift_date: string;      // YYYY-MM-DD
-  shift_type: string;      // Setup | Breakdown | Shop | ...
-  time_in: string | null;  // ISO
-  time_out: string | null; // ISO
-  hours_worked: number | null;
-  pay_due: number | null;
-  is_paid?: boolean | null;
-  paid_at?: string | null; // ISO
+  shift_date: string;          // 'YYYY-MM-DD'
+  shift_type: string;          // 'Setup' | 'Breakdown' | 'Shop' | ...
+  time_in: string;             // ISO
+  time_out: string;            // ISO
+  hours_worked: number;
+  pay_due: number;
+  is_paid?: boolean;
+  paid_at?: string | null;     // ISO
 };
 
 export default function Dashboard() {
+  const router = useRouter();
   const [user, setUser] = useState<{ id: string } | null>(null);
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [loading, setLoading] = useState(true);
-  const [err, setErr] = useState<string | undefined>();
   const [mode, setMode] = useState<Mode>('week');
   const [offset, setOffset] = useState(0);
+  const [err, setErr] = useState<string | undefined>();
 
-  // Wait for session; keep in sync with auth changes
+  // Get current user once
   useEffect(() => {
-    let alive = true;
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
-      if (!alive) return;
-      if (!session?.user) { setUser(null); setLoading(false); return; }
+      if (!session?.user) {
+        setUser(null);
+        setLoading(false);
+        // let _app.tsx handle redirect; do nothing here
+        return;
+      }
       setUser({ id: session.user.id });
     })();
-    const { data: sub } = supabase.auth.onAuthStateChange((_evt, session) => {
-      if (!alive) return;
-      setUser(session?.user ? { id: session.user.id } : null);
-    });
-    return () => { alive = false; sub.subscription.unsubscribe(); };
   }, []);
 
+  // Compute the date range + label
   const range = useMemo(() => {
     const now = new Date();
     if (mode === 'week') {
       const base = addWeeks(now, offset);
       const start = startOfWeek(base, { weekStartsOn: 1 });
       const end = endOfWeek(base, { weekStartsOn: 1 });
-      return { start, end, label: `${format(start, 'MMM d')} – ${format(end, 'MMM d, yyyy')}` };
+      return {
+        start,
+        end,
+        label: `${format(start, 'MMM d')} – ${format(end, 'MMM d, yyyy')}`,
+        kind: 'week' as const,
+      };
     }
     if (mode === 'month') {
       const base = addMonths(now, offset);
       const start = startOfMonth(base);
       const end = endOfMonth(base);
-      return { start, end, label: format(start, 'MMMM yyyy') };
+      return { start, end, label: format(start, 'MMMM yyyy'), kind: 'month' as const };
     }
-    return { start: null as any, end: null as any, label: 'All time' };
+    return { start: null as any, end: null as any, label: 'All time', kind: 'all' as const };
   }, [mode, offset]);
 
+  // Load shifts when user/range changes
   useEffect(() => {
     if (!user) return;
     let alive = true;
+
     (async () => {
       setErr(undefined);
       setLoading(true);
       try {
-        // ✅ type via .returns<Shift[]>()
         let q = supabase
           .from('shifts')
           .select('*')
-          .returns<Shift[]>()
           .eq('user_id', user.id)
           .order('shift_date', { ascending: false });
 
@@ -85,7 +92,6 @@ export default function Dashboard() {
         }
 
         const { data, error } = await q;
-        if (error?.message?.toLowerCase().includes('permission')) return; // transient during refresh
         if (error) throw error;
         if (!alive) return;
         setShifts((data ?? []) as Shift[]);
@@ -96,6 +102,7 @@ export default function Dashboard() {
         if (alive) setLoading(false);
       }
     })();
+
     return () => { alive = false; };
   }, [user, mode, offset, range.start, range.end]);
 
@@ -109,19 +116,14 @@ export default function Dashboard() {
   async function delShift(id: string) {
     if (!confirm('Delete this shift?')) return;
     const { error } = await supabase.from('shifts').delete().eq('id', id);
-    if (error) { alert(error.message); return; }
+    if (error) {
+      alert(error.message);
+      return;
+    }
     setShifts(prev => prev.filter(x => x.id !== id));
   }
 
-  if (user === null) {
-    return (
-      <main className="page page--center">
-        <h1 className="page__title">My Shifts</h1>
-        <p className="center muted">You’re not signed in.</p>
-        <Link href="/" className="btn-primary" style={{ marginTop: 12 }}>Go to Sign in</Link>
-      </main>
-    );
-  }
+  if (!user) return null;
 
   return (
     <main className="page page--center">
@@ -129,7 +131,11 @@ export default function Dashboard() {
         My Shifts ({mode === 'week' ? 'This Week' : mode === 'month' ? 'This Month' : 'All Time'})
       </h1>
 
-      {err && <div className="alert error" role="alert">Error: {err}</div>}
+      {err && (
+        <div className="alert error" role="alert">
+          Error: {err}
+        </div>
+      )}
 
       {/* Toolbar */}
       <div className="toolbar toolbar--center full">
@@ -201,14 +207,10 @@ export default function Dashboard() {
                   <td data-label="Date">{s.shift_date}</td>
                   <td data-label="Type">{s.shift_type}</td>
                   <td data-label="In">
-                    {s.time_in
-                      ? new Date(s.time_in).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                      : '—'}
+                    {s.time_in ? new Date(s.time_in).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
                   </td>
                   <td data-label="Out">
-                    {s.time_out
-                      ? new Date(s.time_out).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
-                      : '—'}
+                    {s.time_out ? new Date(s.time_out).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
                   </td>
                   <td data-label="Hours">{Number(s.hours_worked ?? 0).toFixed(2)}</td>
                   <td data-label="Pay">${Number(s.pay_due ?? 0).toFixed(2)}</td>
@@ -246,4 +248,9 @@ export default function Dashboard() {
       </div>
     </main>
   );
+}
+
+// Force SSR to avoid static HTML emission on /dashboard
+export async function getServerSideProps() {
+  return { props: {} };
 }
