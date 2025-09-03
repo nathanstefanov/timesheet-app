@@ -2,6 +2,8 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
+import type { GetServerSidePropsContext } from 'next';
+import { createServerSupabaseClient } from '@supabase/auth-helpers-nextjs';
 
 type Tab = 'unpaid' | 'paid' | 'all';
 type SortBy = 'name' | 'hours' | 'pay' | 'unpaid';
@@ -104,7 +106,6 @@ export default function Admin() {
         setChecking(true);
         loadProfile();
       }
-      // ignore TOKEN_REFRESHED/USER_UPDATED
     });
 
     return () => { alive = false; sub.subscription.unsubscribe(); };
@@ -526,7 +527,32 @@ export default function Admin() {
   );
 }
 
-/** Force SSR so Vercel does not emit /admin/index static HTML */
-export async function getServerSideProps() {
-  return { props: {} };
+/** SSR: ensure user is admin; pass initial session/profile */
+export async function getServerSideProps(ctx: GetServerSidePropsContext) {
+  const supa = createServerSupabaseClient(ctx, {
+    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  });
+
+  const { data: { user } } = await supa.auth.getUser();
+  if (!user) {
+    return { redirect: { destination: '/', permanent: false } };
+  }
+
+  const { data: prof } = await supa
+    .from('profiles')
+    .select('id, role, full_name')
+    .eq('id', user.id)
+    .single();
+
+  if (!prof || prof.role !== 'admin') {
+    return { redirect: { destination: '/dashboard?msg=not_admin', permanent: false } };
+  }
+
+  return {
+    props: {
+      initialSession: { user },
+      initialProfile: prof,
+    },
+  };
 }

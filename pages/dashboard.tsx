@@ -1,31 +1,31 @@
 // pages/dashboard.tsx
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
 import {
   startOfWeek, endOfWeek, addWeeks,
   startOfMonth, endOfMonth, addMonths,
   format
 } from 'date-fns';
+import type { GetServerSidePropsContext } from 'next';
+import { createServerSupabaseClient } from '@supabase/auth-helpers-nextjs';
 
 type Mode = 'week' | 'month' | 'all';
 
 type Shift = {
   id: string;
   user_id: string;
-  shift_date: string;          // 'YYYY-MM-DD'
-  shift_type: string;          // 'Setup' | 'Breakdown' | 'Shop' | ...
-  time_in: string;             // ISO
-  time_out: string;            // ISO
-  hours_worked: number;
-  pay_due: number;
-  is_paid?: boolean;
-  paid_at?: string | null;     // ISO
+  shift_date: string;   // 'YYYY-MM-DD'
+  shift_type: string;   // 'Setup' | 'Breakdown' | 'Shop' | ...
+  time_in: string | null;   // ISO
+  time_out: string | null;  // ISO
+  hours_worked: number | null;
+  pay_due: number | null;
+  is_paid?: boolean | null;
+  paid_at?: string | null;  // ISO
 };
 
 export default function Dashboard() {
-  const router = useRouter();
   const [user, setUser] = useState<{ id: string } | null>(null);
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [loading, setLoading] = useState(true);
@@ -40,7 +40,6 @@ export default function Dashboard() {
       if (!session?.user) {
         setUser(null);
         setLoading(false);
-        // let _app.tsx handle redirect; do nothing here
         return;
       }
       setUser({ id: session.user.id });
@@ -54,20 +53,15 @@ export default function Dashboard() {
       const base = addWeeks(now, offset);
       const start = startOfWeek(base, { weekStartsOn: 1 });
       const end = endOfWeek(base, { weekStartsOn: 1 });
-      return {
-        start,
-        end,
-        label: `${format(start, 'MMM d')} – ${format(end, 'MMM d, yyyy')}`,
-        kind: 'week' as const,
-      };
+      return { start, end, label: `${format(start, 'MMM d')} – ${format(end, 'MMM d, yyyy')}` };
     }
     if (mode === 'month') {
       const base = addMonths(now, offset);
       const start = startOfMonth(base);
       const end = endOfMonth(base);
-      return { start, end, label: format(start, 'MMMM yyyy'), kind: 'month' as const };
+      return { start, end, label: format(start, 'MMMM yyyy') };
     }
-    return { start: null as any, end: null as any, label: 'All time', kind: 'all' as const };
+    return { start: null as any, end: null as any, label: 'All time' };
   }, [mode, offset]);
 
   // Load shifts when user/range changes
@@ -250,7 +244,28 @@ export default function Dashboard() {
   );
 }
 
-// Force SSR to avoid static HTML emission on /dashboard
-export async function getServerSideProps() {
-  return { props: {} };
+// ---- SSR: provide initialSession + initialProfile to _app.tsx ----
+export async function getServerSideProps(ctx: GetServerSidePropsContext) {
+  const supa = createServerSupabaseClient(ctx, {
+    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
+    supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
+  });
+
+  const { data: { session } } = await supa.auth.getUser();
+  if (!session?.user) {
+    return { redirect: { destination: '/', permanent: false } };
+  }
+
+  const { data: profile } = await supa
+    .from('profiles')
+    .select('id, full_name, role')
+    .eq('id', session.user.id)
+    .single();
+
+  return {
+    props: {
+      initialSession: session,
+      initialProfile: profile ?? null,
+    },
+  };
 }
