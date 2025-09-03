@@ -300,16 +300,6 @@ export default function Dashboard(_props: Props) {
   );
 }
 
-// ---- SSR: provide initialSession + initialProfile to _app.tsx ----
-export async function getServerSideProps(
-  ctx: GetServerSidePropsContext
-): Promise<GetServerSidePropsResult<Props>> {
-  // Create a server-side supabase client bound to cookies
-  const supa = createServerSupabaseClient(ctx, {
-    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  });
-
   // ✅ Use getSession() here (NOT getUser()) so we can read session directly
   const {
     data: { session },
