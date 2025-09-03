@@ -11,45 +11,38 @@ import {
   addMonths,
   format,
 } from 'date-fns';
-import type { GetServerSidePropsContext, GetServerSidePropsResult } from 'next';
-import { createServerSupabaseClient } from '@supabase/auth-helpers-nextjs';
-import type { Session } from '@supabase/supabase-js';
 
 type Mode = 'week' | 'month' | 'all';
 
 type Shift = {
   id: string;
   user_id: string;
-  shift_date: string;     // 'YYYY-MM-DD'
-  shift_type: string;     // 'Setup' | 'Breakdown' | 'Shop' | ...
-  time_in: string | null; // ISO
-  time_out: string | null;// ISO
+  shift_date: string;      // YYYY-MM-DD
+  shift_type: string;      // Setup | Breakdown | Shop | ...
+  time_in: string | null;  // ISO
+  time_out: string | null; // ISO
   hours_worked: number | null;
   pay_due: number | null;
   is_paid?: boolean | null;
-  paid_at?: string | null;// ISO
+  paid_at?: string | null; // ISO
 };
 
-type Props = {
-  initialSession: Session;
-  initialProfile: { id: string; full_name?: string | null; role: 'employee' | 'admin' } | null;
-};
-
-export default function Dashboard(_props: Props) {
+export default function Dashboard() {
   const [user, setUser] = useState<{ id: string } | null>(null);
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState<string | undefined>();
+
   const [mode, setMode] = useState<Mode>('week');
   const [offset, setOffset] = useState(0);
-  const [err, setErr] = useState<string | undefined>();
 
   // Get current user once (client)
   useEffect(() => {
     let alive = true;
     (async () => {
-      const { data } = await supabase.auth.getSession();
+      const { data: { session } } = await supabase.auth.getSession();
       if (!alive) return;
-      const session = data?.session ?? null;
+
       if (!session?.user) {
         setUser(null);
         setLoading(false);
@@ -57,9 +50,8 @@ export default function Dashboard(_props: Props) {
       }
       setUser({ id: session.user.id });
     })();
-    return () => {
-      alive = false;
-    };
+
+    return () => { alive = false; };
   }, []);
 
   // Compute the date range + label
@@ -113,9 +105,7 @@ export default function Dashboard(_props: Props) {
       }
     })();
 
-    return () => {
-      alive = false;
-    };
+    return () => { alive = false; };
   }, [user, mode, offset, range.start, range.end]);
 
   const totals = useMemo(() => {
@@ -132,10 +122,19 @@ export default function Dashboard(_props: Props) {
       alert(error.message);
       return;
     }
-    setShifts((prev) => prev.filter((x) => x.id !== id));
+    setShifts(prev => prev.filter(x => x.id !== id));
   }
 
-  if (!user) return null;
+  // If not signed in, show a gentle prompt (no redirect loop)
+  if (user === null) {
+    return (
+      <main className="page page--center">
+        <h1 className="page__title">My Shifts</h1>
+        <p className="center muted">You’re not signed in.</p>
+        <Link href="/" className="btn-primary" style={{ marginTop: 12 }}>Go to Sign in</Link>
+      </main>
+    );
+  }
 
   return (
     <main className="page page--center">
@@ -143,25 +142,16 @@ export default function Dashboard(_props: Props) {
         My Shifts ({mode === 'week' ? 'This Week' : mode === 'month' ? 'This Month' : 'All Time'})
       </h1>
 
-      {err && (
-        <div className="alert error" role="alert">
-          Error: {err}
-        </div>
-      )}
+      {err && <div className="alert error" role="alert">Error: {err}</div>}
 
       {/* Toolbar */}
       <div className="toolbar toolbar--center full">
         <div className="toolbar__left row wrap">
-          <label className="sr-only" htmlFor="range-mode">
-            Range
-          </label>
+          <label className="sr-only" htmlFor="range-mode">Range</label>
           <select
             id="range-mode"
             value={mode}
-            onChange={(e) => {
-              setMode(e.target.value as Mode);
-              setOffset(0);
-            }}
+            onChange={(e) => { setMode(e.target.value as Mode); setOffset(0); }}
           >
             <option value="week">This week</option>
             <option value="month">This month</option>
@@ -170,19 +160,13 @@ export default function Dashboard(_props: Props) {
 
           {mode !== 'all' && (
             <>
-              <button
-                className="topbar-btn"
-                onClick={() => setOffset((n) => n - 1)}
-                aria-label="Previous range"
-              >
-                ◀ Prev
-              </button>
+              <button className="topbar-btn" onClick={() => setOffset(n => n - 1)} aria-label="Previous range">◀ Prev</button>
               <button className="topbar-btn" onClick={() => setOffset(0)}>
                 {mode === 'week' ? 'This week' : 'This month'}
               </button>
               <button
                 className="topbar-btn"
-                onClick={() => setOffset((n) => n + 1)}
+                onClick={() => setOffset(n => n + 1)}
                 disabled={offset >= 0}
                 aria-label="Next range"
                 title={offset >= 0 ? 'Cannot view future range' : 'Next'}
@@ -196,22 +180,14 @@ export default function Dashboard(_props: Props) {
           )}
         </div>
 
-        <Link href="/new-shift" className="btn-primary">
-          + Log Shift
-        </Link>
+        <Link href="/new-shift" className="btn-primary">+ Log Shift</Link>
       </div>
 
       {/* Totals */}
       <div className="totals totals--center">
-        <div className="chip chip--xl">
-          Hours:&nbsp;<b>{totals.hours.toFixed(2)}</b>
-        </div>
-        <div className="chip chip--xl">
-          Pay:&nbsp;<b>${totals.pay.toFixed(2)}</b>
-        </div>
-        <div className="chip chip--xl">
-          Unpaid:&nbsp;<b>${totals.unpaid.toFixed(2)}</b>
-        </div>
+        <div className="chip chip--xl">Hours:&nbsp;<b>{totals.hours.toFixed(2)}</b></div>
+        <div className="chip chip--xl">Pay:&nbsp;<b>${totals.pay.toFixed(2)}</b></div>
+        <div className="chip chip--xl">Unpaid:&nbsp;<b>${totals.unpaid.toFixed(2)}</b></div>
       </div>
 
       {/* Shifts table */}
@@ -231,66 +207,51 @@ export default function Dashboard(_props: Props) {
             </tr>
           </thead>
           <tbody>
-            {!loading &&
-              shifts.map((s) => {
-                const paid = Boolean(s.is_paid);
-                return (
-                  <tr key={s.id}>
-                    <td data-label="Date">{s.shift_date}</td>
-                    <td data-label="Type">{s.shift_type}</td>
-                    <td data-label="In">
-                      {s.time_in
-                        ? new Date(s.time_in).toLocaleTimeString([], {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })
-                        : '—'}
-                    </td>
-                    <td data-label="Out">
-                      {s.time_out
-                        ? new Date(s.time_out).toLocaleTimeString([], {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })
-                        : '—'}
-                    </td>
-                    <td data-label="Hours">{Number(s.hours_worked ?? 0).toFixed(2)}</td>
-                    <td data-label="Pay">${Number(s.pay_due ?? 0).toFixed(2)}</td>
-                    <td data-label="Status">
-                      <span className={paid ? 'badge badge-paid' : 'badge badge-unpaid'}>
-                        {paid ? 'PAID' : 'NOT PAID'}
-                      </span>
-                    </td>
-                    <td data-label="Paid at" className="col-hide-md">
-                      {s.paid_at ? new Date(s.paid_at).toLocaleDateString() : '—'}
-                    </td>
-                    <td data-label="Actions">
-                      <div className="actions">
-                        <Link href={`/shift/${s.id}`} className="btn-edit">
-                          Edit
-                        </Link>
-                        <button className="btn-delete" onClick={() => delShift(s.id)}>
-                          Delete
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
+            {!loading && shifts.map((s) => {
+              const paid = Boolean(s.is_paid);
+              return (
+                <tr key={s.id}>
+                  <td data-label="Date">{s.shift_date}</td>
+                  <td data-label="Type">{s.shift_type}</td>
+                  <td data-label="In">
+                    {s.time_in
+                      ? new Date(s.time_in).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                      : '—'}
+                  </td>
+                  <td data-label="Out">
+                    {s.time_out
+                      ? new Date(s.time_out).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })
+                      : '—'}
+                  </td>
+                  <td data-label="Hours">{Number(s.hours_worked ?? 0).toFixed(2)}</td>
+                  <td data-label="Pay">${Number(s.pay_due ?? 0).toFixed(2)}</td>
+                  <td data-label="Status">
+                    <span className={paid ? 'badge badge-paid' : 'badge badge-unpaid'}>
+                      {paid ? 'PAID' : 'NOT PAID'}
+                    </span>
+                  </td>
+                  <td data-label="Paid at" className="col-hide-md">
+                    {s.paid_at ? new Date(s.paid_at).toLocaleDateString() : '—'}
+                  </td>
+                  <td data-label="Actions">
+                    <div className="actions">
+                      <Link href={`/shift/${s.id}`} className="btn-edit">Edit</Link>
+                      <button className="btn-delete" onClick={() => delShift(s.id)}>Delete</button>
+                    </div>
+                  </td>
+                </tr>
+              );
+            })}
 
             {!loading && shifts.length === 0 && (
               <tr>
-                <td colSpan={9} className="muted center">
-                  No shifts in this range.
-                </td>
+                <td colSpan={9} className="muted center">No shifts in this range.</td>
               </tr>
             )}
 
             {loading && (
               <tr>
-                <td colSpan={9} className="center">
-                  Loading…
-                </td>
+                <td colSpan={9} className="center">Loading…</td>
               </tr>
             )}
           </tbody>
@@ -298,20 +259,4 @@ export default function Dashboard(_props: Props) {
       </div>
     </main>
   );
-}
-
-  // ✅ Use getSession() here (NOT getUser()) so we can read session directly
-
-  const { data: profile } = await supa
-    .from('profiles')
-    .select('id, full_name, role')
-    .eq('id', session.user.id)
-    .single();
-
-  return {
-    props: {
-      initialSession: session,
-      initialProfile: (profile as any) ?? null,
-    },
-  };
 }
