@@ -31,7 +31,6 @@ function payInfo(s: Shift): { pay: number; minApplied: boolean; base: number } {
   const pay = isBreakdown ? Math.max(base, 50) : base;
   return { pay, minApplied: isBreakdown && base < 50, base };
 }
-
 function venmoHref(raw?: string | null): string | null {
   if (!raw) return null;
   const v = raw.trim();
@@ -72,8 +71,7 @@ export default function Admin() {
       if (!session?.user) {
         setMe(null);
         setChecking(false);
-        // Let _app.tsx own the redirect
-        return;
+        return; // let _app.tsx route
       }
 
       const { data, error } = await supabase
@@ -92,9 +90,7 @@ export default function Admin() {
 
       setMe(data as any);
       setChecking(false);
-      if ((data as any).role !== 'admin') {
-        router.replace('/dashboard?msg=not_admin');
-      }
+      if ((data as any).role !== 'admin') router.replace('/dashboard?msg=not_admin');
     }
 
     loadProfile();
@@ -123,8 +119,13 @@ export default function Admin() {
     setLoading(true);
     setErr(undefined);
     try {
-      // ✨ FIX: put the generic on select, not from
-      let q = supabase.from('shifts').select<Shift>('*').order('shift_date', { ascending: false });
+      // ✅ put row type on .returns<Shift[]>(), not on select<>
+      let q = supabase
+        .from('shifts')
+        .select('*')
+        .returns<Shift[]>()
+        .order('shift_date', { ascending: false });
+
       if (tab === 'unpaid') q = q.eq('is_paid', false);
       if (tab === 'paid') q = q.eq('is_paid', true);
 
@@ -154,9 +155,7 @@ export default function Admin() {
         setVenmo({});
       }
     } catch (e: any) {
-      if (e?.message?.toLowerCase().includes('permission')) {
-        return;
-      }
+      if (e?.message?.toLowerCase().includes('permission')) return; // transient during refresh
       setErr(e?.message || 'Failed to load shifts.');
     } finally {
       setLoading(false);
@@ -194,10 +193,7 @@ export default function Admin() {
     return Object.values(m);
   }, [shifts, names]);
 
-  const unpaidTotal = useMemo(
-    () => totals.reduce((sum, t) => sum + t.unpaid, 0),
-    [totals]
-  );
+  const unpaidTotal = useMemo(() => totals.reduce((sum, t) => sum + t.unpaid, 0), [totals]);
 
   const sortedTotals = useMemo(() => {
     const a = [...totals];
