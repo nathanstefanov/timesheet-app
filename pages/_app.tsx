@@ -36,11 +36,11 @@ export default function App({ Component, pageProps }: AppProps) {
     if (mounted.current) return;
     mounted.current = true;
 
-    let unsub: { subscription: { unsubscribe(): void } } | null = null;
     let alive = true;
+    // hold just the Subscription, not the wrapper object
+    let subscription: { unsubscribe(): void } | null = null;
 
     (async () => {
-      // First bootstrap read from safe storage
       const { data } = await supabase.auth.getSession();
       const session = data?.session ?? null;
       if (!alive) return;
@@ -56,21 +56,25 @@ export default function App({ Component, pageProps }: AppProps) {
       }
     })();
 
-    unsub = supabase.auth.onAuthStateChange(async (event, session) => {
+    // NOTE: keep only data.subscription
+    const { data: sub } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (!alive) return;
+
       if (event === 'SIGNED_OUT') {
         setProfile(null);
         if (router.pathname !== '/') router.replace('/');
       }
+
       if (event === 'SIGNED_IN' && session?.user) {
         await loadProfile(session.user.id);
         if (router.pathname === '/') router.replace('/dashboard');
       }
     });
+    subscription = sub.subscription;
 
     return () => {
       alive = false;
-      unsub?.subscription.unsubscribe();
+      subscription?.unsubscribe();
     };
   }, [router]);
 
