@@ -260,7 +260,9 @@ export default function Admin() {
       !confirm(
         `Are you sure you want to ${next ? 'mark ALL PAID' : 'mark ALL UNPAID'} for ${group.name}? (${toChange.length} shift${toChange.length > 1 ? 's' : ''})`
       )
+    ) {
       return;
+    }
 
     const patch = {
       is_paid: next,
