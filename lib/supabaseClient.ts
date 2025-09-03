@@ -10,10 +10,10 @@ export const supabase = createClient(url, anon, {
     autoRefreshToken: true,
     detectSessionInUrl: true,
     flowType: 'pkce',
-    // Use default storage for best compatibility
+    // ↓ This avoids cross-tab broadcast churn/races
+    multiTab: false,
   },
   global: {
-    fetch: (input, init) =>
-      fetch(input as RequestInfo, { ...init, cache: 'no-store' }),
+    fetch: (input, init) => fetch(input as RequestInfo, { ...init, cache: 'no-store' }),
   },
 });

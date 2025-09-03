@@ -1,9 +1,9 @@
 // pages/_app.tsx
 import type { AppProps } from 'next/app';
 import Link from 'next/link';
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/router';
-import { supabase } from '../lib/supabaseClient'; // keep using your browser client
+import { supabase } from '../lib/supabaseClient';
 import '../styles/globals.css';
 
 type Profile = { id: string; full_name?: string | null; role: 'employee' | 'admin' } | null;
@@ -14,6 +14,11 @@ export default function App({ Component, pageProps }: AppProps) {
   const [profile, setProfile] = useState<Profile>(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [profileError, setProfileError] = useState<string | null>(null);
+
+  // Refs to avoid double-effects / race conditions in Strict Mode and multi-tab quirks
+  const cancelledRef = useRef(false);
+  const hasRedirectedRef = useRef(false);
+  const syncingRef = useRef(false); // prevent overlapping /api/auth/set calls
 
   async function fetchProfile(userId: string) {
     try {
@@ -36,18 +41,18 @@ export default function App({ Component, pageProps }: AppProps) {
   }
 
   useEffect(() => {
-    let cancelled = false;
-    let hasRedirected = false;
+    cancelledRef.current = false;
+    hasRedirectedRef.current = false;
 
     (async () => {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (cancelled) return;
+      const { data: { session) } } = await supabase.auth.getSession();
+      if (cancelledRef.current) return;
 
       if (!session?.user) {
         setProfile(null);
         setLoadingProfile(false);
-        if (!hasRedirected && router.pathname !== '/') {
-          hasRedirected = true;
+        if (!hasRedirectedRef.current && router.pathname !== '/') {
+          hasRedirectedRef.current = true;
           router.replace('/');
         }
         return;
@@ -55,31 +60,37 @@ export default function App({ Component, pageProps }: AppProps) {
 
       setLoadingProfile(true);
       await fetchProfile(session.user.id);
-      if (!cancelled) setLoadingProfile(false);
+      if (!cancelledRef.current) setLoadingProfile(false);
 
-      if (!hasRedirected && router.pathname === '/') {
-        hasRedirected = true;
+      if (!hasRedirectedRef.current && router.pathname === '/') {
+        hasRedirectedRef.current = true;
         router.replace('/dashboard');
       }
     })();
 
-    // ✅ Main auth subscription
     const { data: sub } = supabase.auth.onAuthStateChange(async (event, session) => {
-      if (cancelled) return;
+      if (cancelledRef.current) return;
 
-      // --- NEW: mirror auth events to server cookies ---
-      await fetch('/api/auth/set', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ event, session }),
-      });
+      // Only act on the two important events
+      if (event !== 'SIGNED_IN' && event !== 'SIGNED_OUT') return;
 
-      // --- Your existing logic ---
+      // Fire-and-forget cookie sync so UI never blocks (prevents Chrome “freeze”)
+      if (!syncingRef.current) {
+        syncingRef.current = true;
+        void fetch('/api/auth/set', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ event, session }),
+        }).finally(() => {
+          syncingRef.current = false;
+        });
+      }
+
       if (event === 'SIGNED_OUT') {
         setProfile(null);
         setLoadingProfile(false);
-        if (!hasRedirected && router.pathname !== '/') {
-          hasRedirected = true;
+        if (!hasRedirectedRef.current && router.pathname !== '/') {
+          hasRedirectedRef.current = true;
           router.replace('/');
         }
         return;
@@ -88,16 +99,27 @@ export default function App({ Component, pageProps }: AppProps) {
       if (event === 'SIGNED_IN' && session?.user) {
         setLoadingProfile(true);
         await fetchProfile(session.user.id);
-        if (!cancelled) setLoadingProfile(false);
+        if (!cancelledRef.current) setLoadingProfile(false);
 
-        if (!hasRedirected && router.pathname === '/') {
-          hasRedirected = true;
+        if (!hasRedirectedRef.current && router.pathname === '/') {
+          hasRedirectedRef.current = true;
           router.replace('/dashboard');
         }
+
+        // Safety net: if for any reason we didn't navigate, push to dashboard
+        setTimeout(() => {
+          if (!hasRedirectedRef.current && router.pathname === '/') {
+            hasRedirectedRef.current = true;
+            router.replace('/dashboard');
+          }
+        }, 3000);
       }
     });
 
-    return () => { cancelled = true; sub.subscription.unsubscribe(); };
+    return () => {
+      cancelledRef.current = true;
+      sub.subscription.unsubscribe();
+    };
   }, [router]);
 
   async function handleSignOut() {
