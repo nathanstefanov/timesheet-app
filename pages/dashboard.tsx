@@ -36,7 +36,7 @@ export default function Dashboard() {
   const [mode, setMode] = useState<Mode>('week');
   const [offset, setOffset] = useState(0);
 
-  // Get current user once (client)
+  // Get current user once (client) — wait for session
   useEffect(() => {
     let alive = true;
     (async () => {
@@ -51,7 +51,17 @@ export default function Dashboard() {
       setUser({ id: session.user.id });
     })();
 
-    return () => { alive = false; };
+    // Update if auth state changes (e.g., token refreshed)
+    const { data: sub } = supabase.auth.onAuthStateChange((_evt, session) => {
+      if (!alive) return;
+      if (session?.user) {
+        setUser({ id: session.user.id });
+      } else {
+        setUser(null);
+      }
+    });
+
+    return () => { alive = false; sub.subscription.unsubscribe(); };
   }, []);
 
   // Compute the date range + label
@@ -82,7 +92,7 @@ export default function Dashboard() {
       setLoading(true);
       try {
         let q = supabase
-          .from('shifts')
+          .from<Shift>('shifts')
           .select('*')
           .eq('user_id', user.id)
           .order('shift_date', { ascending: false });
@@ -94,6 +104,10 @@ export default function Dashboard() {
         }
 
         const { data, error } = await q;
+        if (error?.message?.toLowerCase().includes('permission')) {
+          // Session may still be restoring; skip and next effect tick will refetch
+          return;
+        }
         if (error) throw error;
         if (!alive) return;
         setShifts((data ?? []) as Shift[]);

@@ -11,7 +11,7 @@ type Profile = { id: string; full_name?: string | null; role: 'employee' | 'admi
 export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [checking, setChecking] = useState(true);
+  const [checking, setChecking] = useState(true); // gate UI + redirects until initial session resolves
   const [err, setErr] = useState<string | null>(null);
 
   const mounted = useRef(false);
@@ -22,14 +22,29 @@ export default function App({ Component, pageProps }: AppProps) {
       .from('profiles')
       .select('id, full_name, role')
       .eq('id', userId)
-      .single();
+      .maybeSingle(); // ✅ doesn't throw if RLS/session is still warming up
     if (error) {
       setErr(error.message);
       setProfile(null);
-    } else {
-      setErr(null);
-      setProfile(data as Profile);
+      return;
     }
+    if (!data) {
+      setErr('Profile not found');
+      setProfile(null);
+      return;
+    }
+    setErr(null);
+    setProfile(data as Profile);
+  }
+
+  function handleSession(session: import('@supabase/supabase-js').Session | null) {
+    if (!session?.user) {
+      setProfile(null);
+      if (!checking && router.pathname !== '/') router.replace('/');
+      return;
+    }
+    fetchProfile(session.user.id);
+    if (!checking && router.pathname === '/') router.replace('/dashboard');
   }
 
   useEffect(() => {
@@ -40,35 +55,21 @@ export default function App({ Component, pageProps }: AppProps) {
 
     (async () => {
       const { data } = await supabase.auth.getSession();
-      const session = data?.session ?? null;
-
       if (!alive) return;
-
-      if (!session?.user) {
-        setProfile(null);
-        setChecking(false);
-        if (router.pathname !== '/') router.replace('/');
-        return;
-      }
-
-      await fetchProfile(session.user.id);
-      setChecking(false);
-      if (router.pathname === '/') router.replace('/dashboard');
+      handleSession(data?.session ?? null);
+      setChecking(false); // ✅ initial session resolved
     })();
 
-    // Subscribe ONCE. Only react to SIGNED_IN / SIGNED_OUT (no loops on refresh)
-    const { data: sub } = supabase.auth.onAuthStateChange(async (event, session) => {
+    // React to all session-changing events (refreshes included)
+    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       if (!alive) return;
-
-      if (event === 'SIGNED_OUT') {
-        setProfile(null);
-        if (router.pathname !== '/') router.replace('/');
-        return;
-      }
-
-      if (event === 'SIGNED_IN' && session?.user) {
-        await fetchProfile(session.user.id);
-        if (router.pathname === '/') router.replace('/dashboard');
+      if (
+        event === 'SIGNED_IN' ||
+        event === 'SIGNED_OUT' ||
+        event === 'TOKEN_REFRESHED' ||
+        event === 'USER_UPDATED'
+      ) {
+        handleSession(session ?? null);
       }
     });
     subRef.current = sub.subscription;
@@ -77,7 +78,7 @@ export default function App({ Component, pageProps }: AppProps) {
       alive = false;
       subRef.current?.unsubscribe();
     };
-  }, [router]);
+  }, [router, checking]);
 
   async function handleSignOut() {
     await supabase.auth.signOut();
@@ -97,6 +98,7 @@ export default function App({ Component, pageProps }: AppProps) {
             <span className="brand">Timesheet</span>
           </div>
 
+          {/* While checking, don't render nav to avoid flicker */}
           {!checking && profile && (
             <nav className="nav">
               <Link href="/dashboard" className="nav-link">Dashboard</Link>

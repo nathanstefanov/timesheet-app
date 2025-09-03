@@ -61,7 +61,7 @@ export default function Admin() {
   const [err, setErr] = useState<string | undefined>();
   const [bulkBusy, setBulkBusy] = useState<Record<string, boolean>>({});
 
-  // ---- Auth + role check (react only to sign-in/out) ----
+  // ---- Auth + role check (react to sign-in/out/refresh) ----
   useEffect(() => {
     let alive = true;
 
@@ -72,7 +72,7 @@ export default function Admin() {
       if (!session?.user) {
         setMe(null);
         setChecking(false);
-        router.replace('/');
+        // Let _app.tsx own the redirect
         return;
       }
 
@@ -80,7 +80,7 @@ export default function Admin() {
         .from('profiles')
         .select('id, role')
         .eq('id', session.user.id)
-        .single();
+        .maybeSingle(); // ✅ tolerant during warmup
 
       if (!alive) return;
       if (error || !data) {
@@ -100,11 +100,16 @@ export default function Admin() {
     loadProfile();
 
     const { data: sub } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+      if (!alive) return;
+      if (
+        event === 'SIGNED_IN' ||
+        event === 'SIGNED_OUT' ||
+        event === 'TOKEN_REFRESHED' ||
+        event === 'USER_UPDATED'
+      ) {
         setChecking(true);
         loadProfile();
       }
-      // ignore TOKEN_REFRESHED/USER_UPDATED
     });
 
     return () => { alive = false; sub.subscription.unsubscribe(); };
@@ -118,7 +123,7 @@ export default function Admin() {
     setLoading(true);
     setErr(undefined);
     try {
-      let q = supabase.from('shifts').select('*').order('shift_date', { ascending: false });
+      let q = supabase.from<Shift>('shifts').select('*').order('shift_date', { ascending: false });
       if (tab === 'unpaid') q = q.eq('is_paid', false);
       if (tab === 'paid') q = q.eq('is_paid', true);
 
@@ -148,6 +153,10 @@ export default function Admin() {
         setVenmo({});
       }
     } catch (e: any) {
+      // If refresh hit mid-query, let the next tick refetch
+      if (e?.message?.toLowerCase().includes('permission')) {
+        return;
+      }
       setErr(e?.message || 'Failed to load shifts.');
     } finally {
       setLoading(false);
