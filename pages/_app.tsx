@@ -3,16 +3,49 @@ import type { AppProps } from 'next/app';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/router';
-import { SessionContextProvider, useSessionContext } from '@supabase/auth-helpers-react';
+import { SessionContextProvider } from '@supabase/auth-helpers-react';
 import type { Session, AuthChangeEvent } from '@supabase/supabase-js';
 import { supabase } from '../lib/supabaseClient';
 import '../styles/globals.css';
 
 type Profile = { id: string; full_name?: string | null; role: 'employee' | 'admin' } | null;
 
-function AppShell({ Component, pageProps }: AppProps & {
-  pageProps: { initialSession?: Session | null; initialProfile?: Profile }
-}) {
+// ---------- helpers to harden Chrome reload/tab-change ----------
+async function waitForSessionReady(timeoutMs = 3500): Promise<Session | null> {
+  const start = Date.now();
+  while (Date.now() - start < timeoutMs) {
+    const { data } = await supabase.auth.getSession();
+    const session = data?.session ?? null;
+    if (session?.user) return session;
+    // short pause before next poll
+    await new Promise((r) => setTimeout(r, 120));
+  }
+  return null; // listener will still handle SIGNED_IN later
+}
+
+async function fetchProfileWithRetry(userId: string, attempts = 5) {
+  let lastErr: any = null;
+  for (let i = 0; i < attempts; i++) {
+    const { data, error } = await supabase
+      .from('profiles')
+      .select('id, full_name, role')
+      .eq('id', userId)
+      .single();
+
+    if (!error && data) return { data, error: null };
+
+    lastErr = error;
+    // backoff helps if RLS denies until JWT is fully ready
+    await new Promise((r) => setTimeout(r, 200 + i * 200));
+  }
+  return { data: null, error: lastErr };
+}
+// ----------------------------------------------------------------
+
+function AppShell({
+  Component,
+  pageProps,
+}: AppProps & { pageProps: { initialSession?: Session | null; initialProfile?: Profile } }) {
   const router = useRouter();
   const { initialSession, initialProfile } = pageProps;
 
@@ -22,36 +55,15 @@ function AppShell({ Component, pageProps }: AppProps & {
 
   const cancelledRef = useRef(false);
   const hasRedirectedRef = useRef(false);
-  const syncingRef = useRef(false);
+  const syncingRef = useRef(false); // prevent overlapping /api/auth/set calls
 
-  async function fetchProfile(userId: string) {
-    try {
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, full_name, role')
-        .eq('id', userId)
-        .single();
-      if (error) {
-        setProfileError('Failed to fetch profile: ' + error.message);
-        setProfile(null);
-      } else {
-        setProfile((data as any) ?? null);
-        setProfileError(null);
-      }
-    } catch (err) {
-      setProfileError('Unexpected error: ' + (err instanceof Error ? err.message : String(err)));
-      setProfile(null);
-    }
-  }
-
-  // Initial mount: if SSR gave us a session but no profile, load it once
   useEffect(() => {
     cancelledRef.current = false;
     hasRedirectedRef.current = false;
 
     (async () => {
-      const { data } = await supabase.auth.getSession();
-      const session: Session | null = data?.session ?? initialSession ?? null;
+      // Wait for a stable session (Chrome can briefly report null on reload)
+      const session = (await waitForSessionReady(3500)) ?? initialSession ?? null;
 
       if (cancelledRef.current) return;
 
@@ -67,8 +79,16 @@ function AppShell({ Component, pageProps }: AppProps & {
 
       if (!initialProfile) {
         setLoadingProfile(true);
-        await fetchProfile(session.user.id);
-        if (!cancelledRef.current) setLoadingProfile(false);
+        const { data, error } = await fetchProfileWithRetry(session.user.id);
+        if (cancelledRef.current) return;
+        if (error) {
+          setProfile(null);
+          setProfileError('Failed to fetch profile: ' + error.message);
+        } else {
+          setProfile((data as any) ?? null);
+          setProfileError(null);
+        }
+        setLoadingProfile(false);
       }
 
       if (!hasRedirectedRef.current && router.pathname === '/') {
@@ -82,14 +102,16 @@ function AppShell({ Component, pageProps }: AppProps & {
         if (cancelledRef.current) return;
         if (event !== 'SIGNED_IN' && event !== 'SIGNED_OUT') return;
 
-        // Fire-and-forget cookie sync (prevents Chrome freeze)
+        // Fire-and-forget cookie mirror so UI never blocks
         if (!syncingRef.current) {
           syncingRef.current = true;
           void fetch('/api/auth/set', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ event, session }),
-          }).finally(() => { syncingRef.current = false; });
+          }).finally(() => {
+            syncingRef.current = false;
+          });
         }
 
         if (event === 'SIGNED_OUT') {
@@ -104,14 +126,23 @@ function AppShell({ Component, pageProps }: AppProps & {
 
         if (event === 'SIGNED_IN' && session?.user) {
           setLoadingProfile(true);
-          await fetchProfile(session.user.id);
-          if (!cancelledRef.current) setLoadingProfile(false);
+          const { data, error } = await fetchProfileWithRetry(session.user.id);
+          if (!cancelledRef.current) {
+            if (error) {
+              setProfile(null);
+              setProfileError('Failed to fetch profile: ' + error.message);
+            } else {
+              setProfile((data as any) ?? null);
+              setProfileError(null);
+            }
+            setLoadingProfile(false);
+          }
 
           if (!hasRedirectedRef.current && router.pathname === '/') {
             hasRedirectedRef.current = true;
             router.replace('/dashboard');
           }
-
+          // Safety net: force nav if something silently failed
           setTimeout(() => {
             if (!hasRedirectedRef.current && router.pathname === '/') {
               hasRedirectedRef.current = true;
@@ -130,8 +161,11 @@ function AppShell({ Component, pageProps }: AppProps & {
   }, [router]);
 
   async function handleSignOut() {
-    try { await supabase.auth.signOut(); }
-    finally { router.replace('/'); }
+    try {
+      await supabase.auth.signOut();
+    } finally {
+      router.replace('/');
+    }
   }
 
   const errorBanner = profileError ? (
@@ -155,12 +189,20 @@ function AppShell({ Component, pageProps }: AppProps & {
             <nav className="nav">
               {profile && (
                 <>
-                  <Link href="/dashboard" className="nav-link">Dashboard</Link>
-                  <Link href="/new-shift" className="nav-link">Log Shift</Link>
+                  <Link href="/dashboard" className="nav-link">
+                    Dashboard
+                  </Link>
+                  <Link href="/new-shift" className="nav-link">
+                    Log Shift
+                  </Link>
                   {profile.role === 'admin' && (
-                    <Link href="/admin" className="nav-link">Admin</Link>
+                    <Link href="/admin" className="nav-link">
+                      Admin
+                    </Link>
                   )}
-                  <button className="signout" onClick={handleSignOut}>Sign out</button>
+                  <button className="signout" onClick={handleSignOut}>
+                    Sign out
+                  </button>
                 </>
               )}
             </nav>
@@ -174,8 +216,7 @@ function AppShell({ Component, pageProps }: AppProps & {
   );
 }
 
-export default function App(props: AppProps & { pageProps: { initialSession?: Session | null } }) {
-  // Provide the Supabase client + initialSession to the whole app
+export default function App(props: AppProps & { pageProps: { initialSession?: Session | null; initialProfile?: Profile } }) {
   return (
     <SessionContextProvider supabaseClient={supabase} initialSession={props.pageProps.initialSession ?? null}>
       <AppShell {...props} />
