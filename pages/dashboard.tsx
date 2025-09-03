@@ -3,13 +3,8 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { supabase } from '../lib/supabaseClient';
 import {
-  startOfWeek,
-  endOfWeek,
-  addWeeks,
-  startOfMonth,
-  endOfMonth,
-  addMonths,
-  format,
+  startOfWeek, endOfWeek, addWeeks,
+  startOfMonth, endOfMonth, addMonths, format,
 } from 'date-fns';
 
 type Mode = 'week' | 'month' | 'all';
@@ -32,39 +27,25 @@ export default function Dashboard() {
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | undefined>();
-
   const [mode, setMode] = useState<Mode>('week');
   const [offset, setOffset] = useState(0);
 
-  // Get current user once (client) — wait for session
+  // Wait for session; keep in sync with auth changes
   useEffect(() => {
     let alive = true;
     (async () => {
       const { data: { session } } = await supabase.auth.getSession();
       if (!alive) return;
-
-      if (!session?.user) {
-        setUser(null);
-        setLoading(false);
-        return;
-      }
+      if (!session?.user) { setUser(null); setLoading(false); return; }
       setUser({ id: session.user.id });
     })();
-
-    // Update if auth state changes (e.g., token refreshed)
     const { data: sub } = supabase.auth.onAuthStateChange((_evt, session) => {
       if (!alive) return;
-      if (session?.user) {
-        setUser({ id: session.user.id });
-      } else {
-        setUser(null);
-      }
+      setUser(session?.user ? { id: session.user.id } : null);
     });
-
     return () => { alive = false; sub.subscription.unsubscribe(); };
   }, []);
 
-  // Compute the date range + label
   const range = useMemo(() => {
     const now = new Date();
     if (mode === 'week') {
@@ -82,18 +63,18 @@ export default function Dashboard() {
     return { start: null as any, end: null as any, label: 'All time' };
   }, [mode, offset]);
 
-  // Load shifts when user/range changes
   useEffect(() => {
     if (!user) return;
     let alive = true;
-
     (async () => {
       setErr(undefined);
       setLoading(true);
       try {
+        // ✅ type via .returns<Shift[]>()
         let q = supabase
-          .from<Shift>('shifts')
+          .from('shifts')
           .select('*')
+          .returns<Shift[]>()
           .eq('user_id', user.id)
           .order('shift_date', { ascending: false });
 
@@ -104,10 +85,7 @@ export default function Dashboard() {
         }
 
         const { data, error } = await q;
-        if (error?.message?.toLowerCase().includes('permission')) {
-          // Session may still be restoring; skip and next effect tick will refetch
-          return;
-        }
+        if (error?.message?.toLowerCase().includes('permission')) return; // transient during refresh
         if (error) throw error;
         if (!alive) return;
         setShifts((data ?? []) as Shift[]);
@@ -118,7 +96,6 @@ export default function Dashboard() {
         if (alive) setLoading(false);
       }
     })();
-
     return () => { alive = false; };
   }, [user, mode, offset, range.start, range.end]);
 
@@ -132,14 +109,10 @@ export default function Dashboard() {
   async function delShift(id: string) {
     if (!confirm('Delete this shift?')) return;
     const { error } = await supabase.from('shifts').delete().eq('id', id);
-    if (error) {
-      alert(error.message);
-      return;
-    }
+    if (error) { alert(error.message); return; }
     setShifts(prev => prev.filter(x => x.id !== id));
   }
 
-  // If not signed in, show a gentle prompt (no redirect loop)
   if (user === null) {
     return (
       <main className="page page--center">

@@ -31,6 +31,7 @@ function payInfo(s: Shift): { pay: number; minApplied: boolean; base: number } {
   const pay = isBreakdown ? Math.max(base, 50) : base;
   return { pay, minApplied: isBreakdown && base < 50, base };
 }
+
 function venmoHref(raw?: string | null): string | null {
   if (!raw) return null;
   const v = raw.trim();
@@ -60,7 +61,7 @@ export default function Admin() {
   const [err, setErr] = useState<string | undefined>();
   const [bulkBusy, setBulkBusy] = useState<Record<string, boolean>>({});
 
-  // ---- Auth + role check (react to sign-in/out/refresh) ----
+  // ---- Auth + role check (react only to sign-in/out) ----
   useEffect(() => {
     let alive = true;
 
@@ -71,14 +72,15 @@ export default function Admin() {
       if (!session?.user) {
         setMe(null);
         setChecking(false);
-        return; // let _app.tsx route
+        router.replace('/');
+        return;
       }
 
       const { data, error } = await supabase
         .from('profiles')
         .select('id, role')
         .eq('id', session.user.id)
-        .maybeSingle();
+        .single();
 
       if (!alive) return;
       if (error || !data) {
@@ -90,22 +92,19 @@ export default function Admin() {
 
       setMe(data as any);
       setChecking(false);
-      if ((data as any).role !== 'admin') router.replace('/dashboard?msg=not_admin');
+      if ((data as any).role !== 'admin') {
+        router.replace('/dashboard?msg=not_admin');
+      }
     }
 
     loadProfile();
 
     const { data: sub } = supabase.auth.onAuthStateChange((event) => {
-      if (!alive) return;
-      if (
-        event === 'SIGNED_IN' ||
-        event === 'SIGNED_OUT' ||
-        event === 'TOKEN_REFRESHED' ||
-        event === 'USER_UPDATED'
-      ) {
+      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
         setChecking(true);
         loadProfile();
       }
+      // ignore TOKEN_REFRESHED/USER_UPDATED
     });
 
     return () => { alive = false; sub.subscription.unsubscribe(); };
@@ -119,13 +118,7 @@ export default function Admin() {
     setLoading(true);
     setErr(undefined);
     try {
-      // ✅ put row type on .returns<Shift[]>(), not on select<>
-      let q = supabase
-        .from('shifts')
-        .select('*')
-        .returns<Shift[]>()
-        .order('shift_date', { ascending: false });
-
+      let q = supabase.from('shifts').select('*').order('shift_date', { ascending: false });
       if (tab === 'unpaid') q = q.eq('is_paid', false);
       if (tab === 'paid') q = q.eq('is_paid', true);
 
@@ -155,7 +148,6 @@ export default function Admin() {
         setVenmo({});
       }
     } catch (e: any) {
-      if (e?.message?.toLowerCase().includes('permission')) return; // transient during refresh
       setErr(e?.message || 'Failed to load shifts.');
     } finally {
       setLoading(false);
@@ -193,7 +185,10 @@ export default function Admin() {
     return Object.values(m);
   }, [shifts, names]);
 
-  const unpaidTotal = useMemo(() => totals.reduce((sum, t) => sum + t.unpaid, 0), [totals]);
+  const unpaidTotal = useMemo(
+    () => totals.reduce((sum, t) => sum + t.unpaid, 0),
+    [totals]
+  );
 
   const sortedTotals = useMemo(() => {
     const a = [...totals];
