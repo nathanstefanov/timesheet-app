@@ -301,13 +301,6 @@ export default function Dashboard(_props: Props) {
 }
 
   // ✅ Use getSession() here (NOT getUser()) so we can read session directly
-  const {
-    data: { session },
-  } = await supa.auth.getSession();
-
-  if (!session?.user) {
-    return { redirect: { destination: '/', permanent: false } };
-  }
 
   const { data: profile } = await supa
     .from('profiles')
