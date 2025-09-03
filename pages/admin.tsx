@@ -6,20 +6,32 @@ import { supabase } from '../lib/supabaseClient';
 type Tab = 'unpaid' | 'paid' | 'all';
 type SortBy = 'name' | 'hours' | 'pay' | 'unpaid';
 type SortDir = 'asc' | 'desc';
-type Profile = { id: string; role: 'admin' | 'employee' } | null;
 
-/** Compute pay with Breakdown $50 minimum (uses DB pay_due if present) */
-function payInfo(s: any): { pay: number; minApplied: boolean; base: number } {
-  const rate = Number(s.pay_rate ?? 25);
+type Profile = { id: string; role: 'admin' | 'employee' } | null;
+type Shift = {
+  id: string;
+  user_id: string;
+  shift_date: string;       // YYYY-MM-DD
+  shift_type: string;
+  time_in?: string | null;  // ISO
+  time_out?: string | null; // ISO
+  hours_worked?: number | null;
+  pay_due?: number | null;
+  is_paid?: boolean | null;
+  paid_at?: string | null;  // ISO
+  paid_by?: string | null;
+};
+
+// ---- Helpers ----
+function payInfo(s: Shift): { pay: number; minApplied: boolean; base: number } {
+  const rate = Number((s as any).pay_rate ?? 25);
   const hours = Number(s.hours_worked ?? 0);
   const base = s.pay_due != null ? Number(s.pay_due) : hours * rate;
   const isBreakdown = s.shift_type === 'Breakdown';
   const pay = isBreakdown ? Math.max(base, 50) : base;
-  const minApplied = isBreakdown && base < 50;
-  return { pay, minApplied, base };
+  return { pay, minApplied: isBreakdown && base < 50, base };
 }
 
-/** Build a clickable Venmo URL from either a full URL or a @handle */
 function venmoHref(raw?: string | null): string | null {
   if (!raw) return null;
   const v = raw.trim();
@@ -30,68 +42,75 @@ function venmoHref(raw?: string | null): string | null {
 }
 
 export default function Admin() {
-  const r = useRouter();
+  const router = useRouter();
 
+  // auth / role
   const [me, setMe] = useState<Profile>(null);
   const [checking, setChecking] = useState(true);
 
-  const [shifts, setShifts] = useState<any[]>([]);
+  // data
+  const [shifts, setShifts] = useState<Shift[]>([]);
   const [names, setNames] = useState<Record<string, string>>({});
   const [venmo, setVenmo] = useState<Record<string, string>>({});
 
+  // ui state
   const [tab, setTab] = useState<Tab>('unpaid');
-  const [sortBy, setSortBy] = useState<SortBy>('name');   // ← keep ONLY this one
+  const [sortBy, setSortBy] = useState<SortBy>('name');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
-
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | undefined>();
   const [bulkBusy, setBulkBusy] = useState<Record<string, boolean>>({});
 
-  // ---- Auth + role check ----
+  // ---- Auth + role check (react only to sign-in/out) ----
   useEffect(() => {
-    let active = true;
+    let alive = true;
 
     async function loadProfile() {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!active) return;
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!alive) return;
 
-      if (!user) {
+      if (!session?.user) {
         setMe(null);
         setChecking(false);
-        r.replace('/');
+        router.replace('/');
         return;
       }
 
-      const { data: prof } = await supabase
+      const { data, error } = await supabase
         .from('profiles')
         .select('id, role')
-        .eq('id', user.id)
+        .eq('id', session.user.id)
         .single();
 
-      if (!active) return;
-      setMe((prof as any) ?? null);
-      setChecking(false);
+      if (!alive) return;
+      if (error || !data) {
+        setMe(null);
+        setChecking(false);
+        router.replace('/dashboard?msg=not_admin');
+        return;
+      }
 
-      if (!prof || prof.role !== 'admin') {
-        r.replace('/dashboard?msg=not_admin');
+      setMe(data as any);
+      setChecking(false);
+      if ((data as any).role !== 'admin') {
+        router.replace('/dashboard?msg=not_admin');
       }
     }
 
-    setChecking(true);
     loadProfile();
 
-    const { data: sub } = supabase.auth.onAuthStateChange(() => {
-      setChecking(true);
-      loadProfile();
+    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+        setChecking(true);
+        loadProfile();
+      }
+      // ignore TOKEN_REFRESHED/USER_UPDATED
     });
 
-    return () => {
-      active = false;
-      sub.subscription.unsubscribe();
-    };
-  }, [r]);
+    return () => { alive = false; sub.subscription.unsubscribe(); };
+  }, [router]);
 
-  // ---- Loader (mount + on return) ----
+  // ---- Load shifts (+ related profile info) ----
   const loadShifts = useCallback(async () => {
     if (checking) return;
     if (!me || me.role !== 'admin') return;
@@ -106,10 +125,10 @@ export default function Admin() {
       const { data, error } = await q;
       if (error) throw error;
 
-      const rows = data || [];
+      const rows = (data ?? []) as Shift[];
       setShifts(rows);
 
-      const ids = Array.from(new Set(rows.map((s: any) => s.user_id)));
+      const ids = Array.from(new Set(rows.map(s => s.user_id)));
       if (ids.length) {
         const { data: profs } = await supabase
           .from('profiles')
@@ -118,7 +137,7 @@ export default function Admin() {
 
         const nameMap: Record<string, string> = {};
         const venmoMap: Record<string, string> = {};
-        (profs || []).forEach((p: any) => {
+        (profs ?? []).forEach((p: any) => {
           nameMap[p.id] = p.full_name || '—';
           if (p.venmo_url) venmoMap[p.id] = p.venmo_url;
         });
@@ -129,7 +148,7 @@ export default function Admin() {
         setVenmo({});
       }
     } catch (e: any) {
-      setErr(e.message);
+      setErr(e?.message || 'Failed to load shifts.');
     } finally {
       setLoading(false);
     }
@@ -137,11 +156,10 @@ export default function Admin() {
 
   useEffect(() => { loadShifts(); }, [loadShifts]);
 
+  // refresh on focus/visibility
   useEffect(() => {
     const onFocus = () => loadShifts();
-    const onVisible = () => {
-      if (document.visibilityState === 'visible') loadShifts();
-    };
+    const onVisible = () => document.visibilityState === 'visible' && loadShifts();
     window.addEventListener('focus', onFocus);
     document.addEventListener('visibilitychange', onVisible);
     return () => {
@@ -167,7 +185,10 @@ export default function Admin() {
     return Object.values(m);
   }, [shifts, names]);
 
-  const unpaidTotal = useMemo(() => totals.reduce((sum, t) => sum + t.unpaid, 0), [totals]);
+  const unpaidTotal = useMemo(
+    () => totals.reduce((sum, t) => sum + t.unpaid, 0),
+    [totals]
+  );
 
   const sortedTotals = useMemo(() => {
     const a = [...totals];
@@ -185,7 +206,7 @@ export default function Admin() {
 
   // ---- Group shifts by employee ----
   const groups = useMemo(() => {
-    const m: Record<string, any[]> = {};
+    const m: Record<string, Shift[]> = {};
     for (const s of shifts) (m[s.user_id] ??= []).push(s);
     for (const id in m) {
       m[id].sort((a, b) => {
@@ -200,23 +221,23 @@ export default function Admin() {
   const sectionOrder = useMemo(() => sortedTotals.map(t => t.id), [sortedTotals]);
 
   // ---- Actions ----
-  async function togglePaid(row: any, next: boolean) {
+  async function togglePaid(row: Shift, next: boolean) {
     const patch = {
       is_paid: next,
       paid_at: next ? new Date().toISOString() : null,
       paid_by: next ? (me as any)!.id : null,
     };
-    setShifts(prev => prev.map(s => s.id === row.id ? { ...s, ...patch } : s));
+    setShifts(prev => prev.map(s => (s.id === row.id ? { ...s, ...patch } : s)));
     const { error } = await supabase.from('shifts').update(patch).eq('id', row.id);
     if (error) {
       alert(error.message);
-      setShifts(prev => prev.map(s => s.id === row.id ? { ...s, is_paid: !next } : s));
+      setShifts(prev => prev.map(s => (s.id === row.id ? { ...s, is_paid: !next } : s)));
     }
   }
 
   async function bulkTogglePaidForEmployee(userId: string, next: boolean) {
     const rows = groups[userId] || [];
-    const toChange = rows.filter((s) => Boolean(s.is_paid) !== next).map((s) => s.id);
+    const toChange = rows.filter(s => Boolean(s.is_paid) !== next).map(s => s.id);
     if (!toChange.length) return;
 
     const name = names[userId] || 'employee';
@@ -229,25 +250,23 @@ export default function Admin() {
       paid_by: next ? (me as any)!.id : null,
     };
 
-    setBulkBusy((b) => ({ ...b, [userId]: true }));
-    const prevShifts = shifts;
-
-    setShifts((prev) =>
-      prev.map((s) => (s.user_id === userId && toChange.includes(s.id) ? { ...s, ...patch } : s))
-    );
+    setBulkBusy(b => ({ ...b, [userId]: true }));
+    const prev = shifts;
+    setShifts(prev => prev.map(s => (s.user_id === userId && toChange.includes(s.id) ? { ...s, ...patch } : s)));
 
     const { error } = await supabase.from('shifts').update(patch).in('id', toChange);
     if (error) {
       alert(error.message);
-      setShifts(prevShifts);
+      setShifts(prev);
     }
-    setBulkBusy((b) => ({ ...b, [userId]: false }));
+    setBulkBusy(b => ({ ...b, [userId]: false }));
   }
 
-  function editRow(row: any) { r.push(`/shift/${row.id}`); }
+  function editRow(row: Shift) { router.push(`/shift/${row.id}`); }
 
-  async function deleteRow(row: any) {
-    if (!confirm(`Delete shift for ${names[row.user_id] || 'employee'} on ${row.shift_date}?`)) return;
+  async function deleteRow(row: Shift) {
+    const name = names[row.user_id] || 'employee';
+    if (!confirm(`Delete shift for ${name} on ${row.shift_date}?`)) return;
     const { error } = await supabase.from('shifts').delete().eq('id', row.id);
     if (error) return alert(error.message);
     setShifts(prev => prev.filter(s => s.id !== row.id));
@@ -266,7 +285,7 @@ export default function Admin() {
   return (
     <main className="page page--center">
       <h1 className="page__title">Admin Dashboard</h1>
-      {err && <p className="error" role="alert">Error: {err}</p>}
+      {err && <div className="alert error" role="alert">Error: {err}</div>}
 
       {/* Summary */}
       <div className="card card--tight full">
@@ -330,25 +349,14 @@ export default function Admin() {
                   <tr key={t.id}>
                     <td data-label="Employee">
                       {t.name}
-                      {t.minCount > 0 && (
-                        <span className="muted" style={{ marginLeft: 8 }}>
-                          ({t.minCount}× MIN)
-                        </span>
-                      )}
+                      {t.minCount > 0 && <span className="muted" style={{ marginLeft: 8 }}>({t.minCount}× MIN)</span>}
                     </td>
                     <td data-label="Hours">{t.hours.toFixed(2)}</td>
                     <td data-label="Pay">${t.pay.toFixed(2)}</td>
                     <td data-label="Unpaid">
                       ${t.unpaid.toFixed(2)}
                       {hasUnpaid && vHref && (
-                        <a
-                          className="btn-venmo"
-                          href={vHref}
-                          target="_blank"
-                          rel="noopener noreferrer"
-                          style={{ marginLeft: 8 }}
-                          title={`Pay ${t.name} on Venmo`}
-                        >
+                        <a className="btn-venmo" href={vHref} target="_blank" rel="noopener noreferrer" style={{ marginLeft: 8 }}>
                           Venmo
                         </a>
                       )}
@@ -370,7 +378,7 @@ export default function Admin() {
         {loading && <p className="center">Loading…</p>}
 
         <div className="table-wrap">
-          <table className="table table--center table--compact table--admin">
+          <table className="table table--center table--compact table--admin table--stack">
             <thead>
               <tr>
                 <th>Employee</th>
@@ -387,12 +395,12 @@ export default function Admin() {
             </thead>
             <tbody>
               {sectionOrder.map((uid) => {
-                const rows = (groups as any)[uid] || [];
+                const rows = groups[uid] || [];
                 if (!rows.length) return null;
 
                 const name = names[uid] || '—';
                 const subtotal = rows.reduce(
-                  (acc: any, s: any) => {
+                  (acc, s) => {
                     const info = payInfo(s);
                     acc.hours += Number(s.hours_worked || 0);
                     acc.pay += info.pay;
@@ -401,7 +409,7 @@ export default function Admin() {
                   { hours: 0, pay: 0 }
                 );
 
-                const unpaidCount = rows.filter((s: any) => !s.is_paid).length;
+                const unpaidCount = rows.filter(s => !s.is_paid).length;
                 const allPaid = unpaidCount === 0;
 
                 return (
@@ -436,7 +444,7 @@ export default function Admin() {
                       </td>
                     </tr>
 
-                    {rows.map((s: any) => {
+                    {rows.map((s) => {
                       const { pay, minApplied, base } = payInfo(s);
                       const paid = Boolean(s.is_paid);
                       return (
@@ -445,12 +453,12 @@ export default function Admin() {
                           <td data-label="Date">{s.shift_date}</td>
                           <td data-label="Type">{s.shift_type}</td>
                           <td data-label="In">
-                            {new Date(s.time_in).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            {s.time_in ? new Date(s.time_in).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
                           </td>
                           <td data-label="Out">
-                            {new Date(s.time_out).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                            {s.time_out ? new Date(s.time_out).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
                           </td>
-                          <td data-label="Hours">{Number(s.hours_worked).toFixed(2)}</td>
+                          <td data-label="Hours">{Number(s.hours_worked ?? 0).toFixed(2)}</td>
                           <td data-label="Pay">
                             ${pay.toFixed(2)}{' '}
                             {minApplied && (
