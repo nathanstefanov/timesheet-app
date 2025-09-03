@@ -10,10 +10,10 @@ export const supabase = createClient(url, anon, {
     autoRefreshToken: true,
     detectSessionInUrl: true,
     flowType: 'pkce',
-    // ↓ This avoids cross-tab broadcast churn/races
-    multiTab: false,
+    // Note: no multiTab flag in v2. The onAuthStateChange dedupe in _app.tsx handles multi-tab noise.
   },
   global: {
-    fetch: (input, init) => fetch(input as RequestInfo, { ...init, cache: 'no-store' }),
+    fetch: (input, init) =>
+      fetch(input as RequestInfo, { ...init, cache: 'no-store' }),
   },
 });
