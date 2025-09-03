@@ -1,28 +1,25 @@
 // pages/admin.tsx
-import React, { useEffect, useMemo, useState, useCallback } from 'react';
-import { useRouter } from 'next/router';
+import React, { useCallback, useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 
 type Tab = 'unpaid' | 'paid' | 'all';
 type SortBy = 'name' | 'hours' | 'pay' | 'unpaid';
 type SortDir = 'asc' | 'desc';
 
-type Profile = { id: string; role: 'admin' | 'employee' } | null;
 type Shift = {
   id: string;
   user_id: string;
-  shift_date: string;       // YYYY-MM-DD
+  shift_date: string;      // YYYY-MM-DD
   shift_type: string;
-  time_in?: string | null;  // ISO
-  time_out?: string | null; // ISO
+  time_in?: string | null; // ISO
+  time_out?: string | null;// ISO
   hours_worked?: number | null;
   pay_due?: number | null;
   is_paid?: boolean | null;
-  paid_at?: string | null;  // ISO
+  paid_at?: string | null; // ISO
   paid_by?: string | null;
 };
 
-// ---- Helpers ----
 function payInfo(s: Shift): { pay: number; minApplied: boolean; base: number } {
   const rate = Number((s as any).pay_rate ?? 25);
   const hours = Number(s.hours_worked ?? 0);
@@ -42,79 +39,59 @@ function venmoHref(raw?: string | null): string | null {
 }
 
 export default function Admin() {
-  const router = useRouter();
+  // --- Auth gate (client-only) ---
+  const [authChecked, setAuthChecked] = useState(false);
+  const [isAdmin, setIsAdmin] = useState(false);
+  const [err, setErr] = useState<string | undefined>();
 
-  // auth / role
-  const [me, setMe] = useState<Profile>(null);
-  const [checking, setChecking] = useState(true);
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      try {
+        const { data: { session } } = await supabase.auth.getSession();
+        if (!alive) return;
+        if (!session?.user) {
+          setIsAdmin(false);
+          setAuthChecked(true);
+          return;
+        }
+        const { data, error } = await supabase
+          .from('profiles')
+          .select('role')
+          .eq('id', session.user.id)
+          .single();
 
-  // data
-  const [shifts, setShifts] = useState<Shift[]>([]);
-  const [names, setNames] = useState<Record<string, string>>({});
-  const [venmo, setVenmo] = useState<Record<string, string>>({});
+        if (!alive) return;
+        if (error) {
+          setErr(error.message);
+          setIsAdmin(false);
+        } else {
+          setIsAdmin((data?.role as any) === 'admin');
+        }
+      } catch (e: any) {
+        if (!alive) return;
+        setErr(e?.message || 'Failed to check access.');
+        setIsAdmin(false);
+      } finally {
+        if (alive) setAuthChecked(true);
+      }
+    })();
+    return () => { alive = false; };
+  }, []);
 
-  // ui state
+  // --- Data ---
   const [tab, setTab] = useState<Tab>('unpaid');
   const [sortBy, setSortBy] = useState<SortBy>('name');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
+
+  const [shifts, setShifts] = useState<Shift[]>([]);
+  const [names, setNames] = useState<Record<string, string>>({});
+  const [venmo, setVenmo] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
-  const [err, setErr] = useState<string | undefined>();
   const [bulkBusy, setBulkBusy] = useState<Record<string, boolean>>({});
 
-  // ---- Auth + role check (react only to sign-in/out) ----
-  useEffect(() => {
-    let alive = true;
-
-    async function loadProfile() {
-      const { data: { session } } = await supabase.auth.getSession();
-      if (!alive) return;
-
-      if (!session?.user) {
-        setMe(null);
-        setChecking(false);
-        router.replace('/');
-        return;
-      }
-
-      const { data, error } = await supabase
-        .from('profiles')
-        .select('id, role')
-        .eq('id', session.user.id)
-        .single();
-
-      if (!alive) return;
-      if (error || !data) {
-        setMe(null);
-        setChecking(false);
-        router.replace('/dashboard?msg=not_admin');
-        return;
-      }
-
-      setMe(data as any);
-      setChecking(false);
-      if ((data as any).role !== 'admin') {
-        router.replace('/dashboard?msg=not_admin');
-      }
-    }
-
-    loadProfile();
-
-    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
-      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
-        setChecking(true);
-        loadProfile();
-      }
-      // ignore TOKEN_REFRESHED/USER_UPDATED
-    });
-
-    return () => { alive = false; sub.subscription.unsubscribe(); };
-  }, [router]);
-
-  // ---- Load shifts (+ related profile info) ----
   const loadShifts = useCallback(async () => {
-    if (checking) return;
-    if (!me || me.role !== 'admin') return;
-
+    if (!isAdmin) return;
     setLoading(true);
     setErr(undefined);
     try {
@@ -152,11 +129,10 @@ export default function Admin() {
     } finally {
       setLoading(false);
     }
-  }, [checking, me, tab]);
+  }, [isAdmin, tab]);
 
   useEffect(() => { loadShifts(); }, [loadShifts]);
 
-  // refresh on focus/visibility
   useEffect(() => {
     const onFocus = () => loadShifts();
     const onVisible = () => document.visibilityState === 'visible' && loadShifts();
@@ -168,13 +144,13 @@ export default function Admin() {
     };
   }, [loadShifts]);
 
-  // ---- Totals by employee ----
+  // --- Derived (all inside Admin; no custom hooks) ---
   const totals = useMemo(() => {
     const m: Record<string, { id: string; name: string; hours: number; pay: number; unpaid: number; minCount: number }> = {};
     for (const s of shifts) {
       const id = s.user_id;
       const name = names[id] || '—';
-      m[id] ??= { id, name, hours: 0, pay: 0, unpaid: 0, minCount: 0 };
+      if (!m[id]) m[id] = { id, name, hours: 0, pay: 0, unpaid: 0, minCount: 0 };
       const { pay, minApplied } = payInfo(s);
       const h = Number(s.hours_worked || 0);
       m[id].hours += h;
@@ -185,10 +161,7 @@ export default function Admin() {
     return Object.values(m);
   }, [shifts, names]);
 
-  const unpaidTotal = useMemo(
-    () => totals.reduce((sum, t) => sum + t.unpaid, 0),
-    [totals]
-  );
+  const unpaidTotal = useMemo(() => totals.reduce((sum, t) => sum + t.unpaid, 0), [totals]);
 
   const sortedTotals = useMemo(() => {
     const a = [...totals];
@@ -204,7 +177,6 @@ export default function Admin() {
     return a;
   }, [totals, sortBy, sortDir]);
 
-  // ---- Group shifts by employee ----
   const groups = useMemo(() => {
     const m: Record<string, Shift[]> = {};
     for (const s of shifts) (m[s.user_id] ??= []).push(s);
@@ -220,12 +192,12 @@ export default function Admin() {
 
   const sectionOrder = useMemo(() => sortedTotals.map(t => t.id), [sortedTotals]);
 
-  // ---- Actions ----
+  // --- Actions ---
   async function togglePaid(row: Shift, next: boolean) {
     const patch = {
       is_paid: next,
       paid_at: next ? new Date().toISOString() : null,
-      paid_by: next ? (me as any)!.id : null,
+      paid_by: next ? 'admin' : null,
     };
     setShifts(prev => prev.map(s => (s.id === row.id ? { ...s, ...patch } : s)));
     const { error } = await supabase.from('shifts').update(patch).eq('id', row.id);
@@ -247,7 +219,7 @@ export default function Admin() {
     const patch = {
       is_paid: next,
       paid_at: next ? new Date().toISOString() : null,
-      paid_by: next ? (me as any)!.id : null,
+      paid_by: next ? 'admin' : null,
     };
 
     setBulkBusy(b => ({ ...b, [userId]: true }));
@@ -262,7 +234,9 @@ export default function Admin() {
     setBulkBusy(b => ({ ...b, [userId]: false }));
   }
 
-  function editRow(row: Shift) { router.push(`/shift/${row.id}`); }
+  function editRow(row: Shift) {
+    window.location.href = `/shift/${row.id}`;
+  }
 
   async function deleteRow(row: Shift) {
     const name = names[row.user_id] || 'employee';
@@ -272,16 +246,26 @@ export default function Admin() {
     setShifts(prev => prev.filter(s => s.id !== row.id));
   }
 
-  if (checking) {
+  // --- Render gates ---
+  if (!authChecked) {
     return (
       <main className="page page--center">
-        <h1 className="page__title">Admin Dashboard</h1>
-        <p>Loading…</p>
+        <h1 className="page__title">Admin</h1>
+        <p>Checking access…</p>
       </main>
     );
   }
-  if (!me || me.role !== 'admin') return null;
 
+  if (!isAdmin) {
+    return (
+      <main className="page page--center">
+        <h1 className="page__title">Admin</h1>
+        <div className="alert error">You don’t have access to this page.</div>
+      </main>
+    );
+  }
+
+  // --- UI ---
   return (
     <main className="page page--center">
       <h1 className="page__title">Admin Dashboard</h1>
@@ -356,7 +340,13 @@ export default function Admin() {
                     <td data-label="Unpaid">
                       ${t.unpaid.toFixed(2)}
                       {hasUnpaid && vHref && (
-                        <a className="btn-venmo" href={vHref} target="_blank" rel="noopener noreferrer" style={{ marginLeft: 8 }}>
+                        <a
+                          className="btn-venmo"
+                          href={vHref}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          style={{ marginLeft: 8 }}
+                        >
                           Venmo
                         </a>
                       )}
@@ -507,6 +497,17 @@ export default function Admin() {
                   </React.Fragment>
                 );
               })}
+
+              {!loading && shifts.length === 0 && (
+                <tr>
+                  <td colSpan={10} className="muted center">No shifts.</td>
+                </tr>
+              )}
+              {loading && (
+                <tr>
+                  <td colSpan={10} className="center">Loading…</td>
+                </tr>
+              )}
             </tbody>
           </table>
         </div>
@@ -524,9 +525,4 @@ export default function Admin() {
       `}</style>
     </main>
   );
-}
-
-/** Force SSR so Vercel does not emit /admin/index static HTML */
-export async function getServerSideProps() {
-  return { props: {} };
 }
