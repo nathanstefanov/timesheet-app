@@ -1,14 +1,11 @@
 // pages/admin.tsx
 import React, { useCallback, useEffect, useMemo, useState } from 'react';
-import type { GetServerSidePropsContext, GetServerSidePropsResult } from 'next';
-import { createServerSupabaseClient } from '@supabase/auth-helpers-nextjs';
 import { supabase } from '../lib/supabaseClient';
 
 type Tab = 'unpaid' | 'paid' | 'all';
 type SortBy = 'name' | 'hours' | 'pay' | 'unpaid';
 type SortDir = 'asc' | 'desc';
 
-type Profile = { id: string; role: 'admin' | 'employee' } | null;
 type Shift = {
   id: string;
   user_id: string;
@@ -41,25 +38,51 @@ function venmoHref(raw?: string | null): string | null {
   return `https://venmo.com/u/${encodeURIComponent(handle)}`;
 }
 
-type PageProps = {
-  initialSession: any;
-  initialProfile: { id: string; full_name?: string | null; role: 'admin' | 'employee' };
-};
-
-export default function Admin(_props: PageProps) {
-  // We already know the user is admin (SSR enforced), so no client role check.
-  const [shifts, setShifts] = useState<Shift[]>([]);
-  const [names, setNames] = useState<Record<string, string>>({});
-  const [venmo, setVenmo] = useState<Record<string, string>>({});
+export default function Admin() {
+  const [authChecked, setAuthChecked] = useState(false);
+  const [isAdmin, setIsAdmin] = useState<boolean>(false);
 
   const [tab, setTab] = useState<Tab>('unpaid');
   const [sortBy, setSortBy] = useState<SortBy>('name');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
+
+  const [shifts, setShifts] = useState<Shift[]>([]);
+  const [names, setNames] = useState<Record<string, string>>({});
+  const [venmo, setVenmo] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | undefined>();
   const [bulkBusy, setBulkBusy] = useState<Record<string, boolean>>({});
 
+  // Client-only admin check – no redirect, just show a friendly notice
+  useEffect(() => {
+    let alive = true;
+    (async () => {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!alive) return;
+      if (!session?.user) {
+        setIsAdmin(false);
+        setAuthChecked(true);
+        return;
+      }
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', session.user.id)
+        .single();
+      if (!alive) return;
+      if (error) {
+        setErr(error.message);
+        setIsAdmin(false);
+      } else {
+        setIsAdmin((data?.role as any) === 'admin');
+      }
+      setAuthChecked(true);
+    })();
+    return () => { alive = false; };
+  }, []);
+
   const loadShifts = useCallback(async () => {
+    if (!isAdmin) return;
     setLoading(true);
     setErr(undefined);
     try {
@@ -97,7 +120,7 @@ export default function Admin(_props: PageProps) {
     } finally {
       setLoading(false);
     }
-  }, [tab]);
+  }, [isAdmin, tab]);
 
   useEffect(() => { loadShifts(); }, [loadShifts]);
 
@@ -210,24 +233,35 @@ export default function Admin(_props: PageProps) {
     setShifts(prev => prev.filter(s => s.id !== row.id));
   }
 
+  if (!authChecked) {
+    return (
+      <main className="page page--center">
+        <h1 className="page__title">Admin</h1>
+        <p>Checking access…</p>
+      </main>
+    );
+  }
+
+  if (!isAdmin) {
+    return (
+      <main className="page page--center">
+        <h1 className="page__title">Admin</h1>
+        <div className="alert error">You don’t have access to this page.</div>
+      </main>
+    );
+  }
+
   return (
     <main className="page page--center">
       <h1 className="page__title">Admin Dashboard</h1>
       {err && <div className="alert error" role="alert">Error: {err}</div>}
 
-      {/* Summary */}
       <div className="card card--tight full">
         <div className="admin-summary admin-summary--center" style={{ margin: 0, border: 0, boxShadow: 'none' }}>
-          <span className="chip chip--xl">Total Unpaid: ${unpaidTotal.toFixed(2)}</span>
-          <span className="meta">Employees with Unpaid: {totals.filter(t => t.unpaid > 0).length}</span>
-          <span className="inline">
-            <span className="badge badge-min">MIN $50</span>
-            <span className="muted">Breakdown boosted to minimum</span>
-          </span>
+          <TotalsBar shifts={shifts} names={names} venmo={venmo} />
         </div>
       </div>
 
-      {/* Tabs */}
       <div className="card card--tight full" style={{ marginTop: 10, padding: 10 }}>
         <div className="tabs tabs--center" style={{ margin: 0 }}>
           <button className={tab === 'unpaid' ? 'active' : ''} onClick={() => setTab('unpaid')}>Unpaid</button>
@@ -236,253 +270,348 @@ export default function Admin(_props: PageProps) {
         </div>
       </div>
 
-      {/* Totals by Employee */}
-      <div className="card card--tight full">
-        <div className="card__header">
-          <h3>Totals by Employee</h3>
-          <div className="row">
-            <label className="sr-only" htmlFor="sort-by">Sort by</label>
-            <select id="sort-by" value={sortBy} onChange={(e) => setSortBy(e.target.value as SortBy)}>
-              <option value="name">Name</option>
-              <option value="hours">Hours</option>
-              <option value="pay">Pay</option>
-              <option value="unpaid">Unpaid</option>
-            </select>
-            <button
-              className="topbar-btn"
-              onClick={() => setSortDir(d => (d === 'asc' ? 'desc' : 'asc'))}
-              aria-label="Toggle sort direction"
-              title="Toggle sort direction"
-            >
-              {sortDir === 'asc' ? 'Asc ↑' : 'Desc ↓'}
-            </button>
-          </div>
-        </div>
+      <EmployeeTotalsTable
+        totals={useMemoTotals(shifts, names)}
+        sortBy={sortBy}
+        sortDir={sortDir}
+        setSortBy={setSortBy}
+        setSortDir={setSortDir}
+        venmo={venmo}
+      />
 
-        <div className="table-wrap">
-          <table className="table table--center table--compact table--admin">
-            <thead>
-              <tr>
-                <th>Employee</th>
-                <th>Hours</th>
-                <th>Pay</th>
-                <th>Unpaid</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sortedTotals.map((t) => {
-                const vHref = venmoHref(venmo[t.id]);
-                const hasUnpaid = t.unpaid > 0.0001;
-                return (
-                  <tr key={t.id}>
-                    <td data-label="Employee">
-                      {t.name}
-                      {t.minCount > 0 && <span className="muted" style={{ marginLeft: 8 }}>({t.minCount}× MIN)</span>}
-                    </td>
-                    <td data-label="Hours">{t.hours.toFixed(2)}</td>
-                    <td data-label="Pay">${t.pay.toFixed(2)}</td>
-                    <td data-label="Unpaid">
-                      ${t.unpaid.toFixed(2)}
-                      {hasUnpaid && vHref && (
-                        <a className="btn-venmo" href={vHref} target="_blank" rel="noopener noreferrer" style={{ marginLeft: 8 }}>
-                          Venmo
-                        </a>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* Shifts */}
-      <div className="card card--tight full" style={{ marginTop: 12 }}>
-        <div className="card__header">
-          <h3>Shifts</h3>
-        </div>
-
-        {loading && <p className="center">Loading…</p>}
-
-        <div className="table-wrap">
-          <table className="table table--center table--compact table--admin table--stack">
-            <thead>
-              <tr>
-                <th>Employee</th>
-                <th>Date</th>
-                <th>Type</th>
-                <th>In</th>
-                <th>Out</th>
-                <th>Hours</th>
-                <th>Pay</th>
-                <th>Paid?</th>
-                <th className="col-hide-md">Paid at</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sectionOrder.map((uid) => {
-                const rows = groups[uid] || [];
-                if (!rows.length) return null;
-
-                const name = names[uid] || '—';
-                const subtotal = rows.reduce(
-                  (acc, s) => {
-                    const info = payInfo(s);
-                    acc.hours += Number(s.hours_worked || 0);
-                    acc.pay += info.pay;
-                    return acc;
-                  },
-                  { hours: 0, pay: 0 }
-                );
-
-                const unpaidCount = rows.filter(s => !s.is_paid).length;
-                const allPaid = unpaidCount === 0;
-
-                return (
-                  <React.Fragment key={uid}>
-                    <tr className="section-head">
-                      <td colSpan={10}>
-                        <div className="section-bar">
-                          <div className="section-bar__left">
-                            <strong className="employee-name">{name}</strong>
-                            <div className="pill" aria-label="Unpaid shifts">
-                              <span className="pill__num">{unpaidCount}</span>
-                              <span className="pill__label">unpaid shifts</span>
-                            </div>
-                          </div>
-                          <div className="section-bar__right">
-                            <button
-                              className="topbar-btn"
-                              disabled={bulkBusy[uid] || allPaid}
-                              onClick={() => bulkTogglePaidForEmployee(uid, true)}
-                            >
-                              Mark ALL Paid
-                            </button>
-                            <button
-                              className="topbar-btn"
-                              disabled={bulkBusy[uid] || rows.length === unpaidCount}
-                              onClick={() => bulkTogglePaidForEmployee(uid, false)}
-                            >
-                              Mark ALL Unpaid
-                            </button>
-                          </div>
-                        </div>
-                      </td>
-                    </tr>
-
-                    {rows.map((s) => {
-                      const { pay, minApplied, base } = payInfo(s);
-                      const paid = Boolean(s.is_paid);
-                      return (
-                        <tr key={s.id}>
-                          <td data-label="Employee">{name}</td>
-                          <td data-label="Date">{s.shift_date}</td>
-                          <td data-label="Type">{s.shift_type}</td>
-                          <td data-label="In">
-                            {s.time_in ? new Date(s.time_in).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
-                          </td>
-                          <td data-label="Out">
-                            {s.time_out ? new Date(s.time_out).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
-                          </td>
-                          <td data-label="Hours">{Number(s.hours_worked ?? 0).toFixed(2)}</td>
-                          <td data-label="Pay">
-                            ${pay.toFixed(2)}{' '}
-                            {minApplied && (
-                              <span
-                                className="badge badge-min"
-                                title={`Breakdown minimum applied (base ${base.toFixed(2)} < $50)`}
-                                style={{ marginLeft: 6 }}
-                              >
-                                MIN $50
-                              </span>
-                            )}
-                          </td>
-                          <td data-label="Paid?">
-                            <label className="inline-check">
-                              <input
-                                type="checkbox"
-                                checked={paid}
-                                onChange={(e) => togglePaid(s, e.target.checked)}
-                                disabled={bulkBusy[uid]}
-                                aria-label={paid ? 'Mark unpaid' : 'Mark paid'}
-                              />
-                              <span className={paid ? 'badge badge-paid' : 'badge badge-unpaid'}>
-                                {paid ? 'PAID' : 'NOT PAID'}
-                              </span>
-                            </label>
-                          </td>
-                          <td data-label="Paid at" className="col-hide-md">
-                            {s.paid_at ? new Date(s.paid_at).toLocaleString() : '—'}
-                          </td>
-                          <td data-label="Actions">
-                            <div className="actions">
-                              <button className="btn-edit" onClick={() => editRow(s)}>Edit</button>
-                              <button className="btn-delete" onClick={() => deleteRow(s)}>Delete</button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-
-                    <tr className="subtotal">
-                      <td colSpan={5} style={{ textAlign: 'right' }}>Total — {name}</td>
-                      <td>{subtotal.hours.toFixed(2)}</td>
-                      <td>${subtotal.pay.toFixed(2)}</td>
-                      <td colSpan={3}></td>
-                    </tr>
-                  </React.Fragment>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      <style jsx>{`
-        .btn-venmo{
-          display:inline-flex; align-items:center; justify-content:center;
-          height:28px; padding:0 10px; border-radius:999px;
-          font-weight:800; text-decoration:none; border:1px solid var(--border);
-          background:#f8fafc; color:#1f2937; box-shadow: var(--shadow-sm);
-        }
-        .btn-venmo:hover{ filter:brightness(0.98); }
-        .btn-venmo:active{ transform: translateY(1px); }
-      `}</style>
+      <ShiftsTable
+        shifts={shifts}
+        names={names}
+        groups={useMemoGroups(shifts)}
+        sectionOrder={useMemoSectionOrder(useMemoTotals(shifts, names), sortBy, sortDir)}
+        loading={loading}
+        bulkBusy={bulkBusy}
+        togglePaid={togglePaid}
+        bulkTogglePaidForEmployee={bulkTogglePaidForEmployee}
+        editRow={editRow}
+        deleteRow={deleteRow}
+      />
     </main>
   );
 }
 
-// --- SSR: only allow admins in, and seed _app with initialProfile ---
-export async function getServerSideProps(
-  ctx: GetServerSidePropsContext
-): Promise<GetServerSidePropsResult<PageProps>> {
-  const supa = createServerSupabaseClient(ctx, {
-    supabaseUrl: process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    supabaseKey: process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,
-  });
+/* ----- Small helpers using same logic as above (pure functions) ----- */
 
-  const { data: userData } = await supa.auth.getUser();
-  const user = userData.user;
-  if (!user) {
-    return { redirect: { destination: '/', permanent: false } };
-  }
+function useMemoTotals(shifts: Shift[], names: Record<string, string>) {
+  return useMemo(() => {
+    const m: Record<string, { id: string; name: string; hours: number; pay: number; unpaid: number; minCount: number }> = {};
+    for (const s of shifts) {
+      const id = s.user_id;
+      const name = names[id] || '—';
+      m[id] ??= { id, name, hours: 0, pay: 0, unpaid: 0, minCount: 0 };
+      const { pay, minApplied } = payInfo(s);
+      const h = Number(s.hours_worked || 0);
+      m[id].hours += h;
+      m[id].pay += pay;
+      if (minApplied) m[id].minCount += 1;
+      if (!Boolean(s.is_paid)) m[id].unpaid += pay;
+    }
+    return Object.values(m);
+  }, [shifts, names]);
+}
 
-  const { data: profile } = await supa
-    .from('profiles')
-    .select('id, full_name, role')
-    .eq('id', user.id)
-    .single();
+function useMemoGroups(shifts: Shift[]) {
+  return useMemo(() => {
+    const m: Record<string, Shift[]> = {};
+    for (const s of shifts) (m[s.user_id] ??= []).push(s);
+    for (const id in m) {
+      m[id].sort((a, b) => {
+        if (a.shift_date < b.shift_date) return -1;
+        if (a.shift_date > b.shift_date) return 1;
+        return String(a.time_in || '').localeCompare(String(b.time_in || ''));
+      });
+    }
+    return m;
+  }, [shifts]);
+}
 
-  if (!profile || profile.role !== 'admin') {
-    return { redirect: { destination: '/dashboard?msg=not_admin', permanent: false } };
-  }
+function useMemoSectionOrder(totals: any[], sortBy: 'name' | 'hours' | 'pay' | 'unpaid', sortDir: 'asc' | 'desc') {
+  return useMemo(() => {
+    const a = [...totals];
+    if (sortBy === 'name') {
+      a.sort((x, y) => x.name.localeCompare(y.name) * (sortDir === 'asc' ? 1 : -1));
+    } else {
+      a.sort((x, y) => {
+        const aa = (x as any)[sortBy] as number;
+        const bb = (y as any)[sortBy] as number;
+        return (bb - aa) * (sortDir === 'asc' ? -1 : 1);
+      });
+    }
+    return a.map(t => t.id);
+  }, [totals, sortBy, sortDir]);
+}
 
-  return {
-    props: {
-      initialSession: userData,     // not strictly needed by our _app, but harmless
-      initialProfile: profile,      // this is what _app.tsx consumes
-    },
-  };
+function TotalsBar({ shifts, names, venmo }: { shifts: Shift[]; names: Record<string, string>; venmo: Record<string, string> }) {
+  const totals = useMemoTotals(shifts, names);
+  const unpaidTotal = totals.reduce((sum, t) => sum + t.unpaid, 0);
+  return (
+    <>
+      <span className="chip chip--xl">Total Unpaid: ${unpaidTotal.toFixed(2)}</span>
+      <span className="meta">Employees with Unpaid: {totals.filter(t => t.unpaid > 0).length}</span>
+      <span className="inline">
+        <span className="badge badge-min">MIN $50</span>
+        <span className="muted">Breakdown boosted to minimum</span>
+      </span>
+    </>
+  );
+}
+
+function EmployeeTotalsTable({
+  totals, sortBy, sortDir, setSortBy, setSortDir, venmo,
+}: {
+  totals: any[]; sortBy: SortBy; sortDir: SortDir;
+  setSortBy: (v: SortBy) => void; setSortDir: (v: SortDir) => void;
+  venmo: Record<string, string>;
+}) {
+  const a = useMemo(() => {
+    const c = [...totals];
+    if (sortBy === 'name') {
+      c.sort((x, y) => x.name.localeCompare(y.name) * (sortDir === 'asc' ? 1 : -1));
+    } else {
+      c.sort((x, y) => {
+        const aa = (x as any)[sortBy] as number;
+        const bb = (y as any)[sortBy] as number;
+        return (bb - aa) * (sortDir === 'asc' ? -1 : 1);
+      });
+    }
+    return c;
+  }, [totals, sortBy, sortDir]);
+
+  return (
+    <div className="card card--tight full">
+      <div className="card__header">
+        <h3>Totals by Employee</h3>
+        <div className="row">
+          <label className="sr-only" htmlFor="sort-by">Sort by</label>
+          <select id="sort-by" value={sortBy} onChange={(e) => setSortBy(e.target.value as SortBy)}>
+            <option value="name">Name</option>
+            <option value="hours">Hours</option>
+            <option value="pay">Pay</option>
+            <option value="unpaid">Unpaid</option>
+          </select>
+          <button
+            className="topbar-btn"
+            onClick={() => setSortDir(sortDir === 'asc' ? 'desc' : 'asc')}
+            aria-label="Toggle sort direction"
+            title="Toggle sort direction"
+          >
+            {sortDir === 'asc' ? 'Asc ↑' : 'Desc ↓'}
+          </button>
+        </div>
+      </div>
+
+      <div className="table-wrap">
+        <table className="table table--center table--compact table--admin">
+          <thead>
+            <tr>
+              <th>Employee</th>
+              <th>Hours</th>
+              <th>Pay</th>
+              <th>Unpaid</th>
+            </tr>
+          </thead>
+          <tbody>
+            {a.map((t) => {
+              const vHref = venmoHref(venmo[t.id]);
+              const hasUnpaid = t.unpaid > 0.0001;
+              return (
+                <tr key={t.id}>
+                  <td data-label="Employee">
+                    {t.name}
+                    {t.minCount > 0 && <span className="muted" style={{ marginLeft: 8 }}>({t.minCount}× MIN)</span>}
+                  </td>
+                  <td data-label="Hours">{t.hours.toFixed(2)}</td>
+                  <td data-label="Pay">${t.pay.toFixed(2)}</td>
+                  <td data-label="Unpaid">
+                    ${t.unpaid.toFixed(2)}
+                    {hasUnpaid && vHref && (
+                      <a className="btn-venmo" href={vHref} target="_blank" rel="noopener noreferrer" style={{ marginLeft: 8 }}>
+                        Venmo
+                      </a>
+                    )}
+                  </td>
+                </tr>
+              );
+            })}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+function ShiftsTable({
+  shifts, names, groups, sectionOrder, loading, bulkBusy,
+  togglePaid, bulkTogglePaidForEmployee, editRow, deleteRow
+}: {
+  shifts: Shift[];
+  names: Record<string, string>;
+  groups: Record<string, Shift[]>;
+  sectionOrder: string[];
+  loading: boolean;
+  bulkBusy: Record<string, boolean>;
+  togglePaid: (row: Shift, next: boolean) => void;
+  bulkTogglePaidForEmployee: (userId: string, next: boolean) => void;
+  editRow: (row: Shift) => void;
+  deleteRow: (row: Shift) => void;
+}) {
+  return (
+    <div className="card card--tight full" style={{ marginTop: 12 }}>
+      <div className="card__header">
+        <h3>Shifts</h3>
+      </div>
+
+      {loading && <p className="center">Loading…</p>}
+
+      <div className="table-wrap">
+        <table className="table table--center table--compact table--admin table--stack">
+          <thead>
+            <tr>
+              <th>Employee</th>
+              <th>Date</th>
+              <th>Type</th>
+              <th>In</th>
+              <th>Out</th>
+              <th>Hours</th>
+              <th>Pay</th>
+              <th>Paid?</th>
+              <th className="col-hide-md">Paid at</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {sectionOrder.map((uid) => {
+              const rows = groups[uid] || [];
+              if (!rows.length) return null;
+
+              const name = names[uid] || '—';
+              const subtotal = rows.reduce(
+                (acc, s) => {
+                  const info = payInfo(s);
+                  acc.hours += Number(s.hours_worked || 0);
+                  acc.pay += info.pay;
+                  return acc;
+                },
+                { hours: 0, pay: 0 }
+              );
+
+              const unpaidCount = rows.filter(s => !s.is_paid).length;
+              const allPaid = unpaidCount === 0;
+
+              return (
+                <React.Fragment key={uid}>
+                  <tr className="section-head">
+                    <td colSpan={10}>
+                      <div className="section-bar">
+                        <div className="section-bar__left">
+                          <strong className="employee-name">{name}</strong>
+                          <div className="pill" aria-label="Unpaid shifts">
+                            <span className="pill__num">{unpaidCount}</span>
+                            <span className="pill__label">unpaid shifts</span>
+                          </div>
+                        </div>
+                        <div className="section-bar__right">
+                          <button
+                            className="topbar-btn"
+                            disabled={bulkBusy[uid] || allPaid}
+                            onClick={() => bulkTogglePaidForEmployee(uid, true)}
+                          >
+                            Mark ALL Paid
+                          </button>
+                          <button
+                            className="topbar-btn"
+                            disabled={bulkBusy[uid] || rows.length === unpaidCount}
+                            onClick={() => bulkTogglePaidForEmployee(uid, false)}
+                          >
+                            Mark ALL Unpaid
+                          </button>
+                        </div>
+                      </div>
+                    </td>
+                  </tr>
+
+                  {rows.map((s) => {
+                    const { pay, minApplied, base } = payInfo(s);
+                    const paid = Boolean(s.is_paid);
+                    return (
+                      <tr key={s.id}>
+                        <td data-label="Employee">{name}</td>
+                        <td data-label="Date">{s.shift_date}</td>
+                        <td data-label="Type">{s.shift_type}</td>
+                        <td data-label="In">
+                          {s.time_in ? new Date(s.time_in).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
+                        </td>
+                        <td data-label="Out">
+                          {s.time_out ? new Date(s.time_out).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
+                        </td>
+                        <td data-label="Hours">{Number(s.hours_worked ?? 0).toFixed(2)}</td>
+                        <td data-label="Pay">
+                          ${pay.toFixed(2)}{' '}
+                          {minApplied && (
+                            <span
+                              className="badge badge-min"
+                              title={`Breakdown minimum applied (base ${base.toFixed(2)} < $50)`}
+                              style={{ marginLeft: 6 }}
+                            >
+                              MIN $50
+                            </span>
+                          )}
+                        </td>
+                        <td data-label="Paid?">
+                          <label className="inline-check">
+                            <input
+                              type="checkbox"
+                              checked={paid}
+                              onChange={(e) => togglePaid(s, e.target.checked)}
+                              disabled={bulkBusy[uid]}
+                              aria-label={paid ? 'Mark unpaid' : 'Mark paid'}
+                            />
+                            <span className={paid ? 'badge badge-paid' : 'badge badge-unpaid'}>
+                              {paid ? 'PAID' : 'NOT PAID'}
+                            </span>
+                          </label>
+                        </td>
+                        <td data-label="Paid at" className="col-hide-md">
+                          {s.paid_at ? new Date(s.paid_at).toLocaleString() : '—'}
+                        </td>
+                        <td data-label="Actions">
+                          <div className="actions">
+                            <button className="btn-edit" onClick={() => editRow(s)}>Edit</button>
+                            <button className="btn-delete" onClick={() => deleteRow(s)}>Delete</button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+
+                  <tr className="subtotal">
+                    <td colSpan={5} style={{ textAlign: 'right' }}>Total — {name}</td>
+                    <td>{subtotal.hours.toFixed(2)}</td>
+                    <td>${subtotal.pay.toFixed(2)}</td>
+                    <td colSpan={3}></td>
+                  </tr>
+                </React.Fragment>
+              );
+            })}
+
+            {!loading && shifts.length === 0 && (
+              <tr>
+                <td colSpan={10} className="muted center">No shifts.</td>
+              </tr>
+            )}
+            {loading && (
+              <tr>
+                <td colSpan={10} className="center">Loading…</td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
 }

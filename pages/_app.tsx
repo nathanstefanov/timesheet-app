@@ -8,21 +8,21 @@ import '../styles/globals.css';
 
 type Profile = { id: string; full_name?: string | null; role: 'employee' | 'admin' } | null;
 
-type MyPageProps = {
-  initialSession?: any | null;
-  initialProfile?: Profile;
-};
-
-export default function App({ Component, pageProps }: AppProps<MyPageProps>) {
+export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();
 
-  // Seed from SSR so the nav renders correctly immediately
-  const [profile, setProfile] = useState<Profile>(pageProps.initialProfile ?? null);
-  const [loadingProfile, setLoadingProfile] = useState<boolean>(!pageProps.initialProfile);
+  // Seed from localStorage to avoid nav flicker
+  const seedProfile: Profile = (() => {
+    if (typeof window === 'undefined') return null;
+    try { return JSON.parse(localStorage.getItem('lastProfile') || 'null'); }
+    catch { return null; }
+  })();
+
+  const [profile, setProfile] = useState<Profile>(seedProfile);
+  const [loadingProfile, setLoadingProfile] = useState<boolean>(false);
   const [profileError, setProfileError] = useState<string | null>(null);
 
   const cancelled = useRef(false);
-  const hasRedirected = useRef(false);
 
   async function fetchProfile(userId: string) {
     try {
@@ -34,61 +34,53 @@ export default function App({ Component, pageProps }: AppProps<MyPageProps>) {
       if (error) {
         setProfileError('Failed to fetch profile: ' + error.message);
         setProfile(null);
+        localStorage.removeItem('lastProfile');
       } else {
-        setProfile((data as any) ?? null);
+        const p = (data as any) ?? null;
+        setProfile(p);
         setProfileError(null);
+        localStorage.setItem('lastProfile', JSON.stringify(p));
       }
     } catch (err) {
       setProfileError('Unexpected error: ' + (err instanceof Error ? err.message : String(err)));
       setProfile(null);
+      localStorage.removeItem('lastProfile');
     }
   }
 
+  // On mount: get current session and (if any) fetch profile once
   useEffect(() => {
     cancelled.current = false;
 
     (async () => {
-      // If SSR already gave us a profile, don’t refetch on mount.
-      if (pageProps.initialProfile) {
-        setLoadingProfile(false);
-        return;
-      }
-
       const { data: { session } } = await supabase.auth.getSession();
       if (cancelled.current) return;
 
       if (!session?.user) {
         setProfile(null);
-        setLoadingProfile(false);
-        // Only redirect off the login page if needed
-        if (!hasRedirected.current && router.pathname !== '/') {
-          hasRedirected.current = true;
-          router.replace('/');
-        }
-        return;
+        localStorage.removeItem('lastProfile');
+        return; // do not auto-redirect; let pages decide
       }
 
-      setLoadingProfile(true);
-      await fetchProfile(session.user.id);
-      if (!cancelled.current) setLoadingProfile(false);
-
-      if (!hasRedirected.current && router.pathname === '/') {
-        hasRedirected.current = true;
-        router.replace('/dashboard');
+      // Only fetch if we don’t already have a seeded profile for this user
+      if (!profile || profile?.id !== session.user.id) {
+        setLoadingProfile(true);
+        await fetchProfile(session.user.id);
+        if (!cancelled.current) setLoadingProfile(false);
       }
     })();
 
-    // Only care about explicit sign-in/out events (ignore token refresh)
+    // Only react to SIGNED_IN / SIGNED_OUT. Ignore refresh events.
     const { data: sub } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (cancelled.current) return;
       if (event !== 'SIGNED_IN' && event !== 'SIGNED_OUT') return;
 
       if (event === 'SIGNED_OUT') {
         setProfile(null);
-        setLoadingProfile(false);
-        if (!hasRedirected.current && router.pathname !== '/') {
-          hasRedirected.current = true;
-          router.replace('/');
+        localStorage.removeItem('lastProfile');
+        // Only navigate away if you’re on protected pages; otherwise do nothing.
+        if (router.pathname.startsWith('/admin') || router.pathname.startsWith('/dashboard')) {
+          router.push('/');
         }
         return;
       }
@@ -97,10 +89,8 @@ export default function App({ Component, pageProps }: AppProps<MyPageProps>) {
         setLoadingProfile(true);
         await fetchProfile(session.user.id);
         if (!cancelled.current) setLoadingProfile(false);
-        if (!hasRedirected.current && router.pathname === '/') {
-          hasRedirected.current = true;
-          router.replace('/dashboard');
-        }
+        // If you’re sitting on the login page, move to dashboard once.
+        if (router.pathname === '/') router.push('/dashboard');
       }
     });
 
@@ -113,11 +103,14 @@ export default function App({ Component, pageProps }: AppProps<MyPageProps>) {
 
   async function handleSignOut() {
     try { await supabase.auth.signOut(); }
-    finally { router.replace('/'); }
+    finally {
+      // Don’t hard-reload; go to login
+      router.push('/');
+    }
   }
 
   const errorBanner = profileError ? (
-    <div className="alert error">Profile error: {profileError}. You can try again or sign out.</div>
+    <div className="alert error">Profile error: {profileError}</div>
   ) : null;
 
   return (
@@ -133,21 +126,22 @@ export default function App({ Component, pageProps }: AppProps<MyPageProps>) {
             <span className="brand">Timesheet</span>
           </div>
 
-          {/* Render nav only once we’ve decided the profile state */}
-          {!loadingProfile && (
-            <nav className="nav">
-              {profile && (
-                <>
-                  <Link href="/dashboard" className="nav-link">Dashboard</Link>
-                  <Link href="/new-shift" className="nav-link">Log Shift</Link>
-                  {profile.role === 'admin' && (
-                    <Link href="/admin" className="nav-link">Admin</Link>
-                  )}
-                  <button className="signout" onClick={handleSignOut}>Sign out</button>
-                </>
-              )}
-            </nav>
-          )}
+          {/* Don’t render nav until we’ve tried at least one profile fetch OR had a seed */}
+          <nav className="nav">
+            {profile ? (
+              <>
+                <Link href="/dashboard" className="nav-link">Dashboard</Link>
+                <Link href="/new-shift" className="nav-link">Log Shift</Link>
+                {profile.role === 'admin' && <Link href="/admin" className="nav-link">Admin</Link>}
+                <button className="signout" onClick={handleSignOut}>Sign out</button>
+              </>
+            ) : (
+              // When logged out, no links; keep header stable to avoid “blinking”
+              <span style={{ opacity: 0.6, fontSize: 13 }}>
+                {loadingProfile ? 'Loading…' : ''}
+              </span>
+            )}
+          </nav>
         </div>
       </header>
 
