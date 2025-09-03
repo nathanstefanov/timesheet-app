@@ -3,23 +3,26 @@ import type { AppProps } from 'next/app';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/router';
-import { supabase } from '../lib/supabaseClient';
+import { SessionContextProvider, useSessionContext } from '@supabase/auth-helpers-react';
 import type { Session, AuthChangeEvent } from '@supabase/supabase-js';
+import { supabase } from '../lib/supabaseClient';
 import '../styles/globals.css';
 
 type Profile = { id: string; full_name?: string | null; role: 'employee' | 'admin' } | null;
 
-export default function App({ Component, pageProps }: AppProps) {
+function AppShell({ Component, pageProps }: AppProps & {
+  pageProps: { initialSession?: Session | null; initialProfile?: Profile }
+}) {
   const router = useRouter();
+  const { initialSession, initialProfile } = pageProps;
 
-  const [profile, setProfile] = useState<Profile>(null);
-  const [loadingProfile, setLoadingProfile] = useState(true);
+  const [profile, setProfile] = useState<Profile>(initialProfile ?? null);
+  const [loadingProfile, setLoadingProfile] = useState(!initialProfile);
   const [profileError, setProfileError] = useState<string | null>(null);
 
-  // Refs to avoid double-effects / race conditions in Strict Mode and multi-tab quirks
   const cancelledRef = useRef(false);
   const hasRedirectedRef = useRef(false);
-  const syncingRef = useRef(false); // prevent overlapping /api/auth/set calls
+  const syncingRef = useRef(false);
 
   async function fetchProfile(userId: string) {
     try {
@@ -41,14 +44,14 @@ export default function App({ Component, pageProps }: AppProps) {
     }
   }
 
+  // Initial mount: if SSR gave us a session but no profile, load it once
   useEffect(() => {
     cancelledRef.current = false;
     hasRedirectedRef.current = false;
 
     (async () => {
-      // ✅ simple, typed 2-step read (avoids destructure typo & implicit any)
       const { data } = await supabase.auth.getSession();
-      const session: Session | null = data?.session ?? null;
+      const session: Session | null = data?.session ?? initialSession ?? null;
 
       if (cancelledRef.current) return;
 
@@ -62,9 +65,11 @@ export default function App({ Component, pageProps }: AppProps) {
         return;
       }
 
-      setLoadingProfile(true);
-      await fetchProfile(session.user.id);
-      if (!cancelledRef.current) setLoadingProfile(false);
+      if (!initialProfile) {
+        setLoadingProfile(true);
+        await fetchProfile(session.user.id);
+        if (!cancelledRef.current) setLoadingProfile(false);
+      }
 
       if (!hasRedirectedRef.current && router.pathname === '/') {
         hasRedirectedRef.current = true;
@@ -75,20 +80,16 @@ export default function App({ Component, pageProps }: AppProps) {
     const { data: sub } = supabase.auth.onAuthStateChange(
       async (event: AuthChangeEvent, session: Session | null) => {
         if (cancelledRef.current) return;
-
-        // Only act on the two important events
         if (event !== 'SIGNED_IN' && event !== 'SIGNED_OUT') return;
 
-        // Fire-and-forget cookie sync so UI never blocks (prevents Chrome “freeze”)
+        // Fire-and-forget cookie sync (prevents Chrome freeze)
         if (!syncingRef.current) {
           syncingRef.current = true;
           void fetch('/api/auth/set', {
             method: 'POST',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ event, session }),
-          }).finally(() => {
-            syncingRef.current = false;
-          });
+          }).finally(() => { syncingRef.current = false; });
         }
 
         if (event === 'SIGNED_OUT') {
@@ -111,7 +112,6 @@ export default function App({ Component, pageProps }: AppProps) {
             router.replace('/dashboard');
           }
 
-          // Safety net in case navigation didn’t happen for some reason
           setTimeout(() => {
             if (!hasRedirectedRef.current && router.pathname === '/') {
               hasRedirectedRef.current = true;
@@ -126,6 +126,7 @@ export default function App({ Component, pageProps }: AppProps) {
       cancelledRef.current = true;
       sub.subscription.unsubscribe();
     };
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [router]);
 
   async function handleSignOut() {
@@ -170,5 +171,14 @@ export default function App({ Component, pageProps }: AppProps) {
       {errorBanner}
       <Component {...pageProps} />
     </>
+  );
+}
+
+export default function App(props: AppProps & { pageProps: { initialSession?: Session | null } }) {
+  // Provide the Supabase client + initialSession to the whole app
+  return (
+    <SessionContextProvider supabaseClient={supabase} initialSession={props.pageProps.initialSession ?? null}>
+      <AppShell {...props} />
+    </SessionContextProvider>
   );
 }
