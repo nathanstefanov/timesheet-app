@@ -1,15 +1,19 @@
 // lib/supabaseClient.ts
 import { createClient } from '@supabase/supabase-js';
 
-export const supabase = createClient(
-  process.env.NEXT_PUBLIC_SUPABASE_URL!,          // <-- set in .env.local and Vercel
-  process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!,     // <-- set in .env.local and Vercel
-  {
-    auth: {
-      persistSession: true,       // keep user logged in across refreshes
-      autoRefreshToken: true,     // refresh tokens in the background
-      detectSessionInUrl: true,   // handle magic-link redirects
-      storageKey: 'timesheet-auth'
-    }
-  }
-);
+const url = process.env.NEXT_PUBLIC_SUPABASE_URL!;
+const anon = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY!;
+
+export const supabase = createClient(url, anon, {
+  auth: {
+    persistSession: true,
+    autoRefreshToken: true,
+    detectSessionInUrl: true,
+    flowType: 'pkce',
+    // Use default storage for best compatibility
+  },
+  global: {
+    fetch: (input, init) =>
+      fetch(input as RequestInfo, { ...init, cache: 'no-store' }),
+  },
+});
