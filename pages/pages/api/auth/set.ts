@@ -37,7 +37,18 @@ function makeServerClient(req: NextApiRequest, res: NextApiResponse) {
 }
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+  // Allow only POST requests
+  if (req.method !== 'POST') {
+    return res.status(405).json({ error: 'Method Not Allowed' });
+  }
+
   const { event, session } = req.body ?? {};
+
+  // Input validation
+  if (typeof event !== 'string' || (session && (typeof session.access_token !== 'string' || typeof session.refresh_token !== 'string'))) {
+    return res.status(400).json({ error: 'Invalid input' });
+  }
+
   const supabase = makeServerClient(req, res);
 
   // Touch session (ensures cookie helpers are wired)
