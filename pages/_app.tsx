@@ -3,7 +3,7 @@ import type { AppProps } from 'next/app';
 import Link from 'next/link';
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import { supabase } from '../lib/supabaseClient';
+import { supabase } from '../lib/supabaseClient'; // keep using your browser client
 import '../styles/globals.css';
 
 type Profile = { id: string; full_name?: string | null; role: 'employee' | 'admin' } | null;
@@ -63,10 +63,18 @@ export default function App({ Component, pageProps }: AppProps) {
       }
     })();
 
-    // ✅ Only handle SIGNED_IN / SIGNED_OUT. Ignore TOKEN_REFRESHED/USER_UPDATED.
+    // ✅ Main auth subscription
     const { data: sub } = supabase.auth.onAuthStateChange(async (event, session) => {
       if (cancelled) return;
 
+      // --- NEW: mirror auth events to server cookies ---
+      await fetch('/api/auth/set', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ event, session }),
+      });
+
+      // --- Your existing logic ---
       if (event === 'SIGNED_OUT') {
         setProfile(null);
         setLoadingProfile(false);
@@ -94,14 +102,9 @@ export default function App({ Component, pageProps }: AppProps) {
 
   async function handleSignOut() {
     try { await supabase.auth.signOut(); }
-    finally {
-      // SPA navigation (no full document reload)
-      router.replace('/');
-    }
+    finally { router.replace('/'); }
   }
 
-  // ❌ Do NOT auto sign-out + reload on profileError.
-  // Show a non-blocking banner instead.
   const errorBanner = profileError ? (
     <div className="alert error">Profile error: {profileError}. You can try again or sign out.</div>
   ) : null;
@@ -137,7 +140,6 @@ export default function App({ Component, pageProps }: AppProps) {
       </header>
 
       {errorBanner}
-
       <Component {...pageProps} />
     </>
   );
