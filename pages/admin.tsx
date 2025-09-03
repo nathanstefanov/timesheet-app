@@ -80,7 +80,7 @@ export default function Admin() {
         .from('profiles')
         .select('id, role')
         .eq('id', session.user.id)
-        .maybeSingle(); // ✅ tolerant during warmup
+        .maybeSingle();
 
       if (!alive) return;
       if (error || !data) {
@@ -123,7 +123,8 @@ export default function Admin() {
     setLoading(true);
     setErr(undefined);
     try {
-      let q = supabase.from<Shift>('shifts').select('*').order('shift_date', { ascending: false });
+      // ✨ FIX: put the generic on select, not from
+      let q = supabase.from('shifts').select<Shift>('*').order('shift_date', { ascending: false });
       if (tab === 'unpaid') q = q.eq('is_paid', false);
       if (tab === 'paid') q = q.eq('is_paid', true);
 
@@ -153,7 +154,6 @@ export default function Admin() {
         setVenmo({});
       }
     } catch (e: any) {
-      // If refresh hit mid-query, let the next tick refetch
       if (e?.message?.toLowerCase().includes('permission')) {
         return;
       }
