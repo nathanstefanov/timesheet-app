@@ -211,3 +211,123 @@ body {
   .page { margin: 20px auto; padding: 20px; }
   .table-wrap { overflow-x: auto; }
 }
+/* ================================
+   TABLE FIX — Centered & Even
+   (paste at end of globals.css)
+================================ */
+
+/* Center the table, control width, add breathing room */
+.table-wrap{
+  display:flex;
+  justify-content:center;
+  width:100%;
+  margin: 12px auto 22px;
+  padding: 0 8px;
+}
+.table{
+  width: min(100%, 860px);
+  table-layout: fixed;            /* even columns */
+  border-collapse: separate;
+  border-spacing: 0;
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  background:#fff;
+}
+
+/* Consistent cell rhythm */
+.table thead th{
+  background:#f8fafc;
+  color: var(--ink-subtle);
+  font-weight: 800;
+  text-align: center;
+  padding: 12px 14px;
+  letter-spacing:.2px;
+  border-top:0;
+}
+.table th,
+.table td{
+  padding: 12px 14px;
+  text-align: center;             /* center everything */
+  vertical-align: middle;
+  border-top: 1px solid var(--border-soft);
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;            /* stop wrapping chaos */
+}
+.table tbody tr:hover{ background:#f7f9ff; }
+
+/* Compact, tidy action buttons inside cells */
+.table td .actions{
+  display:inline-flex;
+  gap:8px;
+  justify-content:center;
+  align-items:center;
+}
+.btn-edit,.btn-delete{ height:34px; min-width:80px; padding:0 10px; border-radius:10px; }
+
+/* ---- Specific column widths for 9-column tables ----
+   Order: Date | Type | In | Out | Hours | Pay | Status | Paid at | Actions
+   (sums to 100%) */
+.table--admin:not(.table--stack) thead th:nth-child(1),
+.table--admin:not(.table--stack) tbody td:nth-child(1){ width:16%; }
+.table--admin:not(.table--stack) thead th:nth-child(2),
+.table--admin:not(.table--stack) tbody td:nth-child(2){ width:12%; }
+.table--admin:not(.table--stack) thead th:nth-child(3),
+.table--admin:not(.table--stack) tbody td:nth-child(3){ width:9%; }
+.table--admin:not(.table--stack) thead th:nth-child(4),
+.table--admin:not(.table--stack) tbody td:nth-child(4){ width:9%; }
+.table--admin:not(.table--stack) thead th:nth-child(5),
+.table--admin:not(.table--stack) tbody td:nth-child(5){ width:10%; }
+.table--admin:not(.table--stack) thead th:nth-child(6),
+.table--admin:not(.table--stack) tbody td:nth-child(6){ width:10%; }
+.table--admin:not(.table--stack) thead th:nth-child(7),
+.table--admin:not(.table--stack) tbody td:nth-child(7){ width:12%; }
+.table--admin:not(.table--stack) thead th:nth-child(8),
+.table--admin:not(.table--stack) tbody td:nth-child(8){ width:12%; }
+.table--admin:not(.table--stack) thead th:nth-child(9),
+.table--admin:not(.table--stack) tbody td:nth-child(9){ width:10%; }
+
+/* The “Totals by Employee” table (4 columns) */
+.table--admin.totals thead th:nth-child(1),
+.table--admin.totals tbody td:nth-child(1){ width:40%; text-align:left; }
+.table--admin.totals thead th:nth-child(2),
+.table--admin.totals tbody td:nth-child(2){ width:20%; }
+.table--admin.totals thead th:nth-child(3),
+.table--admin.totals tbody td:nth-child(3){ width:20%; }
+.table--admin.totals thead th:nth-child(4),
+.table--admin.totals tbody td:nth-child(4){ width:20%; }
+
+/* Section header rows inside Admin “Shifts” — center them and give air */
+.section-head td{ padding:0; background:#f8fafc; border-top:2px solid var(--border); }
+.section-bar{
+  max-width: 860px;
+  margin: 0 auto;
+  padding: 10px 12px;
+  display:grid;
+  grid-template-columns: 1fr;
+  justify-items:center;
+  row-gap:8px;
+}
+.section-bar__left, .section-bar__right{
+  display:flex; gap:10px; align-items:center; justify-content:center;
+}
+
+/* Subtotal row — centered & readable */
+.subtotal td{
+  background:#fafbff;
+  border-top:2px solid var(--brand-border);
+  font-weight:700;
+  padding:12px 14px;
+}
+
+/* Chips/toolbar spacing so content isn't jammed above tables */
+.totals{ margin: 8px auto 10px; }
+.tabs{ margin: 10px auto 14px; }
+
+/* Mobile: allow natural wrap; keep centered */
+@media (max-width: 720px){
+  .table{ width: 94vw; table-layout: auto; }
+  .table th, .table td{ padding:10px 12px; white-space: normal; }
+}
