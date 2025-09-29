@@ -21,7 +21,7 @@ type Shift = {
   paid_at?: string | null;  // ISO
   paid_by?: string | null;
 
-  // NEW: admin-only metadata
+  // admin-only metadata
   admin_flag?: boolean | null;
   admin_note?: string | null;
 };
@@ -91,7 +91,7 @@ export default function Admin() {
   const [err, setErr] = useState<string | undefined>();
   const [bulkBusy, setBulkBusy] = useState<Record<string, boolean>>({});
 
-  // NEW: week / range filters
+  // week / range filters
   const today = useMemo(() => stripTime(new Date()), []);
   const [useWeek, setUseWeek] = useState<boolean>(true);
   const [weekAnchor, setWeekAnchor] = useState<Date>(startOfWeek(today)); // always Monday of current week
@@ -101,7 +101,35 @@ export default function Admin() {
   const [rangeFrom, setRangeFrom] = useState<string | null>(null);
   const [rangeTo, setRangeTo] = useState<string | null>(null);
 
-  // ---- Auth + role check (react only to sign-in/out) ----
+  // NOTE MODAL (admin only)
+  const [noteModal, setNoteModal] = useState<{ open: boolean; row: Shift | null }>(
+    { open: false, row: null }
+  );
+  const [noteDraft, setNoteDraft] = useState<string>('');
+
+  function openNoteModal(row: Shift) {
+    setNoteDraft(row.admin_note ?? '');
+    setNoteModal({ open: true, row });
+  }
+  function closeNoteModal() {
+    setNoteModal({ open: false, row: null });
+  }
+  async function saveNoteModal() {
+    if (!noteModal.row) return;
+    const row = noteModal.row;
+    const prev = row.admin_note ?? '';
+    const next = noteDraft;
+    setShifts(p => p.map(s => (s.id === row.id ? { ...s, admin_note: next } : s)));
+    const { error } = await supabase.from('shifts').update({ admin_note: next }).eq('id', row.id);
+    if (error) {
+      alert(error.message);
+      setShifts(p => p.map(s => (s.id === row.id ? { ...s, admin_note: prev } : s)));
+      return;
+    }
+    closeNoteModal();
+  }
+
+  // ---- Auth + role check ----
   useEffect(() => {
     let alive = true;
 
@@ -144,13 +172,12 @@ export default function Admin() {
         setChecking(true);
         loadProfile();
       }
-      // ignore TOKEN_REFRESHED/USER_UPDATED
     });
 
     return () => { alive = false; sub.subscription.unsubscribe(); };
   }, [router]);
 
-  // ---- Load shifts (+ related profile info), honoring tab + date filters ----
+  // ---- Load shifts (+ profile info), honoring tab + date filters ----
   const loadShifts = useCallback(async () => {
     if (checking) return;
     if (!me || me.role !== 'admin') return;
@@ -318,25 +345,13 @@ export default function Admin() {
     setShifts(prev => prev.filter(s => s.id !== row.id));
   }
 
-  // NEW: admin-only helpers
+  // admin-only helpers
   async function toggleAdminFlag(row: Shift, next: boolean) {
     setShifts(prev => prev.map(s => (s.id === row.id ? { ...s, admin_flag: next } : s)));
     const { error } = await supabase.from('shifts').update({ admin_flag: next }).eq('id', row.id);
     if (error) {
       alert(error.message);
       setShifts(prev => prev.map(s => (s.id === row.id ? { ...s, admin_flag: row.admin_flag ?? null } : s)));
-    }
-  }
-
-  async function editAdminNote(row: Shift) {
-    const current = row.admin_note ?? '';
-    const next = window.prompt('Admin note (only visible to admins):', current);
-    if (next === null) return; // cancel
-    setShifts(prev => prev.map(s => (s.id === row.id ? { ...s, admin_note: next } : s)));
-    const { error } = await supabase.from('shifts').update({ admin_note: next }).eq('id', row.id);
-    if (error) {
-      alert(error.message);
-      setShifts(prev => prev.map(s => (s.id === row.id ? { ...s, admin_note: current } : s)));
     }
   }
 
@@ -363,7 +378,7 @@ export default function Admin() {
       {err && <div className="alert error" role="alert">Error: {err}</div>}
 
       {/* Summary */}
-      <div className="card card--tight full">
+      <div className="card card--tight full center">
         <div className="admin-summary admin-summary--center" style={{ margin: 0, border: 0, boxShadow: 'none' }}>
           <span className="chip chip--xl">Total Unpaid: ${unpaidTotal.toFixed(2)}</span>
           <span className="meta">Employees with Unpaid: {totals.filter(t => t.unpaid > 0).length}</span>
@@ -375,7 +390,7 @@ export default function Admin() {
       </div>
 
       {/* Tabs */}
-      <div className="card card--tight full" style={{ marginTop: 10, padding: 10 }}>
+      <div className="card card--tight full center" style={{ marginTop: 10, padding: 10 }}>
         <div className="tabs tabs--center" style={{ margin: 0 }}>
           <button className={tab === 'unpaid' ? 'active' : ''} onClick={() => setTab('unpaid')}>Unpaid</button>
           <button className={tab === 'paid' ? 'active' : ''} onClick={() => setTab('paid')}>Paid</button>
@@ -384,18 +399,19 @@ export default function Admin() {
       </div>
 
       {/* Date / Week Filters */}
-      <div className="card card--tight full" style={{ marginTop: 10, padding: 10 }}>
-        <div className="row" style={{ gap: 12, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center' }}>
-          <label className="inline" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+      <div className="card card--tight full center" style={{ marginTop: 10, padding: 10 }}>
+        <div className="row row-center">
+          <label className="inline">
             <input
               type="radio"
               name="range-mode"
               checked={useWeek}
               onChange={() => setUseWeek(true)}
             />
-            Week
+            <span>Week</span>
           </label>
-          <div className="inline" aria-label="Week controls" style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
+
+          <div className="inline" aria-label="Week controls">
             <button className="topbar-btn" onClick={() => setWeekAnchor(addDays(weekAnchor, -7))}>◀ Prev</button>
             <button className="topbar-btn" onClick={() => setWeekAnchor(startOfWeek(today))}>This Week</button>
             <button
@@ -410,18 +426,19 @@ export default function Admin() {
             </span>
           </div>
 
-          <span className="divider" style={{ width: 1, height: 24, background: 'var(--border)' }}></span>
+          <span className="divider" />
 
-          <label className="inline" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          <label className="inline">
             <input
               type="radio"
               name="range-mode"
               checked={!useWeek}
               onChange={() => setUseWeek(false)}
             />
-            Range
+            <span>Range</span>
           </label>
-          <div className="inline" aria-label="Custom range" style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
+
+          <div className="inline" aria-label="Custom range">
             <input
               type="date"
               value={rangeFrom ?? ''}
@@ -450,10 +467,10 @@ export default function Admin() {
       </div>
 
       {/* Totals by Employee */}
-      <div className="card card--tight full">
-        <div className="card__header">
+      <div className="card card--tight full center">
+        <div className="card__header center">
           <h3>Totals by Employee</h3>
-          <div className="row">
+          <div className="row row-center">
             <label className="sr-only" htmlFor="sort-by">Sort by</label>
             <select id="sort-by" value={sortBy} onChange={(e) => setSortBy(e.target.value as SortBy)}>
               <option value="name">Name</option>
@@ -473,7 +490,7 @@ export default function Admin() {
         </div>
 
         <div className="table-wrap">
-          <table className="table table--center table--compact table--admin">
+          <table className="table table--center table--compact table--admin center">
             <thead>
               <tr>
                 <th>Employee</th>
@@ -511,15 +528,15 @@ export default function Admin() {
       </div>
 
       {/* Shifts */}
-      <div className="card card--tight full" style={{ marginTop: 12 }}>
-        <div className="card__header">
+      <div className="card card--tight full center" style={{ marginTop: 12 }}>
+        <div className="card__header center">
           <h3>Shifts</h3>
         </div>
 
         {loading && <p className="center">Loading…</p>}
 
         <div className="table-wrap">
-          <table className="table table--center table--compact table--admin table--stack">
+          <table className="table table--center table--compact table--admin table--stack center">
             <thead>
               <tr>
                 <th>Employee</th>
@@ -557,15 +574,15 @@ export default function Admin() {
                   <React.Fragment key={uid}>
                     <tr className="section-head">
                       <td colSpan={10}>
-                        <div className="section-bar">
-                          <div className="section-bar__left">
+                        <div className="section-bar center">
+                          <div className="section-bar__left center">
                             <strong className="employee-name">{name}</strong>
                             <div className="pill" aria-label="Unpaid shifts">
                               <span className="pill__num">{unpaidCount}</span>
                               <span className="pill__label">unpaid shifts</span>
                             </div>
                           </div>
-                          <div className="section-bar__right">
+                          <div className="section-bar__right center">
                             <button
                               className="topbar-btn"
                               disabled={bulkBusy[uid] || allPaid}
@@ -588,13 +605,23 @@ export default function Admin() {
                     {rows.map((s) => {
                       const { pay, minApplied, base } = payInfo(s);
                       const paid = Boolean(s.is_paid);
+                      const hasNote = !!(s.admin_note && s.admin_note.trim());
                       return (
                         <tr key={s.id} className={s.admin_flag ? 'row-flagged' : ''}>
                           <td data-label="Employee">
-                            {name}
-                            {s.admin_note && (
-                              <span className="muted" title={s.admin_note} style={{ marginLeft: 6 }}>📝</span>
-                            )}
+                            <div className="emp-cell">
+                              <span>{name}</span>
+                              {hasNote && (
+                                <button
+                                  className="icon-btn"
+                                  title="View note"
+                                  onClick={() => openNoteModal(s)}
+                                  aria-label="View note"
+                                >
+                                  📝
+                                </button>
+                              )}
+                            </div>
                           </td>
                           <td data-label="Date">{s.shift_date}</td>
                           <td data-label="Type">{s.shift_type}</td>
@@ -635,23 +662,25 @@ export default function Admin() {
                             {s.paid_at ? new Date(s.paid_at).toLocaleString() : '—'}
                           </td>
                           <td data-label="Actions">
-                            <div className="actions">
-                              <button className="btn-edit" onClick={() => editRow(s)}>Edit</button>
-                              <button className="btn-delete" onClick={() => deleteRow(s)}>Delete</button>
+                            <div className="actions center">
+                              <button className="btn" onClick={() => editRow(s)}>Edit</button>
+                              <button className="btn btn-danger" onClick={() => deleteRow(s)}>Delete</button>
 
-                              {/* NEW: admin-only controls (this page is admin-gated) */}
+                              {/* admin-only controls */}
                               <button
-                                className="btn-flag"
+                                className={`btn ${s.admin_flag ? 'btn-flag-on' : 'btn-flag'}`}
                                 title={s.admin_flag ? 'Unflag' : 'Flag for attention'}
                                 onClick={() => toggleAdminFlag(s, !Boolean(s.admin_flag))}
                                 aria-pressed={Boolean(s.admin_flag)}
                               >
                                 {s.admin_flag ? '★ Flagged' : '☆ Flag'}
                               </button>
+
+                              {/* quick note view/edit */}
                               <button
-                                className="btn-note"
-                                title={s.admin_note ? `Edit note: ${s.admin_note}` : 'Add note'}
-                                onClick={() => editAdminNote(s)}
+                                className="btn"
+                                onClick={() => openNoteModal(s)}
+                                title={hasNote ? 'View / Edit note' : 'Add note'}
                               >
                                 📝 Note
                               </button>
@@ -662,7 +691,7 @@ export default function Admin() {
                     })}
 
                     <tr className="subtotal">
-                      <td colSpan={5} style={{ textAlign: 'right' }}>Total — {name}</td>
+                      <td colSpan={5} style={{ textAlign: 'center' }}>Total — {name}</td>
                       <td>{subtotal.hours.toFixed(2)}</td>
                       <td>${subtotal.pay.toFixed(2)}</td>
                       <td colSpan={3}></td>
@@ -675,38 +704,121 @@ export default function Admin() {
         </div>
       </div>
 
+      {/* NOTE MODAL */}
+      {noteModal.open && noteModal.row && (
+        <div className="modal-backdrop" role="dialog" aria-modal="true">
+          <div className="modal">
+            <div className="modal-header">
+              <span className="modal-title">📝 Note — {names[noteModal.row.user_id] || '—'} · {noteModal.row.shift_date}</span>
+            </div>
+            <div className="modal-body">
+              <textarea
+                value={noteDraft}
+                onChange={(e) => setNoteDraft(e.target.value)}
+                placeholder="Add a private admin note…"
+              />
+              <p className="muted" style={{ marginTop: 8 }}>
+                Notes are only visible to admins on this page.
+              </p>
+            </div>
+            <div className="modal-actions">
+              <button className="btn" onClick={closeNoteModal}>Close</button>
+              <button className="btn btn-primary" onClick={saveNoteModal}>Save</button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <style jsx>{`
-        .btn-venmo{
+        /* Centering helpers */
+        .center { text-align: center; }
+        .row-center {
+          display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap;
+        }
+
+        /* Buttons (unified) */
+        .btn, .topbar-btn, .btn-venmo {
           display:inline-flex; align-items:center; justify-content:center;
-          height:28px; padding:0 10px; border-radius:999px;
-          font-weight:800; text-decoration:none; border:1px solid var(--border);
-          background:#f8fafc; color:#1f2937; box-shadow: var(--shadow-sm);
+          height:36px; padding:0 14px; border-radius:10px;
+          border:1px solid var(--border); background:#f8fafc; color:#1f2937;
+          font-weight:600; cursor:pointer; text-decoration:none;
+          box-shadow: var(--shadow-sm);
         }
-        .btn-venmo:hover{ filter:brightness(0.98); }
-        .btn-venmo:active{ transform: translateY(1px); }
+        .btn:hover, .topbar-btn:hover, .btn-venmo:hover { filter:brightness(0.98); }
+        .btn:active, .topbar-btn:active { transform: translateY(1px); }
 
-        /* NEW: flagged row highlight */
-        .row-flagged {
-          background: #fffbea; /* soft yellow */
-        }
+        .btn-primary { background:#e8f0ff; }
+        .btn-danger { background:#ffe8e8; }
 
-        /* NEW: small admin buttons */
-        .btn-flag, .btn-note {
-          margin-left: 6px;
-          height: 28px;
-          padding: 0 10px;
-          border-radius: 6px;
-          border: 1px solid var(--border);
-          background: #f8fafc;
-          cursor: pointer;
-        }
-        .btn-flag[aria-pressed="true"] {
-          background: #fff3c4;
-          font-weight: 700;
+        .btn-flag { background:#fff; }
+        .btn-flag-on { background:#fff3c4; font-weight:800; }
+
+        .icon-btn{
+          display:inline-flex; align-items:center; justify-content:center;
+          width:28px; height:28px; margin-left:6px; border-radius:999px;
+          border:1px solid var(--border); background:#fff; cursor:pointer;
+          line-height:1;
         }
 
-        /* divider used in date filter card */
-        .divider { opacity: 0.5; }
+        .emp-cell { display:flex; align-items:center; justify-content:center; gap:6px; }
+
+        /* Table: center everything */
+        .table th, .table td { text-align:center; vertical-align:middle; }
+
+        /* Section bar */
+        .section-bar {
+          display:flex; align-items:center; justify-content:space-between; gap:12px;
+        }
+        .section-bar__left, .section-bar__right { display:flex; align-items:center; gap:10px; }
+
+        /* Modal */
+        .modal-backdrop{
+          position:fixed; inset:0; background:rgba(0,0,0,0.4);
+          display:flex; align-items:center; justify-content:center; z-index:1000;
+        }
+        .modal{
+          width:min(640px, 92vw); background:white; border-radius:16px; padding:16px;
+          box-shadow:0 10px 25px rgba(0,0,0,0.2); display:flex; flex-direction:column; gap:12px;
+        }
+        .modal-header{ display:flex; align-items:center; justify-content:center; }
+        .modal-title{ font-weight:800; }
+        .modal-body{ display:flex; flex-direction:column; align-items:center; }
+        .modal-body textarea{
+          width:100%; min-height:140px; border-radius:12px; padding:10px;
+          border:1px solid var(--border); resize:vertical; font:inherit;
+        }
+        .modal-actions{
+          display:flex; align-items:center; justify-content:center; gap:10px;
+        }
+
+        /* Badges & pills */
+        .pill{
+          display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:999px;
+          background:#f3f4f6; border:1px solid var(--border);
+        }
+        .pill__num{ font-weight:800; }
+
+        .badge-min{
+          display:inline-flex; align-items:center; justify-content:center;
+          padding:2px 8px; border-radius:999px; border:1px solid #f6ca00; background:#fffbe6; color:#6b5800; font-weight:700;
+        }
+        .badge-paid{
+          display:inline-flex; align-items:center; justify-content:center;
+          padding:2px 8px; border-radius:999px; border:1px solid #16a34a; background:#ecfdf5; color:#065f46; font-weight:700;
+        }
+        .badge-unpaid{
+          display:inline-flex; align-items:center; justify-content:center;
+          padding:2px 8px; border-radius:999px; border:1px solid #ef4444; background:#fef2f2; color:#7f1d1d; font-weight:700;
+        }
+
+        /* Flagged row */
+        .row-flagged { background:#fffbea; }
+
+        /* Misc */
+        .divider { width:1px; height:24px; background:var(--border); opacity:0.5; }
+        .muted { color:#6b7280; }
+        .inline { display:inline-flex; align-items:center; gap:6px; }
+        .actions { display:flex; align-items:center; justify-content:center; gap:6px; flex-wrap:wrap; }
       `}</style>
     </main>
   );
