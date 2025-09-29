@@ -20,6 +20,10 @@ type Shift = {
   is_paid?: boolean | null;
   paid_at?: string | null;  // ISO
   paid_by?: string | null;
+
+  // NEW: admin-only metadata
+  admin_flag?: boolean | null;
+  admin_note?: string | null;
 };
 
 // ---- Helpers ----
@@ -41,6 +45,32 @@ function venmoHref(raw?: string | null): string | null {
   return `https://venmo.com/u/${encodeURIComponent(handle)}`;
 }
 
+// date helpers
+function toYMD(d: Date) {
+  const y = d.getFullYear();
+  const m = String(d.getMonth() + 1).padStart(2, '0');
+  const dd = String(d.getDate()).padStart(2, '0');
+  return `${y}-${m}-${dd}`;
+}
+function startOfWeek(d: Date) {
+  // Monday start; change if you prefer Sunday
+  const t = new Date(d);
+  const day = (t.getDay() + 6) % 7; // 0..6 where 0 = Monday
+  t.setDate(t.getDate() - day);
+  t.setHours(0, 0, 0, 0);
+  return t;
+}
+function addDays(d: Date, n: number) {
+  const t = new Date(d);
+  t.setDate(t.getDate() + n);
+  return t;
+}
+function stripTime(d: Date) {
+  const t = new Date(d);
+  t.setHours(0, 0, 0, 0);
+  return t;
+}
+
 export default function Admin() {
   const router = useRouter();
 
@@ -60,6 +90,16 @@ export default function Admin() {
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | undefined>();
   const [bulkBusy, setBulkBusy] = useState<Record<string, boolean>>({});
+
+  // NEW: week / range filters
+  const today = useMemo(() => stripTime(new Date()), []);
+  const [useWeek, setUseWeek] = useState<boolean>(true);
+  const [weekAnchor, setWeekAnchor] = useState<Date>(startOfWeek(today)); // always Monday of current week
+  const weekFrom = useMemo(() => toYMD(weekAnchor), [weekAnchor]);
+  const weekTo = useMemo(() => toYMD(addDays(weekAnchor, 6)), [weekAnchor]);
+
+  const [rangeFrom, setRangeFrom] = useState<string | null>(null);
+  const [rangeTo, setRangeTo] = useState<string | null>(null);
 
   // ---- Auth + role check (react only to sign-in/out) ----
   useEffect(() => {
@@ -110,7 +150,7 @@ export default function Admin() {
     return () => { alive = false; sub.subscription.unsubscribe(); };
   }, [router]);
 
-  // ---- Load shifts (+ related profile info) ----
+  // ---- Load shifts (+ related profile info), honoring tab + date filters ----
   const loadShifts = useCallback(async () => {
     if (checking) return;
     if (!me || me.role !== 'admin') return;
@@ -121,6 +161,12 @@ export default function Admin() {
       let q = supabase.from('shifts').select('*').order('shift_date', { ascending: false });
       if (tab === 'unpaid') q = q.eq('is_paid', false);
       if (tab === 'paid') q = q.eq('is_paid', true);
+
+      // Date filtering
+      const from = useWeek ? weekFrom : (rangeFrom || null);
+      const to = useWeek ? weekTo : (rangeTo || null);
+      if (from) q = q.gte('shift_date', from);
+      if (to) q = q.lte('shift_date', to);
 
       const { data, error } = await q;
       if (error) throw error;
@@ -152,7 +198,7 @@ export default function Admin() {
     } finally {
       setLoading(false);
     }
-  }, [checking, me, tab]);
+  }, [checking, me, tab, useWeek, weekFrom, weekTo, rangeFrom, rangeTo]);
 
   useEffect(() => { loadShifts(); }, [loadShifts]);
 
@@ -272,6 +318,28 @@ export default function Admin() {
     setShifts(prev => prev.filter(s => s.id !== row.id));
   }
 
+  // NEW: admin-only helpers
+  async function toggleAdminFlag(row: Shift, next: boolean) {
+    setShifts(prev => prev.map(s => (s.id === row.id ? { ...s, admin_flag: next } : s)));
+    const { error } = await supabase.from('shifts').update({ admin_flag: next }).eq('id', row.id);
+    if (error) {
+      alert(error.message);
+      setShifts(prev => prev.map(s => (s.id === row.id ? { ...s, admin_flag: row.admin_flag ?? null } : s)));
+    }
+  }
+
+  async function editAdminNote(row: Shift) {
+    const current = row.admin_note ?? '';
+    const next = window.prompt('Admin note (only visible to admins):', current);
+    if (next === null) return; // cancel
+    setShifts(prev => prev.map(s => (s.id === row.id ? { ...s, admin_note: next } : s)));
+    const { error } = await supabase.from('shifts').update({ admin_note: next }).eq('id', row.id);
+    if (error) {
+      alert(error.message);
+      setShifts(prev => prev.map(s => (s.id === row.id ? { ...s, admin_note: current } : s)));
+    }
+  }
+
   if (checking) {
     return (
       <main className="page page--center">
@@ -281,6 +349,13 @@ export default function Admin() {
     );
   }
   if (!me || me.role !== 'admin') return null;
+
+  // constrain "Next ▶" to not go past the current calendar week
+  const nextWeekAnchor = addDays(weekAnchor, 7);
+  const nextWeekEnd = stripTime(addDays(nextWeekAnchor, 6));
+  const currentWeekStart = startOfWeek(today);
+  const currentWeekEnd = stripTime(addDays(currentWeekStart, 6));
+  const disableNextWeek = nextWeekEnd > currentWeekEnd;
 
   return (
     <main className="page page--center">
@@ -305,6 +380,72 @@ export default function Admin() {
           <button className={tab === 'unpaid' ? 'active' : ''} onClick={() => setTab('unpaid')}>Unpaid</button>
           <button className={tab === 'paid' ? 'active' : ''} onClick={() => setTab('paid')}>Paid</button>
           <button className={tab === 'all' ? 'active' : ''} onClick={() => setTab('all')}>All</button>
+        </div>
+      </div>
+
+      {/* Date / Week Filters */}
+      <div className="card card--tight full" style={{ marginTop: 10, padding: 10 }}>
+        <div className="row" style={{ gap: 12, flexWrap: 'wrap', alignItems: 'center', justifyContent: 'center' }}>
+          <label className="inline" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <input
+              type="radio"
+              name="range-mode"
+              checked={useWeek}
+              onChange={() => setUseWeek(true)}
+            />
+            Week
+          </label>
+          <div className="inline" aria-label="Week controls" style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
+            <button className="topbar-btn" onClick={() => setWeekAnchor(addDays(weekAnchor, -7))}>◀ Prev</button>
+            <button className="topbar-btn" onClick={() => setWeekAnchor(startOfWeek(today))}>This Week</button>
+            <button
+              className="topbar-btn"
+              onClick={() => setWeekAnchor(nextWeekAnchor)}
+              disabled={disableNextWeek}
+            >
+              Next ▶
+            </button>
+            <span className="muted" style={{ marginLeft: 8 }}>
+              {weekFrom} – {weekTo}
+            </span>
+          </div>
+
+          <span className="divider" style={{ width: 1, height: 24, background: 'var(--border)' }}></span>
+
+          <label className="inline" style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <input
+              type="radio"
+              name="range-mode"
+              checked={!useWeek}
+              onChange={() => setUseWeek(false)}
+            />
+            Range
+          </label>
+          <div className="inline" aria-label="Custom range" style={{ display: 'inline-flex', gap: 6, alignItems: 'center' }}>
+            <input
+              type="date"
+              value={rangeFrom ?? ''}
+              onChange={(e) => setRangeFrom(e.target.value || null)}
+              disabled={useWeek}
+              aria-label="From"
+            />
+            <span>to</span>
+            <input
+              type="date"
+              value={rangeTo ?? ''}
+              onChange={(e) => setRangeTo(e.target.value || null)}
+              disabled={useWeek}
+              aria-label="To"
+            />
+            <button
+              className="topbar-btn"
+              onClick={() => { setRangeFrom(null); setRangeTo(null); }}
+              disabled={useWeek && !rangeFrom && !rangeTo}
+              title="Clear range"
+            >
+              Clear
+            </button>
+          </div>
         </div>
       </div>
 
@@ -448,8 +589,13 @@ export default function Admin() {
                       const { pay, minApplied, base } = payInfo(s);
                       const paid = Boolean(s.is_paid);
                       return (
-                        <tr key={s.id}>
-                          <td data-label="Employee">{name}</td>
+                        <tr key={s.id} className={s.admin_flag ? 'row-flagged' : ''}>
+                          <td data-label="Employee">
+                            {name}
+                            {s.admin_note && (
+                              <span className="muted" title={s.admin_note} style={{ marginLeft: 6 }}>📝</span>
+                            )}
+                          </td>
                           <td data-label="Date">{s.shift_date}</td>
                           <td data-label="Type">{s.shift_type}</td>
                           <td data-label="In">
@@ -492,6 +638,23 @@ export default function Admin() {
                             <div className="actions">
                               <button className="btn-edit" onClick={() => editRow(s)}>Edit</button>
                               <button className="btn-delete" onClick={() => deleteRow(s)}>Delete</button>
+
+                              {/* NEW: admin-only controls (this page is admin-gated) */}
+                              <button
+                                className="btn-flag"
+                                title={s.admin_flag ? 'Unflag' : 'Flag for attention'}
+                                onClick={() => toggleAdminFlag(s, !Boolean(s.admin_flag))}
+                                aria-pressed={Boolean(s.admin_flag)}
+                              >
+                                {s.admin_flag ? '★ Flagged' : '☆ Flag'}
+                              </button>
+                              <button
+                                className="btn-note"
+                                title={s.admin_note ? `Edit note: ${s.admin_note}` : 'Add note'}
+                                onClick={() => editAdminNote(s)}
+                              >
+                                📝 Note
+                              </button>
                             </div>
                           </td>
                         </tr>
@@ -521,6 +684,29 @@ export default function Admin() {
         }
         .btn-venmo:hover{ filter:brightness(0.98); }
         .btn-venmo:active{ transform: translateY(1px); }
+
+        /* NEW: flagged row highlight */
+        .row-flagged {
+          background: #fffbea; /* soft yellow */
+        }
+
+        /* NEW: small admin buttons */
+        .btn-flag, .btn-note {
+          margin-left: 6px;
+          height: 28px;
+          padding: 0 10px;
+          border-radius: 6px;
+          border: 1px solid var(--border);
+          background: #f8fafc;
+          cursor: pointer;
+        }
+        .btn-flag[aria-pressed="true"] {
+          background: #fff3c4;
+          font-weight: 700;
+        }
+
+        /* divider used in date filter card */
+        .divider { opacity: 0.5; }
       `}</style>
     </main>
   );
