@@ -779,7 +779,7 @@ export default function Admin() {
         .btn-danger { background:#ffe8e8; }
 
         .btn-flag { background:#fff; }
-        .btn-flag-on { background:#fff3c4; font-weight:800; }
+        .btn-flag-on { background:#DD571C; font-weight:800; }
 
         .icon-btn{
           display:inline-flex; align-items:center; justify-content:center;
