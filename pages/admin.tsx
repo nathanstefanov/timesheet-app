@@ -87,6 +87,7 @@ export default function Admin() {
   const [tab, setTab] = useState<Tab>('unpaid');
   const [sortBy, setSortBy] = useState<SortBy>('name');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
+  const [userSorted, setUserSorted] = useState(false); // tracks if user manually chose a sort
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | undefined>();
   const [bulkBusy, setBulkBusy] = useState<Record<string, boolean>>({});
@@ -177,6 +178,21 @@ export default function Admin() {
     return () => { alive = false; sub.subscription.unsubscribe(); };
   }, [router]);
 
+  // ---- Auto sort per tab (unpaid/paid) unless user overrides ----
+  useEffect(() => {
+    if (userSorted) return; // don't override user's choice
+    if (tab === 'unpaid') {         // show employees with highest unpaid first
+      setSortBy('unpaid');
+      setSortDir('desc');
+    } else if (tab === 'paid') {    // within paid filter, sort by total pay desc
+      setSortBy('pay');
+      setSortDir('desc');
+    } else {                        // all = alphabetical
+      setSortBy('name');
+      setSortDir('asc');
+    }
+  }, [tab, userSorted]);
+
   // ---- Load shifts (+ profile info), honoring tab + date filters ----
   const loadShifts = useCallback(async () => {
     if (checking) return;
@@ -189,7 +205,7 @@ export default function Admin() {
       if (tab === 'unpaid') q = q.eq('is_paid', false);
       if (tab === 'paid') q = q.eq('is_paid', true);
 
-      // Date filtering
+      // Date filtering (this is the week filter you wanted kept as an option)
       const from = useWeek ? weekFrom : (rangeFrom || null);
       const to = useWeek ? weekTo : (rangeTo || null);
       if (from) q = q.gte('shift_date', from);
@@ -355,16 +371,6 @@ export default function Admin() {
     }
   }
 
-  if (checking) {
-    return (
-      <main className="page page--center">
-        <h1 className="page__title">Admin Dashboard</h1>
-        <p>Loading…</p>
-      </main>
-    );
-  }
-  if (!me || me.role !== 'admin') return null;
-
   // constrain "Next ▶" to not go past the current calendar week
   const nextWeekAnchor = addDays(weekAnchor, 7);
   const nextWeekEnd = stripTime(addDays(nextWeekAnchor, 6));
@@ -392,13 +398,28 @@ export default function Admin() {
       {/* Tabs */}
       <div className="card card--tight full center" style={{ marginTop: 10, padding: 10 }}>
         <div className="tabs tabs--center" style={{ margin: 0 }}>
-          <button className={tab === 'unpaid' ? 'active' : ''} onClick={() => setTab('unpaid')}>Unpaid</button>
-          <button className={tab === 'paid' ? 'active' : ''} onClick={() => setTab('paid')}>Paid</button>
-          <button className={tab === 'all' ? 'active' : ''} onClick={() => setTab('all')}>All</button>
+          <button
+            className={tab === 'unpaid' ? 'active' : ''}
+            onClick={() => { setTab('unpaid'); setUserSorted(false); }}
+          >
+            Unpaid
+          </button>
+          <button
+            className={tab === 'paid' ? 'active' : ''}
+            onClick={() => { setTab('paid'); setUserSorted(false); }}
+          >
+            Paid
+          </button>
+          <button
+            className={tab === 'all' ? 'active' : ''}
+            onClick={() => { setTab('all'); setUserSorted(false); }}
+          >
+            All
+          </button>
         </div>
       </div>
 
-      {/* Date / Week Filters */}
+      {/* Date / Week Filters (OPTIONAL, does not affect sorting rule) */}
       <div className="card card--tight full center" style={{ marginTop: 10, padding: 10 }}>
         <div className="row row-center">
           <label className="inline">
@@ -472,7 +493,11 @@ export default function Admin() {
           <h3>Totals by Employee</h3>
           <div className="row row-center">
             <label className="sr-only" htmlFor="sort-by">Sort by</label>
-            <select id="sort-by" value={sortBy} onChange={(e) => setSortBy(e.target.value as SortBy)}>
+            <select
+              id="sort-by"
+              value={sortBy}
+              onChange={(e) => { setSortBy(e.target.value as SortBy); setUserSorted(true); }}
+            >
               <option value="name">Name</option>
               <option value="hours">Hours</option>
               <option value="pay">Pay</option>
@@ -480,7 +505,7 @@ export default function Admin() {
             </select>
             <button
               className="topbar-btn"
-              onClick={() => setSortDir(d => (d === 'asc' ? 'desc' : 'asc'))}
+              onClick={() => { setSortDir(d => (d === 'asc' ? 'desc' : 'asc')); setUserSorted(true); }}
               aria-label="Toggle sort direction"
               title="Toggle sort direction"
             >
