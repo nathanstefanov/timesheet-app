@@ -45,6 +45,13 @@ function venmoHref(raw?: string | null): string | null {
   return `https://venmo.com/u/${encodeURIComponent(handle)}`;
 }
 
+// Auto-flag rule: Breakdown with 3+ hours
+function isAutoFlag(s: Shift): boolean {
+  const isBreakdown = (s.shift_type || '').toLowerCase() === 'breakdown';
+  const hrs = Number(s.hours_worked ?? 0);
+  return isBreakdown && hrs >= 3;
+}
+
 // date helpers
 function toYMD(d: Date) {
   const y = d.getFullYear();
@@ -94,7 +101,7 @@ export default function Admin() {
 
   // week / range filters
   const today = useMemo(() => stripTime(new Date()), []);
-  const [useWeek, setUseWeek] = useState<boolean>(false); // ⬅️ default OFF (all-time)
+  const [useWeek, setUseWeek] = useState<boolean>(false); // default ALL-TIME
   const [weekAnchor, setWeekAnchor] = useState<Date>(startOfWeek(today));
   const weekFrom = useMemo(() => toYMD(weekAnchor), [weekAnchor]);
   const weekTo = useMemo(() => toYMD(addDays(weekAnchor, 6)), [weekAnchor]);
@@ -206,9 +213,6 @@ export default function Admin() {
       if (tab === 'paid') q = q.eq('is_paid', true);
 
       // Date filtering:
-      // - Default: no filter (all-time) because useWeek=false and rangeFrom/To are null.
-      // - If useWeek=true → filter to that week.
-      // - If custom range is set → filter to that range.
       const from = useWeek ? weekFrom : (rangeFrom || null);
       const to = useWeek ? weekTo : (rangeTo || null);
       if (from) q = q.gte('shift_date', from);
@@ -260,18 +264,23 @@ export default function Admin() {
     };
   }, [loadShifts]);
 
-  // ---- Totals by employee ----
+  // ---- Totals by employee (now also tracking auto/manual flagged count) ----
   const totals = useMemo(() => {
-    const m: Record<string, { id: string; name: string; hours: number; pay: number; unpaid: number; minCount: number }> = {};
+    const m: Record<string, {
+      id: string; name: string; hours: number; pay: number; unpaid: number; minCount: number; flagCount: number
+    }> = {};
     for (const s of shifts) {
       const id = s.user_id;
       const name = names[id] || '—';
-      m[id] ??= { id, name, hours: 0, pay: 0, unpaid: 0, minCount: 0 };
+      m[id] ??= { id, name, hours: 0, pay: 0, unpaid: 0, minCount: 0, flagCount: 0 };
       const { pay, minApplied } = payInfo(s);
       const h = Number(s.hours_worked || 0);
+      const flagged = Boolean(s.admin_flag) || isAutoFlag(s);
+
       m[id].hours += h;
       m[id].pay += pay;
       if (minApplied) m[id].minCount += 1;
+      if (flagged) m[id].flagCount += 1;
       if (!Boolean(s.is_paid)) m[id].unpaid += pay;
     }
     return Object.values(m);
@@ -364,7 +373,7 @@ export default function Admin() {
     setShifts(prev => prev.filter(s => s.id !== row.id));
   }
 
-  // admin-only helpers
+  // admin-only helpers (manual flag only)
   async function toggleAdminFlag(row: Shift, next: boolean) {
     setShifts(prev => prev.map(s => (s.id === row.id ? { ...s, admin_flag: next } : s)));
     const { error } = await supabase.from('shifts').update({ admin_flag: next }).eq('id', row.id);
@@ -395,6 +404,10 @@ export default function Admin() {
             <span className="badge badge-min">MIN $50</span>
             <span className="muted">Breakdown boosted to minimum</span>
           </span>
+          <span className="inline" style={{ marginLeft: 12 }}>
+            <span className="badge badge-flag">FLAGGED</span>
+            <span className="muted">Auto if Breakdown ≥ 3h</span>
+          </span>
         </div>
       </div>
 
@@ -422,9 +435,9 @@ export default function Admin() {
         </div>
       </div>
 
-      {/* Date / Week Filters (optional; default is ALL-TIME because useWeek=false and range unset) */}
+      {/* Date / Week Filters */}
       <div className="card card--tight full center" style={{ marginTop: 10, padding: 10 }}>
-        <div className="row row-center">
+        <div className="filters">
           <label className="inline">
             <input
               type="radio"
@@ -531,11 +544,18 @@ export default function Admin() {
               {sortedTotals.map((t) => {
                 const vHref = venmoHref(venmo[t.id]);
                 const hasUnpaid = t.unpaid > 0.0001;
+                const badges: string[] = [];
+                if (t.minCount > 0) badges.push(`${t.minCount}× MIN`);
+                if (t.flagCount > 0) badges.push(`${t.flagCount}× FLAG`);
                 return (
                   <tr key={t.id}>
                     <td data-label="Employee">
                       {t.name}
-                      {t.minCount > 0 && <span className="muted" style={{ marginLeft: 8 }}>({t.minCount}× MIN)</span>}
+                      {badges.length > 0 && (
+                        <span className="muted" style={{ marginLeft: 8 }}>
+                          ({badges.join(', ')})
+                        </span>
+                      )}
                     </td>
                     <td data-label="Hours">{t.hours.toFixed(2)}</td>
                     <td data-label="Pay">${t.pay.toFixed(2)}</td>
@@ -634,8 +654,9 @@ export default function Admin() {
                       const { pay, minApplied, base } = payInfo(s);
                       const paid = Boolean(s.is_paid);
                       const hasNote = !!(s.admin_note && s.admin_note.trim());
+                      const flagged = Boolean(s.admin_flag) || isAutoFlag(s);
                       return (
-                        <tr key={s.id} className={s.admin_flag ? 'row-flagged' : ''}>
+                        <tr key={s.id} className={flagged ? 'row-flagged' : ''}>
                           <td data-label="Employee">
                             <div className="emp-cell">
                               <span>{name}</span>
@@ -671,6 +692,15 @@ export default function Admin() {
                                 MIN $50
                               </span>
                             )}
+                            {flagged && (
+                              <span
+                                className="badge badge-flag"
+                                title="Flagged (Breakdown ≥ 3h or manually flagged)"
+                                style={{ marginLeft: 6 }}
+                              >
+                                FLAG
+                              </span>
+                            )}
                           </td>
                           <td data-label="Paid?">
                             <label className="inline-check">
@@ -694,10 +724,10 @@ export default function Admin() {
                               <button className="btn" onClick={() => editRow(s)}>Edit</button>
                               <button className="btn btn-danger" onClick={() => deleteRow(s)}>Delete</button>
 
-                              {/* admin-only controls */}
+                              {/* admin-only controls (manual flag toggles only admin_flag) */}
                               <button
                                 className={`btn ${s.admin_flag ? 'btn-flag-on' : 'btn-flag'}`}
-                                title={s.admin_flag ? 'Unflag' : 'Flag for attention'}
+                                title={s.admin_flag ? 'Unflag (manual)' : 'Flag for attention (manual)'}
                                 onClick={() => toggleAdminFlag(s, !Boolean(s.admin_flag))}
                                 aria-pressed={Boolean(s.admin_flag)}
                               >
@@ -762,6 +792,26 @@ export default function Admin() {
         .center { text-align: center; }
         .row-center {
           display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap;
+        }
+
+        /* Filters row */
+        .filters{
+          display:flex;
+          align-items:center;
+          justify-content:center;
+          gap:12px;
+          flex-wrap:nowrap;
+          overflow-x:auto;
+          -webkit-overflow-scrolling:touch;
+          padding:2px 4px;
+        }
+        .filters .inline,
+        .filters label.inline{
+          display:inline-flex; align-items:center; gap:6px;
+        }
+        .filters .divider{
+          width:1px; height:24px; background:var(--border); opacity:0.5;
+          flex:0 0 auto;
         }
 
         /* Buttons (unified) */
@@ -830,6 +880,10 @@ export default function Admin() {
           display:inline-flex; align-items:center; justify-content:center;
           padding:2px 8px; border-radius:999px; border:1px solid #f6ca00; background:#fffbe6; color:#6b5800; font-weight:700;
         }
+        .badge-flag{
+          display:inline-flex; align-items:center; justify-content:center;
+          padding:2px 8px; border-radius:999px; border:1px solid #f59e0b; background:#fffbeb; color:#92400e; font-weight:700;
+        }
         .badge-paid{
           display:inline-flex; align-items:center; justify-content:center;
           padding:2px 8px; border-radius:999px; border:1px solid #16a34a; background:#ecfdf5; color:#065f46; font-weight:700;
@@ -839,7 +893,7 @@ export default function Admin() {
           padding:2px 8px; border-radius:999px; border:1px solid #ef4444; background:#fef2f2; color:#7f1d1d; font-weight:700;
         }
 
-        /* Flagged row */
+        /* Flagged row (kept your red highlight) */
         .row-flagged { background:#ff474c; }
 
         /* Misc */
