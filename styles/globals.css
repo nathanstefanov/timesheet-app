@@ -390,3 +390,31 @@ textarea{ min-height:80px; resize:vertical; }
 ====================================================== */
 .muted{ color: var(--muted); }
 .link-right{ margin-left:auto; color:#2563eb; font-weight:600; }
+/* flag badge (same visual weight as MIN badge, not loud) */
+.badge-flag{
+  display:inline-flex; align-items:center; justify-content:center;
+  padding:2px 8px; border-radius:999px;
+  border:1px solid #f59e0b;           /* amber-500-ish border */
+  background:#fffbeb;                  /* amber-50-ish background */
+  color:#92400e;                       /* amber-800-ish text */
+  font-weight:700;
+}
+
+/* mobile-only row for badges under the name */
+.mobile-badges{ display:none; }
+
+/* stack name + counts on mobile neatly centered */
+@media (max-width: 640px){
+  .section-bar__left{
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+  .mobile-badges{
+    display: inline-flex;
+    gap: 6px;
+    margin-top: 4px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+}
