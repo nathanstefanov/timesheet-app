@@ -84,18 +84,18 @@ export default function Admin() {
   const [venmo, setVenmo] = useState<Record<string, string>>({});
 
   // ui state
-  const [tab, setTab] = useState<Tab>('unpaid');
+  const [tab, setTab] = useState<Tab>('unpaid'); // default unpaid
   const [sortBy, setSortBy] = useState<SortBy>('name');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
-  const [userSorted, setUserSorted] = useState(false); // tracks if user manually chose a sort
+  const [userSorted, setUserSorted] = useState(false); // track if user chose a sort
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | undefined>();
   const [bulkBusy, setBulkBusy] = useState<Record<string, boolean>>({});
 
   // week / range filters
   const today = useMemo(() => stripTime(new Date()), []);
-  const [useWeek, setUseWeek] = useState<boolean>(true);
-  const [weekAnchor, setWeekAnchor] = useState<Date>(startOfWeek(today)); // always Monday of current week
+  const [useWeek, setUseWeek] = useState<boolean>(false); // ⬅️ default OFF (all-time)
+  const [weekAnchor, setWeekAnchor] = useState<Date>(startOfWeek(today));
   const weekFrom = useMemo(() => toYMD(weekAnchor), [weekAnchor]);
   const weekTo = useMemo(() => toYMD(addDays(weekAnchor, 6)), [weekAnchor]);
 
@@ -180,15 +180,15 @@ export default function Admin() {
 
   // ---- Auto sort per tab (unpaid/paid) unless user overrides ----
   useEffect(() => {
-    if (userSorted) return; // don't override user's choice
-    if (tab === 'unpaid') {         // show employees with highest unpaid first
-      setSortBy('unpaid');
+    if (userSorted) return; // don't override user's manual choice
+    if (tab === 'unpaid') {
+      setSortBy('unpaid'); // show most unpaid first
       setSortDir('desc');
-    } else if (tab === 'paid') {    // within paid filter, sort by total pay desc
-      setSortBy('pay');
+    } else if (tab === 'paid') {
+      setSortBy('pay');    // show highest paid totals first
       setSortDir('desc');
-    } else {                        // all = alphabetical
-      setSortBy('name');
+    } else {
+      setSortBy('name');   // alphabetical for "all"
       setSortDir('asc');
     }
   }, [tab, userSorted]);
@@ -205,7 +205,10 @@ export default function Admin() {
       if (tab === 'unpaid') q = q.eq('is_paid', false);
       if (tab === 'paid') q = q.eq('is_paid', true);
 
-      // Date filtering (this is the week filter you wanted kept as an option)
+      // Date filtering:
+      // - Default: no filter (all-time) because useWeek=false and rangeFrom/To are null.
+      // - If useWeek=true → filter to that week.
+      // - If custom range is set → filter to that range.
       const from = useWeek ? weekFrom : (rangeFrom || null);
       const to = useWeek ? weekTo : (rangeTo || null);
       if (from) q = q.gte('shift_date', from);
@@ -419,7 +422,7 @@ export default function Admin() {
         </div>
       </div>
 
-      {/* Date / Week Filters (OPTIONAL, does not affect sorting rule) */}
+      {/* Date / Week Filters (optional; default is ALL-TIME because useWeek=false and range unset) */}
       <div className="card card--tight full center" style={{ marginTop: 10, padding: 10 }}>
         <div className="row row-center">
           <label className="inline">
@@ -456,7 +459,7 @@ export default function Admin() {
               checked={!useWeek}
               onChange={() => setUseWeek(false)}
             />
-            <span>Range</span>
+            <span>Range / All-time</span>
           </label>
 
           <div className="inline" aria-label="Custom range">
@@ -478,10 +481,10 @@ export default function Admin() {
             <button
               className="topbar-btn"
               onClick={() => { setRangeFrom(null); setRangeTo(null); }}
-              disabled={useWeek && !rangeFrom && !rangeTo}
-              title="Clear range"
+              title="Clear range (shows all time)"
+              disabled={useWeek}
             >
-              Clear
+              Clear (All-time)
             </button>
           </div>
         </div>
