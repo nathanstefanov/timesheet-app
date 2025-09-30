@@ -610,7 +610,7 @@ export default function Admin() {
         .badge-unpaid{ display:inline-flex; align-items:center; justify-content:center; padding:2px 8px; border-radius:999px; border:1px solid #ef4444; background:#fef2f2; color:#7f1d1d; font-weight:700; }
 
         /* Softer flagged row */
-        .row-flagged{ background:#fff7ed; }
+        .row-flagged{ background:#fbec5d; }
 
         /* Modal */
         .modal-backdrop{ position:fixed; inset:0; background:rgba(0,0,0,0.4); display:flex; align-items:center; justify-content:center; z-index:1000; padding:10px; }
