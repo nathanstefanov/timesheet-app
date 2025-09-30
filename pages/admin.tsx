@@ -392,508 +392,549 @@ export default function Admin() {
 
   return (
     <main className="page page--center">
-      <h1 className="page__title">Admin Dashboard</h1>
-      {err && <div className="alert error" role="alert">Error: {err}</div>}
+      <div className="container">
+        <h1 className="page__title">Admin Dashboard</h1>
+        {err && <div className="alert error" role="alert">Error: {err}</div>}
 
-      {/* Summary */}
-      <div className="card card--tight full center">
-        <div className="admin-summary admin-summary--center" style={{ margin: 0, border: 0, boxShadow: 'none' }}>
-          <span className="chip chip--xl">Total Unpaid: ${unpaidTotal.toFixed(2)}</span>
-          <span className="meta">Employees with Unpaid: {totals.filter(t => t.unpaid > 0).length}</span>
-          <span className="inline">
-            <span className="badge badge-min">MIN $50</span>
-            <span className="muted">Breakdown boosted to minimum</span>
-          </span>
-          <span className="inline" style={{ marginLeft: 12 }}>
-            <span className="badge badge-flag">FLAGGED</span>
-            <span className="muted">Auto if Breakdown ≥ 3h</span>
-          </span>
-        </div>
-      </div>
-
-      {/* Tabs */}
-      <div className="card card--tight full center" style={{ marginTop: 10, padding: 10 }}>
-        <div className="tabs tabs--center" style={{ margin: 0 }}>
-          <button
-            className={tab === 'unpaid' ? 'active' : ''}
-            onClick={() => { setTab('unpaid'); setUserSorted(false); }}
-          >
-            Unpaid
-          </button>
-          <button
-            className={tab === 'paid' ? 'active' : ''}
-            onClick={() => { setTab('paid'); setUserSorted(false); }}
-          >
-            Paid
-          </button>
-          <button
-            className={tab === 'all' ? 'active' : ''}
-            onClick={() => { setTab('all'); setUserSorted(false); }}
-          >
-            All
-          </button>
-        </div>
-      </div>
-
-      {/* Date / Week Filters */}
-      <div className="card card--tight full center" style={{ marginTop: 10, padding: 10 }}>
-        <div className="filters">
-          <label className="inline">
-            <input
-              type="radio"
-              name="range-mode"
-              checked={useWeek}
-              onChange={() => setUseWeek(true)}
-            />
-            <span>Week</span>
-          </label>
-
-          <div className="inline" aria-label="Week controls">
-            <button className="topbar-btn" onClick={() => setWeekAnchor(addDays(weekAnchor, -7))}>◀ Prev</button>
-            <button className="topbar-btn" onClick={() => setWeekAnchor(startOfWeek(today))}>This Week</button>
-            <button
-              className="topbar-btn"
-              onClick={() => setWeekAnchor(nextWeekAnchor)}
-              disabled={disableNextWeek}
-            >
-              Next ▶
-            </button>
-            <span className="muted" style={{ marginLeft: 8 }}>
-              {weekFrom} – {weekTo}
+        {/* Summary */}
+        <div className="card summary">
+          <div className="summary__row">
+            <span className="chip chip--xl">Total Unpaid: ${unpaidTotal.toFixed(2)}</span>
+            <span className="meta">Employees with Unpaid: {totals.filter(t => t.unpaid > 0).length}</span>
+          </div>
+          <div className="summary__row summary__badges">
+            <span className="inline">
+              <span className="badge badge-min">MIN $50</span>
+              <span className="muted">Breakdown boosted to minimum</span>
+            </span>
+            <span className="inline">
+              <span className="badge badge-flag">FLAGGED</span>
+              <span className="muted">Auto if Breakdown ≥ 3h</span>
             </span>
           </div>
-
-          <span className="divider" />
-
-          <label className="inline">
-            <input
-              type="radio"
-              name="range-mode"
-              checked={!useWeek}
-              onChange={() => setUseWeek(false)}
-            />
-            <span>Range / All-time</span>
-          </label>
-
-          <div className="inline" aria-label="Custom range">
-            <input
-              type="date"
-              value={rangeFrom ?? ''}
-              onChange={(e) => setRangeFrom(e.target.value || null)}
-              disabled={useWeek}
-              aria-label="From"
-            />
-            <span>to</span>
-            <input
-              type="date"
-              value={rangeTo ?? ''}
-              onChange={(e) => setRangeTo(e.target.value || null)}
-              disabled={useWeek}
-              aria-label="To"
-            />
-            <button
-              className="topbar-btn"
-              onClick={() => { setRangeFrom(null); setRangeTo(null); }}
-              title="Clear range (shows all time)"
-              disabled={useWeek}
-              style={{ whiteSpace: 'nowrap' }}
-            >
-              Clear (All-time)
-            </button>
-          </div>
         </div>
-      </div>
 
-      {/* Totals by Employee */}
-      <div className="card card--tight full center">
-        <div className="card__header center">
-          <h3>Totals by Employee</h3>
-          <div className="row row-center">
-            <label className="sr-only" htmlFor="sort-by">Sort by</label>
-            <select
-              id="sort-by"
-              value={sortBy}
-              onChange={(e) => { setSortBy(e.target.value as SortBy); setUserSorted(true); }}
-            >
-              <option value="name">Name</option>
-              <option value="hours">Hours</option>
-              <option value="pay">Pay</option>
-              <option value="unpaid">Unpaid</option>
-            </select>
+        {/* Tabs */}
+        <div className="card">
+          <div className="tabs">
             <button
-              className="topbar-btn"
-              onClick={() => { setSortDir(d => (d === 'asc' ? 'desc' : 'asc')); setUserSorted(true); }}
-              aria-label="Toggle sort direction"
-              title="Toggle sort direction"
+              className={`tab ${tab === 'unpaid' ? 'active' : ''}`}
+              onClick={() => { setTab('unpaid'); setUserSorted(false); }}
             >
-              {sortDir === 'asc' ? 'Asc ↑' : 'Desc ↓'}
+              Unpaid
+            </button>
+            <button
+              className={`tab ${tab === 'paid' ? 'active' : ''}`}
+              onClick={() => { setTab('paid'); setUserSorted(false); }}
+            >
+              Paid
+            </button>
+            <button
+              className={`tab ${tab === 'all' ? 'active' : ''}`}
+              onClick={() => { setTab('all'); setUserSorted(false); }}
+            >
+              All
             </button>
           </div>
         </div>
 
-        <div className="table-wrap">
-          <table className="table table--center table--compact table--admin center">
-            <thead>
-              <tr>
-                <th>Employee</th>
-                <th>Hours</th>
-                <th>Pay</th>
-                <th>Unpaid</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sortedTotals.map((t) => {
-                const vHref = venmoHref(venmo[t.id]);
-                const hasUnpaid = t.unpaid > 0.0001;
-                const badges: string[] = [];
-                if (t.minCount > 0) badges.push(`${t.minCount}× MIN`);
-                if (t.flagCount > 0) badges.push(`${t.flagCount}× FLAG`);
-                return (
-                  <tr key={t.id}>
-                    <td data-label="Employee">
-                      {t.name}
-                      {badges.length > 0 && (
-                        <span className="muted" style={{ marginLeft: 8 }}>
-                          ({badges.join(', ')})
-                        </span>
-                      )}
-                    </td>
-                    <td data-label="Hours">{t.hours.toFixed(2)}</td>
-                    <td data-label="Pay">${t.pay.toFixed(2)}</td>
-                    <td data-label="Unpaid">
-                      ${t.unpaid.toFixed(2)}
-                      {hasUnpaid && vHref && (
-                        <a className="btn-venmo" href={vHref} target="_blank" rel="noopener noreferrer" style={{ marginLeft: 8 }}>
-                          Venmo
-                        </a>
-                      )}
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
+        {/* Date / Week Filters */}
+        <div className="card">
+          <div className="filters">
+            <label className="inline">
+              <input
+                type="radio"
+                name="range-mode"
+                checked={useWeek}
+                onChange={() => setUseWeek(true)}
+              />
+              <span>Week</span>
+            </label>
+
+            <div className="inline" aria-label="Week controls">
+              <button className="btn" onClick={() => setWeekAnchor(addDays(weekAnchor, -7))}>◀ Prev</button>
+              <button className="btn" onClick={() => setWeekAnchor(startOfWeek(today))}>This Week</button>
+              <button
+                className="btn"
+                onClick={() => setWeekAnchor(nextWeekAnchor)}
+                disabled={disableNextWeek}
+              >
+                Next ▶
+              </button>
+              <span className="muted range-label">
+                {weekFrom} – {weekTo}
+              </span>
+            </div>
+
+            <span className="divider" />
+
+            <label className="inline">
+              <input
+                type="radio"
+                name="range-mode"
+                checked={!useWeek}
+                onChange={() => setUseWeek(false)}
+              />
+              <span>Range / All-time</span>
+            </label>
+
+            <div className="inline" aria-label="Custom range">
+              <input
+                className="input"
+                type="date"
+                value={rangeFrom ?? ''}
+                onChange={(e) => setRangeFrom(e.target.value || null)}
+                disabled={useWeek}
+                aria-label="From"
+              />
+              <span className="muted">to</span>
+              <input
+                className="input"
+                type="date"
+                value={rangeTo ?? ''}
+                onChange={(e) => setRangeTo(e.target.value || null)}
+                disabled={useWeek}
+                aria-label="To"
+              />
+              <button
+                className="btn"
+                onClick={() => { setRangeFrom(null); setRangeTo(null); }}
+                title="Clear range (shows all time)"
+                disabled={useWeek}
+              >
+                Clear (All-time)
+              </button>
+            </div>
+          </div>
         </div>
-      </div>
 
-      {/* Shifts */}
-      <div className="card card--tight full center" style={{ marginTop: 12 }}>
-        <div className="card__header center">
-          <h3>Shifts</h3>
-        </div>
+        {/* Totals by Employee */}
+        <div className="card">
+          <div className="card__header">
+            <h3>Totals by Employee</h3>
+            <div className="sorter">
+              <label className="sr-only" htmlFor="sort-by">Sort by</label>
+              <select
+                id="sort-by"
+                className="input"
+                value={sortBy}
+                onChange={(e) => { setSortBy(e.target.value as SortBy); setUserSorted(true); }}
+              >
+                <option value="name">Name</option>
+                <option value="hours">Hours</option>
+                <option value="pay">Pay</option>
+                <option value="unpaid">Unpaid</option>
+              </select>
+              <button
+                className="btn"
+                onClick={() => { setSortDir(d => (d === 'asc' ? 'desc' : 'asc')); setUserSorted(true); }}
+                aria-label="Toggle sort direction"
+                title="Toggle sort direction"
+              >
+                {sortDir === 'asc' ? 'Asc ↑' : 'Desc ↓'}
+              </button>
+            </div>
+          </div>
 
-        {loading && <p className="center">Loading…</p>}
-
-        <div className="table-wrap">
-          <table className="table table--center table--compact table--admin table--stack center">
-            <thead>
-              <tr>
-                <th>Employee</th>
-                <th>Date</th>
-                <th>Type</th>
-                <th>In</th>
-                <th>Out</th>
-                <th>Hours</th>
-                <th>Pay</th>
-                <th>Paid?</th>
-                <th className="col-hide-md">Paid at</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {sectionOrder.map((uid) => {
-                const rows = groups[uid] || [];
-                if (!rows.length) return null;
-
-                const name = names[uid] || '—';
-                const subtotal = rows.reduce(
-                  (acc, s) => {
-                    const info = payInfo(s);
-                    acc.hours += Number(s.hours_worked || 0);
-                    acc.pay += info.pay;
-                    return acc;
-                  },
-                  { hours: 0, pay: 0 }
-                );
-
-                const unpaidCount = rows.filter(s => !s.is_paid).length;
-                const allPaid = unpaidCount === 0;
-
-                return (
-                  <React.Fragment key={uid}>
-                    <tr className="section-head">
-                      <td colSpan={10}>
-                        <div className="section-bar center">
-                          <div className="section-bar__left center">
-                            <strong className="employee-name">{name}</strong>
-                            <div className="pill" aria-label="Unpaid shifts">
-                              <span className="pill__num">{unpaidCount}</span>
-                              <span className="pill__label">unpaid shifts</span>
-                            </div>
-                          </div>
-                          <div className="section-bar__right center">
-                            <button
-                              className="topbar-btn"
-                              disabled={bulkBusy[uid] || allPaid}
-                              onClick={() => bulkTogglePaidForEmployee(uid, true)}
-                            >
-                              Mark ALL Paid
-                            </button>
-                            <button
-                              className="topbar-btn"
-                              disabled={bulkBusy[uid] || rows.length === unpaidCount}
-                              onClick={() => bulkTogglePaidForEmployee(uid, false)}
-                            >
-                              Mark ALL Unpaid
-                            </button>
-                          </div>
-                        </div>
+          <div className="table-wrap">
+            <table className="table">
+              <thead>
+                <tr>
+                  <th>Employee</th>
+                  <th>Hours</th>
+                  <th>Pay</th>
+                  <th>Unpaid</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sortedTotals.map((t) => {
+                  const vHref = venmoHref(venmo[t.id]);
+                  const hasUnpaid = t.unpaid > 0.0001;
+                  const badges: string[] = [];
+                  if (t.minCount > 0) badges.push(`${t.minCount}× MIN`);
+                  if (t.flagCount > 0) badges.push(`${t.flagCount}× FLAG`);
+                  return (
+                    <tr key={t.id}>
+                      <td data-label="Employee">
+                        <span className="emp-name">{t.name}</span>
+                        {badges.length > 0 && (
+                          <span className="muted" style={{ marginLeft: 8 }}>
+                            ({badges.join(', ')})
+                          </span>
+                        )}
+                      </td>
+                      <td data-label="Hours">{t.hours.toFixed(2)}</td>
+                      <td data-label="Pay">${t.pay.toFixed(2)}</td>
+                      <td data-label="Unpaid">
+                        ${t.unpaid.toFixed(2)}
+                        {hasUnpaid && vHref && (
+                          <a className="btn btn-venmo" href={vHref} target="_blank" rel="noopener noreferrer" style={{ marginLeft: 8 }}>
+                            Venmo
+                          </a>
+                        )}
                       </td>
                     </tr>
-
-                    {rows.map((s) => {
-                      const { pay, minApplied, base } = payInfo(s);
-                      const paid = Boolean(s.is_paid);
-                      const hasNote = !!(s.admin_note && s.admin_note.trim());
-                      const auto = isAutoFlag(s);
-                      const combinedFlagged = Boolean(s.admin_flag) || auto;
-
-                      return (
-                        <tr key={s.id} className={combinedFlagged ? 'row-flagged' : ''}>
-                          <td data-label="Employee">
-                            <div className="emp-cell">
-                              <span>{name}</span>
-                              {hasNote && (
-                                <button
-                                  className="icon-btn"
-                                  title="View note"
-                                  onClick={() => openNoteModal(s)}
-                                  aria-label="View note"
-                                >
-                                  📝
-                                </button>
-                              )}
-                            </div>
-                          </td>
-                          <td data-label="Date">{s.shift_date}</td>
-                          <td data-label="Type">{s.shift_type}</td>
-                          <td data-label="In">
-                            {s.time_in ? new Date(s.time_in).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
-                          </td>
-                          <td data-label="Out">
-                            {s.time_out ? new Date(s.time_out).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
-                          </td>
-                          <td data-label="Hours">{Number(s.hours_worked ?? 0).toFixed(2)}</td>
-                          <td data-label="Pay">
-                            ${pay.toFixed(2)}{' '}
-                            {minApplied && (
-                              <span
-                                className="badge badge-min"
-                                title={`Breakdown minimum applied (base ${base.toFixed(2)} < $50)`}
-                                style={{ marginLeft: 6 }}
-                              >
-                                MIN $50
-                              </span>
-                            )}
-                            {combinedFlagged && (
-                              <span
-                                className="badge badge-flag"
-                                title={auto ? 'Auto-flagged (Breakdown ≥ 3h)' : 'Manually flagged'}
-                                style={{ marginLeft: 6 }}
-                              >
-                                FLAG
-                              </span>
-                            )}
-                          </td>
-                          <td data-label="Paid?">
-                            <label className="inline-check">
-                              <input
-                                type="checkbox"
-                                checked={paid}
-                                onChange={(e) => togglePaid(s, e.target.checked)}
-                                disabled={bulkBusy[uid]}
-                                aria-label={paid ? 'Mark unpaid' : 'Mark paid'}
-                              />
-                              <span className={paid ? 'badge badge-paid' : 'badge badge-unpaid'}>
-                                {paid ? 'PAID' : 'NOT PAID'}
-                              </span>
-                            </label>
-                          </td>
-                          <td data-label="Paid at" className="col-hide-md">
-                            {s.paid_at ? new Date(s.paid_at).toLocaleString() : '—'}
-                          </td>
-                          <td data-label="Actions">
-                            <div className="actions center">
-                              <button className="btn" onClick={() => editRow(s)}>Edit</button>
-                              <button className="btn btn-danger" onClick={() => deleteRow(s)}>Delete</button>
-
-                              {/* Flag button shows ON when auto-flagged as well */}
-                              <button
-                                className={`btn ${combinedFlagged ? 'btn-flag-on' : 'btn-flag'}`}
-                                title={
-                                  combinedFlagged
-                                    ? (auto ? 'Auto-flagged (Breakdown ≥ 3h). Click to toggle manual flag.' : 'Manually flagged. Click to unflag.')
-                                    : 'Flag for attention'
-                                }
-                                onClick={() => toggleAdminFlag(s, !Boolean(s.admin_flag))}
-                                aria-pressed={combinedFlagged}
-                              >
-                                {combinedFlagged ? '★ Flagged' : '☆ Flag'}
-                              </button>
-
-                              {/* quick note view/edit */}
-                              <button
-                                className="btn"
-                                onClick={() => openNoteModal(s)}
-                                title={hasNote ? 'View / Edit note' : 'Add note'}
-                              >
-                                📝 Note
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-
-                    <tr className="subtotal">
-                      <td colSpan={5} style={{ textAlign: 'center' }}>Total — {name}</td>
-                      <td>{subtotal.hours.toFixed(2)}</td>
-                      <td>${subtotal.pay.toFixed(2)}</td>
-                      <td colSpan={3}></td>
-                    </tr>
-                  </React.Fragment>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
-
-      {/* NOTE MODAL */}
-      {noteModal.open && noteModal.row && (
-        <div className="modal-backdrop" role="dialog" aria-modal="true">
-          <div className="modal">
-            <div className="modal-header">
-              <span className="modal-title">📝 Note — {names[noteModal.row.user_id] || '—'} · {noteModal.row.shift_date}</span>
-            </div>
-            <div className="modal-body">
-              <textarea
-                value={noteDraft}
-                onChange={(e) => setNoteDraft(e.target.value)}
-                placeholder="Add a private admin note…"
-              />
-              <p className="muted" style={{ marginTop: 8 }}>
-                Notes are only visible to admins on this page.
-              </p>
-            </div>
-            <div className="modal-actions">
-              <button className="btn" onClick={closeNoteModal}>Close</button>
-              <button className="btn btn-primary" onClick={saveNoteModal}>Save</button>
-            </div>
+                  );
+                })}
+              </tbody>
+            </table>
           </div>
         </div>
-      )}
+
+        {/* Shifts */}
+        <div className="card">
+          <div className="card__header"><h3>Shifts</h3></div>
+
+          {loading && <p className="center muted">Loading…</p>}
+
+          <div className="table-wrap">
+            <table className="table table--stack">
+              <thead>
+                <tr>
+                  <th>Employee</th>
+                  <th>Date</th>
+                  <th>Type</th>
+                  <th>In</th>
+                  <th>Out</th>
+                  <th>Hours</th>
+                  <th>Pay</th>
+                  <th>Paid?</th>
+                  <th className="col-hide-md">Paid at</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {sectionOrder.map((uid) => {
+                  const rows = groups[uid] || [];
+                  if (!rows.length) return null;
+
+                  const name = names[uid] || '—';
+                  const subtotal = rows.reduce(
+                    (acc, s) => {
+                      const info = payInfo(s);
+                      acc.hours += Number(s.hours_worked || 0);
+                      acc.pay += info.pay;
+                      return acc;
+                    },
+                    { hours: 0, pay: 0 }
+                  );
+
+                  const unpaidCount = rows.filter(s => !s.is_paid).length;
+                  const allPaid = unpaidCount === 0;
+
+                  return (
+                    <React.Fragment key={uid}>
+                      <tr className="section-head">
+                        <td colSpan={10}>
+                          <div className="section-bar">
+                            <div className="section-side">
+                              <strong className="employee-name">{name}</strong>
+                              <div className="pill" aria-label="Unpaid shifts">
+                                <span className="pill__num">{unpaidCount}</span>
+                                <span className="pill__label">unpaid</span>
+                              </div>
+                            </div>
+                            <div className="section-side">
+                              <button
+                                className="btn"
+                                disabled={bulkBusy[uid] || allPaid}
+                                onClick={() => bulkTogglePaidForEmployee(uid, true)}
+                              >
+                                Mark ALL Paid
+                              </button>
+                              <button
+                                className="btn"
+                                disabled={bulkBusy[uid] || rows.length === unpaidCount}
+                                onClick={() => bulkTogglePaidForEmployee(uid, false)}
+                              >
+                                Mark ALL Unpaid
+                              </button>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+
+                      {rows.map((s) => {
+                        const { pay, minApplied, base } = payInfo(s);
+                        const paid = Boolean(s.is_paid);
+                        const hasNote = !!(s.admin_note && s.admin_note.trim());
+                        const auto = isAutoFlag(s);
+                        const combinedFlagged = Boolean(s.admin_flag) || auto;
+
+                        return (
+                          <tr key={s.id} className={combinedFlagged ? 'row-flagged' : ''}>
+                            <td data-label="Employee">
+                              <div className="emp-cell">
+                                <span>{name}</span>
+                                {hasNote && (
+                                  <button
+                                    className="icon-btn"
+                                    title="View note"
+                                    onClick={() => openNoteModal(s)}
+                                    aria-label="View note"
+                                  >
+                                    📝
+                                  </button>
+                                )}
+                              </div>
+                            </td>
+                            <td data-label="Date">{s.shift_date}</td>
+                            <td data-label="Type">{s.shift_type}</td>
+                            <td data-label="In">
+                              {s.time_in ? new Date(s.time_in).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
+                            </td>
+                            <td data-label="Out">
+                              {s.time_out ? new Date(s.time_out).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
+                            </td>
+                            <td data-label="Hours">{Number(s.hours_worked ?? 0).toFixed(2)}</td>
+                            <td data-label="Pay">
+                              ${pay.toFixed(2)}{' '}
+                              {minApplied && (
+                                <span
+                                  className="badge badge-min"
+                                  title={`Breakdown minimum applied (base ${base.toFixed(2)} < $50)`}
+                                  style={{ marginLeft: 6 }}
+                                >
+                                  MIN $50
+                                </span>
+                              )}
+                              {combinedFlagged && (
+                                <span
+                                  className="badge badge-flag"
+                                  title={auto ? 'Auto-flagged (Breakdown ≥ 3h)' : 'Manually flagged'}
+                                  style={{ marginLeft: 6 }}
+                                >
+                                  FLAG
+                                </span>
+                              )}
+                            </td>
+                            <td data-label="Paid?">
+                              <label className="inline-check">
+                                <input
+                                  type="checkbox"
+                                  checked={paid}
+                                  onChange={(e) => togglePaid(s, e.target.checked)}
+                                  disabled={bulkBusy[uid]}
+                                  aria-label={paid ? 'Mark unpaid' : 'Mark paid'}
+                                />
+                                <span className={paid ? 'badge badge-paid' : 'badge badge-unpaid'}>
+                                  {paid ? 'PAID' : 'NOT PAID'}
+                                </span>
+                              </label>
+                            </td>
+                            <td data-label="Paid at" className="col-hide-md">
+                              {s.paid_at ? new Date(s.paid_at).toLocaleString() : '—'}
+                            </td>
+                            <td data-label="Actions">
+                              <div className="actions">
+                                <button className="btn" onClick={() => editRow(s)}>Edit</button>
+                                <button className="btn btn-danger" onClick={() => deleteRow(s)}>Delete</button>
+
+                                {/* Flag button shows ON when auto-flagged as well */}
+                                <button
+                                  className={`btn ${combinedFlagged ? 'btn-flag-on' : 'btn-flag'}`}
+                                  title={
+                                    combinedFlagged
+                                      ? (auto ? 'Auto-flagged (Breakdown ≥ 3h). Click to toggle manual flag.' : 'Manually flagged. Click to unflag.')
+                                      : 'Flag for attention'
+                                  }
+                                  onClick={() => toggleAdminFlag(s, !Boolean(s.admin_flag))}
+                                  aria-pressed={combinedFlagged}
+                                >
+                                  {combinedFlagged ? '★ Flagged' : '☆ Flag'}
+                                </button>
+
+                                {/* quick note view/edit */}
+                                <button
+                                  className="btn"
+                                  onClick={() => openNoteModal(s)}
+                                  title={hasNote ? 'View / Edit note' : 'Add note'}
+                                >
+                                  📝 Note
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+
+                      <tr className="subtotal">
+                        <td colSpan={5} className="subtotal__label">Total — {name}</td>
+                        <td>{subtotal.hours.toFixed(2)}</td>
+                        <td>${subtotal.pay.toFixed(2)}</td>
+                        <td colSpan={3}></td>
+                      </tr>
+                    </React.Fragment>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        {/* NOTE MODAL */}
+        {noteModal.open && noteModal.row && (
+          <div className="modal-backdrop" role="dialog" aria-modal="true">
+            <div className="modal">
+              <div className="modal-header">
+                <span className="modal-title">📝 Note — {names[noteModal.row.user_id] || '—'} · {noteModal.row.shift_date}</span>
+              </div>
+              <div className="modal-body">
+                <textarea
+                  value={noteDraft}
+                  onChange={(e) => setNoteDraft(e.target.value)}
+                  placeholder="Add a private admin note…"
+                />
+                <p className="muted" style={{ marginTop: 8 }}>
+                  Notes are only visible to admins on this page.
+                </p>
+              </div>
+              <div className="modal-actions">
+                <button className="btn" onClick={closeNoteModal}>Close</button>
+                <button className="btn btn-primary" onClick={saveNoteModal}>Save</button>
+              </div>
+            </div>
+          </div>
+        )}
+      </div>
 
       <style jsx>{`
-        /* Centering helpers */
-        .center { text-align: center; }
-        .row-center {
-          display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap;
+        /* Layout shell */
+        .container{
+          width:min(1100px, 92vw);
+          margin: 0 auto;
+          padding: 12px 0 40px;
+        }
+        .page__title{
+          font-size: clamp(22px, 2.4vw, 28px);
+          text-align:center;
+          margin: 6px 0 14px;
         }
 
-        /* Filters row — keep on one line, centered; scroll if too tight */
-        .filters{
-          display:flex;
-          align-items:center;
+        /* Cards */
+        .card{
+          background: #fff;
+          border: 1px solid var(--border, #e5e7eb);
+          border-radius: 16px;
+          padding: 14px;
+          margin: 12px 0;
+          box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+        }
+        .card__header{
+          display:flex; align-items:center; justify-content:space-between; gap:10px;
+        }
+        .card__header h3{
+          margin:0; font-size: clamp(18px, 2vw, 20px);
+        }
+
+        /* Summary layout */
+        .summary{
+          padding: 16px;
+        }
+        .summary__row{
+          display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+        }
+        .summary__badges{
+          margin-top:10px;
           justify-content:center;
-          gap:12px;
-          flex-wrap:nowrap;             /* no stacking */
-          overflow-x:auto;              /* scroll on small screens */
-          -webkit-overflow-scrolling:touch;
-          padding:2px 4px;
+          gap:20px;
         }
-        .filters .inline,
-        .filters label.inline{
-          display:inline-flex; align-items:center; gap:6px; flex:0 0 auto;
-        }
-        .filters .divider{
-          width:1px; height:24px; background:var(--border); opacity:0.5;
-          flex:0 0 auto;
-        }
-        .topbar-btn { white-space: nowrap; }
 
-        /* Buttons (unified) */
-        .btn, .topbar-btn, .btn-venmo {
+        /* Tabs */
+        .tabs{
+          display:flex; align-items:center; justify-content:center; gap:10px; flex-wrap:nowrap;
+        }
+        .tab{
+          display:inline-flex; align-items:center; justify-content:center;
+          height:40px; padding:0 16px; border-radius:12px;
+          border:1px solid var(--border, #e5e7eb);
+          background:#f8fafc; font-weight:700; cursor:pointer;
+        }
+        .tab.active{ background:#eef2ff; border-color:#c7d2fe; }
+
+        /* Filters row — stays on one line, scrolls horizontally if needed */
+        .filters{
+          display:flex; align-items:center; justify-content:center; gap:12px;
+          flex-wrap:nowrap; overflow-x:auto; -webkit-overflow-scrolling:touch;
+          padding:4px 2px;
+        }
+        .filters .inline{ display:inline-flex; align-items:center; gap:8px; }
+        .divider{ width:1px; height:24px; background:var(--border, #e5e7eb); opacity:0.6; flex:0 0 auto; }
+        .range-label{ white-space:nowrap; }
+
+        /* Inputs & buttons */
+        .input{
+          height:36px; padding:0 10px; border-radius:10px;
+          border:1px solid var(--border, #e5e7eb); background:#fff;
+        }
+        .btn, .btn-venmo{
           display:inline-flex; align-items:center; justify-content:center;
           height:36px; padding:0 14px; border-radius:10px;
-          border:1px solid var(--border); background:#f8fafc; color:#1f2937;
+          border:1px solid var(--border, #e5e7eb); background:#f8fafc; color:#111827;
           font-weight:600; cursor:pointer; text-decoration:none;
-          box-shadow: var(--shadow-sm);
+          white-space:nowrap;
         }
-        .btn:hover, .topbar-btn:hover, .btn-venmo:hover { filter:brightness(0.98); }
-        .btn:active, .topbar-btn:active { transform: translateY(1px); }
-
-        .btn-primary { background:#e8f0ff; }
-        .btn-danger { background:#ffe8e8; }
-
-        .btn-flag { background:#fff; }
-        /* Softer ON state */
-        .btn-flag-on {
-          background:#fff4e5;                 /* soft orange */
-          border-color:#f3d2a8;
-          font-weight:800;
+        .btn:hover, .btn-venmo:hover{ filter:brightness(0.98); }
+        .btn:active{ transform: translateY(1px); }
+        .btn-primary{ background:#e8f0ff; }
+        .btn-danger{ background:#ffe8e8; }
+        .btn-flag{ background:#fff; }
+        .btn-flag-on{
+          background:#fff4e5; border-color:#f3d2a8; font-weight:800;
         }
 
         .icon-btn{
           display:inline-flex; align-items:center; justify-content:center;
           width:28px; height:28px; margin-left:6px; border-radius:999px;
-          border:1px solid var(--border); background:#fff; cursor:pointer;
+          border:1px solid var(--border,#e5e7eb); background:#fff; cursor:pointer;
           line-height:1;
         }
 
-        .emp-cell { display:flex; align-items:center; justify-content:center; gap:6px; }
+        .emp-cell{ display:flex; align-items:center; justify-content:center; gap:6px; }
+        .emp-name{ font-weight:600; }
 
-        /* Table: center everything */
-        .table th, .table td { text-align:center; vertical-align:middle; }
+        /* Tables */
+        .table-wrap{ width:100%; overflow:auto; }
+        table{ width:100%; border-collapse:collapse; }
+        .table th, .table td{
+          text-align:center; padding:10px 8px; border-top:1px solid #f1f5f9;
+          vertical-align:middle; font-size:14px;
+        }
+        .table thead th{
+          position:sticky; top:0; background:#fafafa; z-index:1; font-weight:700;
+        }
+        .table--stack td::before{ display:none; font-weight:700; margin-right:6px; }
 
-        /* Section bar */
-        .section-bar {
-          display:flex; align-items:center; justify-content:space-between; gap:12px;
-        }
-        .section-bar__left, .section-bar__right { display:flex; align-items:center; gap:10px; }
-
-        /* Modal */
-        .modal-backdrop{
-          position:fixed; inset:0; background:rgba(0,0,0,0.4);
-          display:flex; align-items:center; justify-content:center; z-index:1000;
-        }
-        .modal{
-          width:min(640px, 92vw); background:white; border-radius:16px; padding:16px;
-          box-shadow:0 10px 25px rgba(0,0,0,0.2); display:flex; flex-direction:column; gap:12px;
-        }
-        .modal-header{ display:flex; align-items:center; justify-content:center; }
-        .modal-title{ font-weight:800; }
-        .modal-body{ display:flex; flex-direction:column; align-items:center; }
-        .modal-body textarea{
-          width:100%; min-height:140px; border-radius:12px; padding:10px;
-          border:1px solid var(--border); resize:vertical; font:inherit;
-        }
-        .modal-actions{
-          display:flex; align-items:center; justify-content:center; gap:10px;
+        /* Mobile table stack */
+        @media (max-width: 680px){
+          .table--stack thead{ display:none; }
+          .table--stack, .table--stack tbody, .table--stack tr, .table--stack td{ display:block; width:100%; }
+          .table--stack tr{ border:1px solid #f1f5f9; border-radius:12px; margin:10px 0; padding:8px; }
+          .table--stack td{ display:flex; align-items:center; justify-content:space-between; border:none; padding:8px 4px; }
+          .table--stack td::before{ display:inline-block; content:attr(data-label); color:#6b7280; }
+          .section-head td, .subtotal td{ display:block; }
         }
 
-        /* Badges & pills */
+        /* Section bar inside Shifts */
+        .section-bar{
+          display:flex; align-items:center; justify-content:space-between; gap:10px; flex-wrap:wrap;
+        }
+        .section-side{ display:flex; align-items:center; gap:10px; }
+
         .pill{
           display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:999px;
-          background:#f3f4f6; border:1px solid var(--border);
+          background:#f3f4f6; border:1px solid var(--border, #e5e7eb);
         }
         .pill__num{ font-weight:800; }
 
+        /* Subtotal row */
+        .subtotal__label{ text-align:center; }
+
+        /* Badges */
         .badge-min{
           display:inline-flex; align-items:center; justify-content:center;
           padding:2px 8px; border-radius:999px; border:1px solid #f6ca00; background:#fffbe6; color:#6b5800; font-weight:700;
         }
-        /* Softer flag badge */
         .badge-flag{
           display:inline-flex; align-items:center; justify-content:center;
           padding:2px 8px; border-radius:999px; border:1px solid #f3d2a8; background:#fff4e5; color:#7a4b14; font-weight:700;
@@ -908,12 +949,35 @@ export default function Admin() {
         }
 
         /* Softer flagged row */
-        .row-flagged { background:#fa8072; } /* soft orange-50 */
+        .row-flagged{ background:#fff7ed; }
 
-        /* Misc */
-        .muted { color:#6b7280; }
-        .inline { display:inline-flex; align-items:center; gap:6px; }
-        .actions { display:flex; align-items:center; justify-content:center; gap:6px; flex-wrap:wrap; }
+        /* Modal */
+        .modal-backdrop{
+          position:fixed; inset:0; background:rgba(0,0,0,0.4);
+          display:flex; align-items:center; justify-content:center; z-index:1000;
+          padding: 10px;
+        }
+        .modal{
+          width:min(640px, 100%); background:white; border-radius:16px; padding:16px;
+          box-shadow:0 10px 25px rgba(0,0,0,0.2); display:flex; flex-direction:column; gap:12px;
+        }
+        .modal-header{ display:flex; align-items:center; justify-content:center; }
+        .modal-title{ font-weight:800; text-align:center; }
+        .modal-body{ display:flex; flex-direction:column; }
+        .modal-body textarea{
+          width:100%; min-height:140px; border-radius:12px; padding:10px;
+          border:1px solid var(--border, #e5e7eb); resize:vertical; font:inherit;
+        }
+        .modal-actions{
+          display:flex; align-items:center; justify-content:center; gap:10px;
+        }
+
+        /* Utilities */
+        .muted{ color:#6b7280; }
+        .inline{ display:inline-flex; align-items:center; gap:6px; }
+        .center{ text-align:center; }
+        .sr-only{ position:absolute; width:1px; height:1px; padding:0; margin:-1px; overflow:hidden; clip:rect(0,0,0,0); border:0; }
+        .alert.error{ background:#fef2f2; border:1px solid #fecaca; color:#7f1d1d; padding:10px 12px; border-radius:10px; }
       `}</style>
     </main>
   );
