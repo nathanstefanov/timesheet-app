@@ -264,7 +264,7 @@ export default function Admin() {
     };
   }, [loadShifts]);
 
-  // ---- Totals by employee (now also tracking auto/manual flagged count) ----
+  // ---- Totals by employee (track MIN + FLAG counts) ----
   const totals = useMemo(() => {
     const m: Record<string, {
       id: string; name: string; hours: number; pay: number; unpaid: number; minCount: number; flagCount: number
@@ -496,6 +496,7 @@ export default function Admin() {
               onClick={() => { setRangeFrom(null); setRangeTo(null); }}
               title="Clear range (shows all time)"
               disabled={useWeek}
+              style={{ whiteSpace: 'nowrap' }}
             >
               Clear (All-time)
             </button>
@@ -654,9 +655,11 @@ export default function Admin() {
                       const { pay, minApplied, base } = payInfo(s);
                       const paid = Boolean(s.is_paid);
                       const hasNote = !!(s.admin_note && s.admin_note.trim());
-                      const flagged = Boolean(s.admin_flag) || isAutoFlag(s);
+                      const auto = isAutoFlag(s);
+                      const combinedFlagged = Boolean(s.admin_flag) || auto;
+
                       return (
-                        <tr key={s.id} className={flagged ? 'row-flagged' : ''}>
+                        <tr key={s.id} className={combinedFlagged ? 'row-flagged' : ''}>
                           <td data-label="Employee">
                             <div className="emp-cell">
                               <span>{name}</span>
@@ -692,10 +695,10 @@ export default function Admin() {
                                 MIN $50
                               </span>
                             )}
-                            {flagged && (
+                            {combinedFlagged && (
                               <span
                                 className="badge badge-flag"
-                                title="Flagged (Breakdown ≥ 3h or manually flagged)"
+                                title={auto ? 'Auto-flagged (Breakdown ≥ 3h)' : 'Manually flagged'}
                                 style={{ marginLeft: 6 }}
                               >
                                 FLAG
@@ -724,14 +727,18 @@ export default function Admin() {
                               <button className="btn" onClick={() => editRow(s)}>Edit</button>
                               <button className="btn btn-danger" onClick={() => deleteRow(s)}>Delete</button>
 
-                              {/* admin-only controls (manual flag toggles only admin_flag) */}
+                              {/* Flag button shows ON when auto-flagged as well */}
                               <button
-                                className={`btn ${s.admin_flag ? 'btn-flag-on' : 'btn-flag'}`}
-                                title={s.admin_flag ? 'Unflag (manual)' : 'Flag for attention (manual)'}
+                                className={`btn ${combinedFlagged ? 'btn-flag-on' : 'btn-flag'}`}
+                                title={
+                                  combinedFlagged
+                                    ? (auto ? 'Auto-flagged (Breakdown ≥ 3h). Click to toggle manual flag.' : 'Manually flagged. Click to unflag.')
+                                    : 'Flag for attention'
+                                }
                                 onClick={() => toggleAdminFlag(s, !Boolean(s.admin_flag))}
-                                aria-pressed={Boolean(s.admin_flag)}
+                                aria-pressed={combinedFlagged}
                               >
-                                {s.admin_flag ? '★ Flagged' : '☆ Flag'}
+                                {combinedFlagged ? '★ Flagged' : '☆ Flag'}
                               </button>
 
                               {/* quick note view/edit */}
@@ -794,25 +801,26 @@ export default function Admin() {
           display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap;
         }
 
-        /* Filters row */
+        /* Filters row — keep on one line, centered; scroll if too tight */
         .filters{
           display:flex;
           align-items:center;
           justify-content:center;
           gap:12px;
-          flex-wrap:nowrap;
-          overflow-x:auto;
+          flex-wrap:nowrap;             /* no stacking */
+          overflow-x:auto;              /* scroll on small screens */
           -webkit-overflow-scrolling:touch;
           padding:2px 4px;
         }
         .filters .inline,
         .filters label.inline{
-          display:inline-flex; align-items:center; gap:6px;
+          display:inline-flex; align-items:center; gap:6px; flex:0 0 auto;
         }
         .filters .divider{
           width:1px; height:24px; background:var(--border); opacity:0.5;
           flex:0 0 auto;
         }
+        .topbar-btn { white-space: nowrap; }
 
         /* Buttons (unified) */
         .btn, .topbar-btn, .btn-venmo {
@@ -829,7 +837,12 @@ export default function Admin() {
         .btn-danger { background:#ffe8e8; }
 
         .btn-flag { background:#fff; }
-        .btn-flag-on { background:#DD571C; font-weight:800; }
+        /* Softer ON state */
+        .btn-flag-on {
+          background:#fff4e5;                 /* soft orange */
+          border-color:#f3d2a8;
+          font-weight:800;
+        }
 
         .icon-btn{
           display:inline-flex; align-items:center; justify-content:center;
@@ -880,9 +893,10 @@ export default function Admin() {
           display:inline-flex; align-items:center; justify-content:center;
           padding:2px 8px; border-radius:999px; border:1px solid #f6ca00; background:#fffbe6; color:#6b5800; font-weight:700;
         }
+        /* Softer flag badge */
         .badge-flag{
           display:inline-flex; align-items:center; justify-content:center;
-          padding:2px 8px; border-radius:999px; border:1px solid #f59e0b; background:#fffbeb; color:#92400e; font-weight:700;
+          padding:2px 8px; border-radius:999px; border:1px solid #f3d2a8; background:#fff4e5; color:#7a4b14; font-weight:700;
         }
         .badge-paid{
           display:inline-flex; align-items:center; justify-content:center;
@@ -893,11 +907,10 @@ export default function Admin() {
           padding:2px 8px; border-radius:999px; border:1px solid #ef4444; background:#fef2f2; color:#7f1d1d; font-weight:700;
         }
 
-        /* Flagged row (kept your red highlight) */
-        .row-flagged { background:#ff474c; }
+        /* Softer flagged row */
+        .row-flagged { background:#fff7ed; } /* soft orange-50 */
 
         /* Misc */
-        .divider { width:1px; height:24px; background:var(--border); opacity:0.5; }
         .muted { color:#6b7280; }
         .inline { display:inline-flex; align-items:center; gap:6px; }
         .actions { display:flex; align-items:center; justify-content:center; gap:6px; flex-wrap:wrap; }
