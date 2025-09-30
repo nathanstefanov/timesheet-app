@@ -840,7 +840,7 @@ export default function Admin() {
         }
 
         /* Flagged row */
-        .row-flagged { background:#fffbea; }
+        .row-flagged { background:#ff474c; }
 
         /* Misc */
         .divider { width:1px; height:24px; background:var(--border); opacity:0.5; }
