@@ -908,7 +908,7 @@ export default function Admin() {
         }
 
         /* Softer flagged row */
-        .row-flagged { background:#fff7ed; } /* soft orange-50 */
+        .row-flagged { background:#fa8072; } /* soft orange-50 */
 
         /* Misc */
         .muted { color:#6b7280; }
