@@ -1,6 +1,6 @@
 // pages/me/schedule.tsx
 import { useEffect, useState } from 'react';
-import { supabase } from '../lib/supabaseClient';
+import { supabase } from '../../lib/supabaseClient';
 
 type Mate = { id: string; full_name?: string | null };
 type Row = {
