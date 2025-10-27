@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabaseClient';
 type Emp = { id: string; full_name?: string | null; email?: string | null };
 
 export default function AdminSchedule() {
+  // ---- form state for creating a shift ----
   const [form, setForm] = useState({
     start_time: '',
     end_time: '',
@@ -15,16 +16,18 @@ export default function AdminSchedule() {
     status: 'draft',
   });
 
+  // ---- UI / flow state ----
   const [creating, setCreating] = useState(false);
-  const [shiftId, setShiftId] = useState<string | null>(null);
+  const [assigning, setAssigning] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [shiftId, setShiftId] = useState<string | null>(null);
 
+  // ---- employees + selection ----
   const [employees, setEmployees] = useState<Emp[]>([]);
   const [q, setQ] = useState('');
   const [selected, setSelected] = useState<string[]>([]);
-  const [assigning, setAssigning] = useState(false);
 
-  // Load employees from profiles
+  // load employee list from profiles
   useEffect(() => {
     (async () => {
       const { data, error } = await supabase
@@ -47,7 +50,17 @@ export default function AdminSchedule() {
     setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   }
 
-  // Create shift (end time optional). Must return row with id.
+  // ---- helpers ----
+  async function parseMaybeJson(r: Response) {
+    const ct = r.headers.get('content-type') || '';
+    if (ct.includes('application/json')) {
+      try { return await r.json(); } catch { return null; }
+    }
+    const raw = await r.text();
+    return { raw };
+  }
+
+  // ---- create shift (end time optional) ----
   async function createShift() {
     setErrorMsg(null);
     if (!form.start_time) return setErrorMsg('Start time is required');
@@ -70,13 +83,12 @@ export default function AdminSchedule() {
         body: JSON.stringify(body),
       });
 
-      const j = await r.json();
-      if (!r.ok) throw new Error(j?.error || 'Error creating shift');
-
-      // j must include the inserted shift row (with id)
+      const j = await parseMaybeJson(r);
+      if (!r.ok) throw new Error(j?.error || j?.message || j?.raw || `HTTP ${r.status}`);
       if (!j?.id) throw new Error('API did not return a shift id');
+
       setShiftId(j.id);
-      setSelected([]); // reset any prior selection
+      setSelected([]); // reset any previous choices
     } catch (e: any) {
       setErrorMsg(e.message || 'Failed to create shift');
     } finally {
@@ -84,7 +96,7 @@ export default function AdminSchedule() {
     }
   }
 
-  // Assign selected employees to the created shift
+  // ---- assign selected employees to this shift ----
   async function assignEmployees() {
     setErrorMsg(null);
     if (!shiftId) return setErrorMsg('Create a shift first');
@@ -97,8 +109,8 @@ export default function AdminSchedule() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ employee_ids: selected }),
       });
-      const j = await r.json();
-      if (!r.ok) throw new Error(j?.error || 'Error assigning employees');
+      const j = await parseMaybeJson(r);
+      if (!r.ok) throw new Error(j?.error || j?.message || j?.raw || `HTTP ${r.status}`);
       alert('Assigned!');
     } catch (e: any) {
       setErrorMsg(e.message || 'Failed to assign');
@@ -112,7 +124,7 @@ export default function AdminSchedule() {
       <h1 className="page__title">Scheduling</h1>
       {errorMsg && <div className="alert error">{errorMsg}</div>}
 
-      {/* Step 1 – Create Shift */}
+      {/* ---------- Step 1: Create Shift ---------- */}
       <div className="card" style={{ padding: 12 }}>
         <label>Start</label>
         <input
@@ -178,13 +190,17 @@ export default function AdminSchedule() {
         </select>
 
         <div className="mt-lg">
-          <button className="btn-primary" onClick={createShift} disabled={creating || !form.start_time}>
+          <button
+            className="btn-primary"
+            onClick={createShift}
+            disabled={creating || !form.start_time}
+          >
             {creating ? 'Creating…' : 'Create Shift'}
           </button>
         </div>
       </div>
 
-      {/* Step 2 – Assign Employees (always visible; disabled until shift exists) */}
+      {/* ---------- Step 2: Assign Employees ---------- */}
       <div className="card mt-lg" style={{ padding: 12 }}>
         <div className="row between wrap">
           <strong>Assign Employees</strong>
@@ -193,7 +209,7 @@ export default function AdminSchedule() {
           </span>
         </div>
 
-        {/* Search */}
+        {/* Search box */}
         <div className="mt-lg">
           <input
             className="full"
@@ -204,7 +220,7 @@ export default function AdminSchedule() {
           />
         </div>
 
-        {/* Employee list */}
+        {/* Employee grid */}
         <div
           className="mt-lg"
           style={{
