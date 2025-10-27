@@ -21,23 +21,44 @@ export default function MySchedule() {
 
   useEffect(() => {
     let alive = true;
+
     (async () => {
       try {
-        const res = await fetch('/api/schedule/me');
-        // Always try JSON, but fall back to []
-        let j: any = [];
-        try { j = await res.json(); } catch { j = []; }
-        const list: Row[] = Array.isArray(j) ? j : Array.isArray(j?.data) ? j.data : [];
+        // Get the current session access token so the API can identify the user
+        const { data: sessionData } = await supabase.auth.getSession();
+        const token = sessionData?.session?.access_token ?? '';
+
+        const res = await fetch('/api/schedule/me', {
+          headers: token ? { Authorization: `Bearer ${token}` } : {},
+        });
+
+        // Try JSON; if not JSON, fall back to empty array to avoid crashing
+        let payload: any = [];
+        try {
+          payload = await res.json();
+        } catch {
+          payload = [];
+        }
+
+        const list: Row[] = Array.isArray(payload)
+          ? payload
+          : Array.isArray(payload?.data)
+          ? payload.data
+          : [];
+
         if (!alive) return;
         setRows(list);
       } catch (e: any) {
         if (!alive) return;
-        setErr(e.message || 'Failed to load schedule');
+        setErr(e?.message || 'Failed to load schedule');
       } finally {
         if (alive) setLoading(false);
       }
     })();
-    return () => { alive = false; };
+
+    return () => {
+      alive = false;
+    };
   }, []);
 
   const fmt = (s?: string | null) => (s ? new Date(s).toLocaleString() : '');
@@ -45,8 +66,9 @@ export default function MySchedule() {
   return (
     <div className="page">
       <h1 className="page__title">My Schedule</h1>
+
       {err && <div className="alert error">{err}</div>}
-      {loading ? <div className="toast">Loading…</div> : null}
+      {loading && <div className="toast">Loading…</div>}
 
       {!loading && rows.length === 0 && !err && (
         <div className="card" style={{ padding: 12 }}>
@@ -57,7 +79,7 @@ export default function MySchedule() {
       <div className="mt-lg" style={{ display: 'grid', gap: 12 }}>
         {rows.map((s) => (
           <div key={s.id} className="card" style={{ padding: 12 }}>
-            {/* Time + job/location */}
+            {/* Time + job/location row */}
             <div className="row wrap gap-md" style={{ alignItems: 'baseline' }}>
               <strong>{fmt(s.time_in)}</strong>
               {s.time_out ? <span className="muted">→ {fmt(s.time_out)}</span> : null}
@@ -73,13 +95,15 @@ export default function MySchedule() {
               </div>
             )}
 
-            {/* Mates */}
+            {/* Teammates */}
             {s.mates && s.mates.length > 0 && (
               <div className="mt-lg">
                 <div className="muted" style={{ marginBottom: 6 }}>Who’s on:</div>
                 <div className="row wrap gap-sm">
                   {s.mates.map((m) => (
-                    <span key={m.id} className="pill">{m.full_name || m.id.slice(0, 6)}</span>
+                    <span key={m.id} className="pill">
+                      {m.full_name || m.id.slice(0, 6)}
+                    </span>
                   ))}
                 </div>
               </div>
