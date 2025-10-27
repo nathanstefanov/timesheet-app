@@ -1,4 +1,5 @@
 // pages/admin-schedule.tsx
+import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
 
@@ -15,7 +16,6 @@ type SRow = {
 };
 
 export default function AdminSchedule() {
-  // current admin
   const [adminId, setAdminId] = useState<string | null>(null);
   useEffect(() => {
     (async () => {
@@ -24,12 +24,10 @@ export default function AdminSchedule() {
     })();
   }, []);
 
-  // list + loading
   const [rows, setRows] = useState<SRow[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
 
-  // create form
   const [form, setForm] = useState({
     start_time: '',
     end_time: '',
@@ -41,21 +39,18 @@ export default function AdminSchedule() {
   });
   const [creating, setCreating] = useState(false);
 
-  // edit drawer
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [edit, setEdit] = useState<SRow | null>(null);
   const [saving, setSaving] = useState(false);
   const [deleting, setDeleting] = useState(false);
 
-  // assignment panel
   const [assignOpen, setAssignOpen] = useState(false);
   const [assignShiftId, setAssignShiftId] = useState<string | null>(null);
   const [employees, setEmployees] = useState<Emp[]>([]);
-  const [assignees, setAssignees] = useState<string[]>([]); // selected ids
-  const [currentAssignees, setCurrentAssignees] = useState<string[]>([]); // currently assigned on server
+  const [assignees, setAssignees] = useState<string[]>([]);
+  const [currentAssignees, setCurrentAssignees] = useState<string[]>([]);
   const [search, setSearch] = useState('');
 
-  // helper: parse (maybe) json
   async function parseMaybeJson(r: Response) {
     const ct = r.headers.get('content-type') || '';
     if (ct.includes('application/json')) {
@@ -65,7 +60,6 @@ export default function AdminSchedule() {
     return { raw };
   }
 
-  // load shifts
   async function loadRows() {
     setLoading(true);
     setErr(null);
@@ -86,7 +80,6 @@ export default function AdminSchedule() {
     loadRows();
   }, []);
 
-  // load all employees once
   useEffect(() => {
     (async () => {
       const { data, error } = await supabase
@@ -132,7 +125,6 @@ export default function AdminSchedule() {
       const j: any = await parseMaybeJson(r);
       if (!r.ok) throw new Error(j?.error || j?.raw || `HTTP ${r.status}`);
 
-      // reset + reload
       setForm({
         start_time: '',
         end_time: '',
@@ -143,7 +135,7 @@ export default function AdminSchedule() {
         notes: '',
       });
       await loadRows();
-      alert('Scheduled shift created (not payroll).');
+      alert('Scheduled shift created.');
     } catch (e: any) {
       alert(e.message || 'Failed to create');
     } finally {
@@ -169,7 +161,6 @@ export default function AdminSchedule() {
         status: edit.status ?? undefined,
         notes: edit.notes ?? undefined,
       };
-      // convert local datetime to ISO if user changed it on the form
       if (body.start_time && !body.start_time.endsWith('Z')) {
         body.start_time = new Date(body.start_time).toISOString();
       }
@@ -216,10 +207,7 @@ export default function AdminSchedule() {
     setAssignShiftId(row.id);
     setAssignOpen(true);
     setSearch('');
-    // load current assignees for this shift
     try {
-      // quick fetch from your schedule_assignments; you can create a tiny API for this,
-      // but we can query from client since RLS allows select.
       const { data, error } = await supabase
         .from('schedule_assignments')
         .select('employee_id')
@@ -245,28 +233,22 @@ export default function AdminSchedule() {
   async function saveAssignments() {
     if (!assignShiftId) return;
     try {
-      // Compute diffs (who to add, who to remove)
       const add = assignees.filter(x => !currentAssignees.includes(x));
       const remove = currentAssignees.filter(x => !assignees.includes(x));
 
       if (add.length) {
-        const r = await fetch(`/api/schedule/shifts/${assignShiftId}/assign`, {
+        await fetch(`/api/schedule/shifts/${assignShiftId}/assign`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ employee_ids: add }),
         });
-        const j: any = await parseMaybeJson(r);
-        if (!r.ok) throw new Error(j?.error || j?.raw || `HTTP ${r.status}`);
       }
-
       if (remove.length) {
-        const r = await fetch(`/api/schedule/shifts/${assignShiftId}/assign`, {
+        await fetch(`/api/schedule/shifts/${assignShiftId}/assign`, {
           method: 'DELETE',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({ employee_ids: remove }),
         });
-        const j: any = await parseMaybeJson(r);
-        if (!r.ok) throw new Error(j?.error || j?.raw || `HTTP ${r.status}`);
       }
 
       setAssignOpen(false);
@@ -280,68 +262,39 @@ export default function AdminSchedule() {
   return (
     <div className="page">
       <h1 className="page__title">Admin – Scheduling (separate from payroll)</h1>
+
+      <div className="center" style={{ marginBottom: 12 }}>
+        <Link href="/admin-schedule-past" className="nav-link">View Past Shifts</Link>
+      </div>
+
       {err && <div className="alert error">{err}</div>}
 
-      {/* Create */}
+      {/* Create Shift */}
       <div className="card" style={{ padding: 12 }}>
         <strong>Create Scheduled Shift</strong>
-
         <label className="mt-lg">Start</label>
-        <input
-          type="datetime-local"
-          value={form.start_time}
-          onChange={(e) => setForm({ ...form, start_time: e.target.value })}
-        />
-
+        <input type="datetime-local" value={form.start_time} onChange={(e) => setForm({ ...form, start_time: e.target.value })}/>
         <label className="mt-lg">End (optional)</label>
-        <input
-          type="datetime-local"
-          value={form.end_time}
-          onChange={(e) => setForm({ ...form, end_time: e.target.value })}
-        />
-
+        <input type="datetime-local" value={form.end_time} onChange={(e) => setForm({ ...form, end_time: e.target.value })}/>
         <label className="mt-lg">Location Name</label>
-        <input
-          placeholder="e.g., Oak Grove Park – Pavilion"
-          value={form.location_name}
-          onChange={(e) => setForm({ ...form, location_name: e.target.value })}
-        />
-
+        <input value={form.location_name} onChange={(e) => setForm({ ...form, location_name: e.target.value })}/>
         <label className="mt-lg">Address</label>
-        <input
-          placeholder="123 Main St, City"
-          value={form.address}
-          onChange={(e) => setForm({ ...form, address: e.target.value })}
-        />
-
+        <input value={form.address} onChange={(e) => setForm({ ...form, address: e.target.value })}/>
         <label className="mt-lg">Job Type</label>
-        <select
-          value={form.job_type}
-          onChange={(e) => setForm({ ...form, job_type: e.target.value as any })}
-        >
+        <select value={form.job_type} onChange={(e) => setForm({ ...form, job_type: e.target.value as any })}>
           <option value="setup">Setup</option>
           <option value="event">Event</option>
           <option value="breakdown">Breakdown</option>
           <option value="other">Other</option>
         </select>
-
         <label className="mt-lg">Status</label>
-        <select
-          value={form.status}
-          onChange={(e) => setForm({ ...form, status: e.target.value as any })}
-        >
+        <select value={form.status} onChange={(e) => setForm({ ...form, status: e.target.value as any })}>
           <option value="draft">Draft</option>
           <option value="confirmed">Confirmed</option>
           <option value="changed">Changed</option>
         </select>
-
         <label className="mt-lg">Notes</label>
-        <textarea
-          placeholder="Bring ladder; load truck…"
-          value={form.notes}
-          onChange={(e) => setForm({ ...form, notes: e.target.value })}
-        />
-
+        <textarea value={form.notes} onChange={(e) => setForm({ ...form, notes: e.target.value })}/>
         <div className="mt-lg">
           <button className="btn-primary" onClick={createShift} disabled={creating || !form.start_time || !adminId}>
             {creating ? 'Creating…' : 'Create Scheduled Shift'}
@@ -349,13 +302,15 @@ export default function AdminSchedule() {
         </div>
       </div>
 
-      {/* List */}
+      {/* Upcoming Shifts */}
       <div className="mt-lg">
         <h2 className="center" style={{ fontSize: 18, marginBottom: 8 }}>Upcoming Scheduled Shifts</h2>
-        {loading ? <div className="toast">Loading…</div> : null}
-        {!loading && rows.length === 0 ? (
-          <div className="card" style={{ padding: 12 }}><div className="muted">No scheduled shifts yet.</div></div>
-        ) : null}
+        {loading && <div className="toast">Loading…</div>}
+        {!loading && rows.length === 0 && !err && (
+          <div className="card" style={{ padding: 12 }}>
+            <div className="muted">No scheduled shifts yet.</div>
+          </div>
+        )}
 
         <div className="table-wrap">
           <table className="table table--admin">
@@ -396,141 +351,6 @@ export default function AdminSchedule() {
           </table>
         </div>
       </div>
-
-      {/* Edit Drawer (simple card overlay) */}
-      {drawerOpen && edit && (
-        <div
-          style={{
-            position: 'fixed', inset: 0, background: 'rgba(0,0,0,.25)',
-            display: 'flex', justifyContent: 'flex-end', zIndex: 50
-          }}
-          onClick={() => setDrawerOpen(false)}
-        >
-          <div
-            className="card"
-            style={{ width: 'min(520px, 96vw)', height: '100%', padding: 16, overflow: 'auto' }}
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="row between">
-              <strong>Edit Scheduled Shift</strong>
-              <button className="topbar-btn" onClick={() => setDrawerOpen(false)}>Close</button>
-            </div>
-
-            <label className="mt-lg">Start</label>
-            <input
-              type="datetime-local"
-              value={edit.start_time ? new Date(edit.start_time).toISOString().slice(0,16) : ''}
-              onChange={(e) => setEdit({ ...edit, start_time: e.target.value })}
-            />
-
-            <label className="mt-lg">End (optional)</label>
-            <input
-              type="datetime-local"
-              value={edit.end_time ? new Date(edit.end_time).toISOString().slice(0,16) : ''}
-              onChange={(e) => setEdit({ ...edit, end_time: e.target.value })}
-            />
-
-            <label className="mt-lg">Location Name</label>
-            <input
-              value={edit.location_name ?? ''}
-              onChange={(e) => setEdit({ ...edit, location_name: e.target.value })}
-            />
-
-            <label className="mt-lg">Address</label>
-            <input
-              value={edit.address ?? ''}
-              onChange={(e) => setEdit({ ...edit, address: e.target.value })}
-            />
-
-            <label className="mt-lg">Job Type</label>
-            <select
-              value={edit.job_type ?? 'setup'}
-              onChange={(e) => setEdit({ ...edit, job_type: e.target.value as any })}
-            >
-              <option value="setup">Setup</option>
-              <option value="event">Event</option>
-              <option value="breakdown">Breakdown</option>
-              <option value="other">Other</option>
-            </select>
-
-            <label className="mt-lg">Status</label>
-            <select
-              value={edit.status ?? 'draft'}
-              onChange={(e) => setEdit({ ...edit, status: e.target.value as any })}
-            >
-              <option value="draft">Draft</option>
-              <option value="confirmed">Confirmed</option>
-              <option value="changed">Changed</option>
-            </select>
-
-            <label className="mt-lg">Notes</label>
-            <textarea
-              value={edit.notes ?? ''}
-              onChange={(e) => setEdit({ ...edit, notes: e.target.value })}
-            />
-
-            <div className="mt-lg">
-              <button className="btn-primary" onClick={saveEdit} disabled={saving}>
-                {saving ? 'Saving…' : 'Save Changes'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Assign Panel (overlay) */}
-      {assignOpen && assignShiftId && (
-        <div
-          style={{
-            position: 'fixed', inset: 0, background: 'rgba(0,0,0,.25)',
-            display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 50
-          }}
-          onClick={() => setAssignOpen(false)}
-        >
-          <div
-            className="card"
-            style={{ width: 'min(760px, 96vw)', maxHeight: '92vh', padding: 16, overflow: 'auto' }}
-            onClick={e => e.stopPropagation()}
-          >
-            <div className="row between">
-              <strong>Assign Employees</strong>
-              <button className="topbar-btn" onClick={() => setAssignOpen(false)}>Close</button>
-            </div>
-
-            <input
-              className="mt-lg"
-              placeholder="Search name or email…"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-
-            <div
-              className="mt-lg"
-              style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}
-            >
-              {filteredEmps.map(e => (
-                <label key={e.id} className="inline-check card" style={{ padding: 10 }}>
-                  <input
-                    type="checkbox"
-                    checked={assignees.includes(e.id)}
-                    onChange={() => toggleEmp(e.id)}
-                  />
-                  <span>
-                    {e.full_name || e.id.slice(0, 8)}
-                    {e.email ? <span className="muted"> • {e.email}</span> : null}
-                  </span>
-                </label>
-              ))}
-            </div>
-
-            <div className="mt-lg">
-              <button className="btn-primary" onClick={saveAssignments}>
-                Save Assignments
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
     </div>
   );
 }
