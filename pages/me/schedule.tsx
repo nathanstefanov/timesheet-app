@@ -7,15 +7,8 @@
 </div>
 <div className="text-sm">
   {s.address || ''}
-</div>
-
-{s.address && (
-  <a
-    className="nav-link"
-    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.address)}`}
-    target="_blank"
-    rel="noreferrer"
-  >
+  {s.address && (
+  <a className="nav-link" href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(s.address)}`} target="_blank" rel="noreferrer">
     Open in Maps
   </a>
 )}
