@@ -11,7 +11,7 @@ const ShiftSchema = z.object({
   job_type: z.enum(['setup','event','breakdown','other']).optional(),
   task_notes: z.string().max(1000).optional(),
   status: z.enum(['draft','confirmed','changed']).optional(),
-  created_by: z.string().uuid(),         // admin user id
+  created_by: z.string().uuid()
 });
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -25,19 +25,25 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(400).json({ error: 'end_time must be after start_time' });
     }
 
-    // ✅ IMPORTANT: provide a NOT-NULL shift_type value
-    const shift_type = job_type ?? 'scheduled';
+    // ✅ map job_type → allowed shift_type values
+    const jobMap: Record<string, string> = {
+      setup: 'Setup',
+      breakdown: 'Breakdown',
+      event: 'Shop',       // you can change this if you have an "Event" type later
+      other: 'Shop',       // fallback
+    };
+    const shift_type = job_type ? jobMap[job_type] ?? 'Shop' : 'Shop';
 
     const { data, error } = await supabaseAdmin
       .from('shifts')
       .insert([{
-        user_id: created_by,                   // satisfy NOT NULL user_id
+        user_id: created_by,
         time_in: start_time,
         time_out: end_time ?? null,
         notes: task_notes ?? null,
         status: status ?? 'draft',
-        shift_type,                            // ✅ NEW
-        location_name: location_name ?? null,  // optional scheduling fields
+        shift_type,                            // ✅ now always valid
+        location_name: location_name ?? null,
         address: address ?? null,
         job_type: job_type ?? null,
         shift_date: start_time.split('T')[0],
@@ -58,6 +64,6 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     return res.status(200).json(data ?? []);
   }
 
-  res.setHeader('Allow', ['GET', 'POST']);
+  res.setHeader('Allow', ['GET','POST']);
   return res.status(405).json({ error: 'Method Not Allowed' });
 }
