@@ -101,11 +101,19 @@ export default function App({ Component, pageProps }: AppProps) {
           {/* While checking, don't render nav to avoid flicker */}
           {!checking && profile && (
             <nav className="nav">
-              <Link href="/dashboard" className="nav-link">Dashboard</Link>
-              <Link href="/new-shift" className="nav-link">Log Shift</Link>
-              {profile.role === 'admin' && <Link href="/admin" className="nav-link">Admin</Link>}
-              <button className="signout" onClick={handleSignOut}>Sign out</button>
-            </nav>
+  <Link href="/dashboard" className="nav-link">Dashboard</Link>
+  <Link href="/new-shift" className="nav-link">Log Shift</Link>
+
+  {/* NEW: everyone sees their own schedule */}
+  <Link href="/me/schedule" className="nav-link">My Schedule</Link>
+
+  {/* Admin-only: scheduling console */}
+  {profile.role === 'admin' && (
+    <Link href="/admin-schedule" className="nav-link">Schedule</Link>
+  )}
+
+  <button className="signout" onClick={handleSignOut}>Sign out</button>
+</nav>
           )}
         </div>
       </header>
