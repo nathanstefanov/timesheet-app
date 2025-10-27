@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { z } from 'zod';
-import { supabaseAdmin } from '../../../../lib/lib/supabaseAdmin';
+import { supabaseAdmin } from '../../../../lib/supabaseAdmin';
 
 const ShiftSchema = z.object({
   location_id: z.string().uuid().optional(),     // keep if you add locations later
