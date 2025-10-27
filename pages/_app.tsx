@@ -124,3 +124,7 @@ export default function App({ Component, pageProps }: AppProps) {
     </>
   );
 }
+<Link href="/me/schedule" className="nav-link">My Schedule</Link>
+{profile.role === 'admin' && (
+  <Link href="/admin-schedule" className="nav-link">Schedule</Link>
+)}
