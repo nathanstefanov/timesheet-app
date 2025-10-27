@@ -3,9 +3,14 @@ import { z } from 'zod';
 import { supabaseAdmin } from '../../../../lib/supabaseAdmin';
 
 const ShiftSchema = z.object({
-  location_id: z.string().uuid().optional(),     // keep if you add locations later
-  start_time: z.string().datetime(),             // ISO from client
-  end_time: z.string().datetime().optional().nullable(), // OPTIONAL
+  start_time: z.string().datetime(),
+  end_time: z.string().datetime().optional().nullable(),
+
+  // NEW
+  location_name: z.string().min(1).max(200).optional(),
+  address: z.string().min(3).max(300).optional(),
+  job_type: z.enum(['setup','event','breakdown','other']).optional(),
+
   task_notes: z.string().max(1000).optional(),
   status: z.enum(['draft','confirmed','changed']).optional()
 });
@@ -15,8 +20,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     const parsed = ShiftSchema.safeParse(req.body);
     if (!parsed.success) return res.status(400).json(parsed.error);
 
-    const { start_time, end_time, task_notes, status } = parsed.data;
-
+    const { start_time, end_time, task_notes, status, location_name, address, job_type } = parsed.data;
     if (end_time && new Date(end_time) <= new Date(start_time)) {
       return res.status(400).json({ error: 'end_time must be after start_time' });
     }
@@ -27,8 +31,17 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         time_in: start_time,
         time_out: end_time ?? null,
         notes: task_notes ?? null,
-        shift_type: status ?? 'draft',
-        shift_date: start_time.split('T')[0]  // optional convenience
+
+        // keep your historical shift_type intact; use new status column
+        status: status ?? 'draft',
+
+        // NEW
+        location_name: location_name ?? null,
+        address: address ?? null,
+        job_type: job_type ?? null,
+
+        // convenience
+        shift_date: start_time.split('T')[0]
       }])
       .select()
       .single();
