@@ -9,7 +9,7 @@ const PatchSchema = z.object({
   status: z.enum(['draft','confirmed','changed']).optional(),
   location_name: z.string().min(1).max(200).optional(),
   address: z.string().min(3).max(300).optional(),
-  job_type: z.enum(['setup','event','breakdown','other']).optional()
+  job_type: z.enum(['setup','event','breakdown','other']).optional(),
 });
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
@@ -17,9 +17,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   if (req.method === 'PATCH') {
     const parsed = PatchSchema.safeParse(req.body);
-    if (!parsed.success) return res.status(400).json(parsed.error);
-    const p = parsed.data;
+    if (!parsed.success) return res.status(400).json({ error: parsed.error.message });
 
+    const p = parsed.data;
     if (p.start_time && p.end_time && new Date(p.end_time) <= new Date(p.start_time)) {
       return res.status(400).json({ error: 'end_time must be after start_time' });
     }
@@ -33,13 +33,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
     if (p.address !== undefined) update.address = p.address;
     if (p.job_type !== undefined) update.job_type = p.job_type;
 
-    const { data, error } = await supabaseAdmin
-      .from('shifts')
-      .update(update)
-      .eq('id', id)
-      .select()
-      .single();
-
+    const { data, error } = await supabaseAdmin.from('shifts').update(update).eq('id', id).select().single();
     if (error) return res.status(500).json({ error: error.message });
     return res.status(200).json(data);
   }
@@ -51,5 +45,5 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   res.setHeader('Allow', 'PATCH, DELETE');
-  res.status(405).end();
+  return res.status(405).json({ error: 'Method Not Allowed' });
 }

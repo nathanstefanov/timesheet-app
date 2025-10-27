@@ -5,7 +5,16 @@ import { supabase } from '../lib/supabaseClient';
 type Emp = { id: string; full_name?: string | null; email?: string | null };
 
 export default function AdminSchedule() {
-  // ---- form state for creating a shift ----
+  // ---------- creator (admin) id ----------
+  const [creatorId, setCreatorId] = useState<string | null>(null);
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.auth.getSession();
+      setCreatorId(data.session?.user?.id ?? null);
+    })();
+  }, []);
+
+  // ---------- create-shift form ----------
   const [form, setForm] = useState({
     start_time: '',
     end_time: '',
@@ -16,18 +25,17 @@ export default function AdminSchedule() {
     status: 'draft',
   });
 
-  // ---- UI / flow state ----
+  // ---------- ui state ----------
   const [creating, setCreating] = useState(false);
   const [assigning, setAssigning] = useState(false);
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [shiftId, setShiftId] = useState<string | null>(null);
 
-  // ---- employees + selection ----
+  // ---------- employees + selection ----------
   const [employees, setEmployees] = useState<Emp[]>([]);
   const [q, setQ] = useState('');
   const [selected, setSelected] = useState<string[]>([]);
 
-  // load employee list from profiles
   useEffect(() => {
     (async () => {
       const { data, error } = await supabase
@@ -42,28 +50,33 @@ export default function AdminSchedule() {
     if (!q.trim()) return employees;
     const needle = q.toLowerCase();
     return employees.filter((e) =>
-      [e.full_name ?? '', e.email ?? '', e.id].some((v) => v?.toLowerCase().includes(needle))
+      [e.full_name ?? '', e.email ?? '', e.id].some((v) =>
+        v?.toLowerCase().includes(needle)
+      )
     );
   }, [q, employees]);
 
   function toggle(id: string) {
-    setSelected((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+    setSelected((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
   }
 
-  // ---- helpers ----
+  // ---------- helpers ----------
   async function parseMaybeJson(r: Response) {
     const ct = r.headers.get('content-type') || '';
     if (ct.includes('application/json')) {
-      try { return await r.json(); } catch { return null; }
+      try { return await r.json(); } catch { /* ignore */ }
     }
     const raw = await r.text();
     return { raw };
   }
 
-  // ---- create shift (end time optional) ----
+  // ---------- create shift (satisfy NOT NULL user_id via created_by) ----------
   async function createShift() {
     setErrorMsg(null);
     if (!form.start_time) return setErrorMsg('Start time is required');
+    if (!creatorId) return setErrorMsg('You must be signed in');
 
     setCreating(true);
     try {
@@ -75,6 +88,7 @@ export default function AdminSchedule() {
         job_type: form.job_type || undefined,
         task_notes: form.task_notes || undefined,
         status: form.status,
+        created_by: creatorId, // <- API writes this to shifts.user_id
       };
 
       const r = await fetch('/api/schedule/shifts', {
@@ -84,11 +98,11 @@ export default function AdminSchedule() {
       });
 
       const j = await parseMaybeJson(r);
-      if (!r.ok) throw new Error(j?.error || j?.message || j?.raw || `HTTP ${r.status}`);
-      if (!j?.id) throw new Error('API did not return a shift id');
+      if (!r.ok) throw new Error((j as any)?.error || (j as any)?.raw || `HTTP ${r.status}`);
+      if (!(j as any)?.id) throw new Error('API did not return a shift id');
 
-      setShiftId(j.id);
-      setSelected([]); // reset any previous choices
+      setShiftId((j as any).id);
+      setSelected([]);
     } catch (e: any) {
       setErrorMsg(e.message || 'Failed to create shift');
     } finally {
@@ -96,7 +110,7 @@ export default function AdminSchedule() {
     }
   }
 
-  // ---- assign selected employees to this shift ----
+  // ---------- assign employees ----------
   async function assignEmployees() {
     setErrorMsg(null);
     if (!shiftId) return setErrorMsg('Create a shift first');
@@ -110,7 +124,7 @@ export default function AdminSchedule() {
         body: JSON.stringify({ employee_ids: selected }),
       });
       const j = await parseMaybeJson(r);
-      if (!r.ok) throw new Error(j?.error || j?.message || j?.raw || `HTTP ${r.status}`);
+      if (!r.ok) throw new Error((j as any)?.error || (j as any)?.raw || `HTTP ${r.status}`);
       alert('Assigned!');
     } catch (e: any) {
       setErrorMsg(e.message || 'Failed to assign');
@@ -209,7 +223,6 @@ export default function AdminSchedule() {
           </span>
         </div>
 
-        {/* Search box */}
         <div className="mt-lg">
           <input
             className="full"
@@ -220,7 +233,6 @@ export default function AdminSchedule() {
           />
         </div>
 
-        {/* Employee grid */}
         <div
           className="mt-lg"
           style={{
