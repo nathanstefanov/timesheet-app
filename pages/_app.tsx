@@ -11,7 +11,7 @@ type Profile = { id: string; full_name?: string | null; role: 'employee' | 'admi
 export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [checking, setChecking] = useState(true); // gate UI + redirects until initial session resolves
+  const [checking, setChecking] = useState(true);
   const [err, setErr] = useState<string | null>(null);
 
   const mounted = useRef(false);
@@ -22,7 +22,8 @@ export default function App({ Component, pageProps }: AppProps) {
       .from('profiles')
       .select('id, full_name, role')
       .eq('id', userId)
-      .maybeSingle(); // ✅ doesn't throw if RLS/session is still warming up
+      .maybeSingle();
+
     if (error) {
       setErr(error.message);
       setProfile(null);
@@ -40,27 +41,27 @@ export default function App({ Component, pageProps }: AppProps) {
   function handleSession(session: import('@supabase/supabase-js').Session | null) {
     if (!session?.user) {
       setProfile(null);
+      // If not on the landing page, send home
       if (!checking && router.pathname !== '/') router.replace('/');
       return;
     }
     fetchProfile(session.user.id);
+    // If on landing page and now signed in, go to dashboard
     if (!checking && router.pathname === '/') router.replace('/dashboard');
   }
 
   useEffect(() => {
     if (mounted.current) return;
     mounted.current = true;
-
     let alive = true;
 
     (async () => {
       const { data } = await supabase.auth.getSession();
       if (!alive) return;
       handleSession(data?.session ?? null);
-      setChecking(false); // ✅ initial session resolved
+      setChecking(false);
     })();
 
-    // React to all session-changing events (refreshes included)
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       if (!alive) return;
       if (
@@ -101,19 +102,19 @@ export default function App({ Component, pageProps }: AppProps) {
           {/* While checking, don't render nav to avoid flicker */}
           {!checking && profile && (
             <nav className="nav">
-  <Link href="/dashboard" className="nav-link">Dashboard</Link>
-  <Link href="/new-shift" className="nav-link">Log Shift</Link>
+              <Link href="/dashboard" className="nav-link">Dashboard</Link>
+              <Link href="/new-shift" className="nav-link">Log Shift</Link>
 
-  {/* NEW: everyone sees their own schedule */}
-  <Link href="/me/schedule" className="nav-link">My Schedule</Link>
+              {/* Everyone: personal schedule */}
+              <Link href="/me/schedule" className="nav-link">My Schedule</Link>
 
-  {/* Admin-only: scheduling console */}
-  {profile.role === 'admin' && (
-    <Link href="/admin-schedule" className="nav-link">Schedule</Link>
-  )}
+              {/* Admin-only: scheduling console */}
+              {profile.role === 'admin' && (
+                <Link href="/admin-schedule" className="nav-link">Schedule</Link>
+              )}
 
-  <button className="signout" onClick={handleSignOut}>Sign out</button>
-</nav>
+              <button className="signout" onClick={handleSignOut}>Sign out</button>
+            </nav>
           )}
         </div>
       </header>
