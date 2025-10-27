@@ -1,6 +1,6 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/router';
-import { supabase } from '../lib/lib/supabaseClient';
+import { supabase } from '../lib/supabaseClient';
 
 type Mode = 'signin' | 'signup';
 

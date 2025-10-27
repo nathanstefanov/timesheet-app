@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { supabase } from '../lib/lib/supabaseClient';
+import { supabase } from '../lib/supabaseClient';
 
 type Emp = { id: string; full_name?: string | null };
 

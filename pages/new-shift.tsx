@@ -1,7 +1,7 @@
 // pages/new-shift.tsx
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
-import { supabase } from '../lib/lib/supabaseClient';
+import { supabase } from '../lib/supabaseClient';
 
 type ShiftType = 'Setup' | 'Breakdown' | 'Shop';
 
