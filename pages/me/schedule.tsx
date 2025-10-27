@@ -1,12 +1,11 @@
-// pages/me/schedule.tsx
 import { useEffect, useState } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 
 type Mate = { id: string; full_name?: string | null };
 type Row = {
   id: string;
-  time_in: string | null;
-  time_out: string | null;
+  start_time: string | null;
+  end_time: string | null;
   job_type?: string | null;
   location_name?: string | null;
   address?: string | null;
@@ -21,31 +20,16 @@ export default function MySchedule() {
 
   useEffect(() => {
     let alive = true;
-
     (async () => {
       try {
-        // Get the current session access token so the API can identify the user
-        const { data: sessionData } = await supabase.auth.getSession();
-        const token = sessionData?.session?.access_token ?? '';
-
+        const { data: s } = await supabase.auth.getSession();
+        const token = s?.session?.access_token ?? '';
         const res = await fetch('/api/schedule/me', {
           headers: token ? { Authorization: `Bearer ${token}` } : {},
         });
-
-        // Try JSON; if not JSON, fall back to empty array to avoid crashing
         let payload: any = [];
-        try {
-          payload = await res.json();
-        } catch {
-          payload = [];
-        }
-
-        const list: Row[] = Array.isArray(payload)
-          ? payload
-          : Array.isArray(payload?.data)
-          ? payload.data
-          : [];
-
+        try { payload = await res.json(); } catch { payload = []; }
+        const list: Row[] = Array.isArray(payload) ? payload : [];
         if (!alive) return;
         setRows(list);
       } catch (e: any) {
@@ -55,10 +39,7 @@ export default function MySchedule() {
         if (alive) setLoading(false);
       }
     })();
-
-    return () => {
-      alive = false;
-    };
+    return () => { alive = false; };
   }, []);
 
   const fmt = (s?: string | null) => (s ? new Date(s).toLocaleString() : '');
@@ -66,23 +47,20 @@ export default function MySchedule() {
   return (
     <div className="page">
       <h1 className="page__title">My Schedule</h1>
-
       {err && <div className="alert error">{err}</div>}
       {loading && <div className="toast">Loading…</div>}
-
       {!loading && rows.length === 0 && !err && (
         <div className="card" style={{ padding: 12 }}>
-          <div className="muted">No assigned shifts yet.</div>
+          <div className="muted">No assigned scheduled shifts yet.</div>
         </div>
       )}
 
       <div className="mt-lg" style={{ display: 'grid', gap: 12 }}>
         {rows.map((s) => (
           <div key={s.id} className="card" style={{ padding: 12 }}>
-            {/* Time + job/location row */}
             <div className="row wrap gap-md" style={{ alignItems: 'baseline' }}>
-              <strong>{fmt(s.time_in)}</strong>
-              {s.time_out ? <span className="muted">→ {fmt(s.time_out)}</span> : null}
+              <strong>{fmt(s.start_time)}</strong>
+              {s.end_time ? <span className="muted">→ {fmt(s.end_time)}</span> : null}
               {s.job_type ? <span className="chip">{s.job_type}</span> : null}
               {s.status ? <span className="badge">{s.status}</span> : null}
             </div>
@@ -95,7 +73,6 @@ export default function MySchedule() {
               </div>
             )}
 
-            {/* Teammates */}
             {s.mates && s.mates.length > 0 && (
               <div className="mt-lg">
                 <div className="muted" style={{ marginBottom: 6 }}>Who’s on:</div>
