@@ -418,3 +418,6 @@ textarea{ min-height:80px; resize:vertical; }
     justify-content: center;
   }
 }
+/* globals.css (or wherever your nav styles live) */
+.nav { display:flex; gap:1rem; flex-wrap:wrap; overflow:visible; }
+.nav-link { display:inline-block; }
