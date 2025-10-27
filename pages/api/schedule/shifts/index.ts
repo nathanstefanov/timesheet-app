@@ -1,16 +1,13 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { z } from 'zod';
-import { supabaseAdmin } from '../../../../lib/lib/supabaseAdmin';
+import { supabaseAdmin } from '../../../../lib/supabaseAdmin';
 
 const ShiftSchema = z.object({
   start_time: z.string().datetime(),
   end_time: z.string().datetime().optional().nullable(),
-
-  // NEW
   location_name: z.string().min(1).max(200).optional(),
   address: z.string().min(3).max(300).optional(),
   job_type: z.enum(['setup','event','breakdown','other']).optional(),
-
   task_notes: z.string().max(1000).optional(),
   status: z.enum(['draft','confirmed','changed']).optional()
 });
@@ -31,16 +28,10 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
         time_in: start_time,
         time_out: end_time ?? null,
         notes: task_notes ?? null,
-
-        // keep your historical shift_type intact; use new status column
         status: status ?? 'draft',
-
-        // NEW
         location_name: location_name ?? null,
         address: address ?? null,
         job_type: job_type ?? null,
-
-        // convenience
         shift_date: start_time.split('T')[0]
       }])
       .select()
@@ -55,6 +46,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .from('shifts')
       .select('*')
       .order('time_in', { ascending: true });
+
     if (error) return res.status(500).json({ error: error.message });
     return res.status(200).json(data ?? []);
   }

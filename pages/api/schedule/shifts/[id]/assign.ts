@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { z } from 'zod';
-import { supabaseAdmin } from '../../../../../lib/lib/supabaseAdmin';
+import { supabaseAdmin } from '../../../../../lib/supabaseAdmin';
 
 const AssignSchema = z.object({
   employee_ids: z.array(z.string().uuid()).min(1),
@@ -9,7 +9,8 @@ const AssignSchema = z.object({
 
 export default async function handler(req: NextApiRequest, res: NextApiResponse) {
   if (req.method !== 'POST') {
-    res.setHeader('Allow', 'POST'); return res.status(405).end();
+    res.setHeader('Allow', 'POST');
+    return res.status(405).end();
   }
 
   const shift_id = req.query.id as string;
@@ -17,7 +18,9 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (!parsed.success) return res.status(400).json(parsed.error);
 
   const rows = parsed.data.employee_ids.map(eid => ({
-    shift_id, employee_id: eid, assigned_by: parsed.data.assigned_by ?? null
+    shift_id,
+    employee_id: eid,
+    assigned_by: parsed.data.assigned_by ?? null
   }));
 
   const { data, error } = await supabaseAdmin
