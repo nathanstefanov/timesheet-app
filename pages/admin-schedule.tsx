@@ -51,6 +51,13 @@ export default function AdminSchedule() {
   const [currentAssignees, setCurrentAssignees] = useState<string[]>([]);
   const [search, setSearch] = useState('');
 
+  // tick every 60s so a shift automatically moves from Upcoming -> Past without manual refresh
+  const [, setTick] = useState(0);
+  useEffect(() => {
+    const id = setInterval(() => setTick(t => t + 1), 60000);
+    return () => clearInterval(id);
+  }, []);
+
   async function parseMaybeJson(r: Response) {
     const ct = r.headers.get('content-type') || '';
     if (ct.includes('application/json')) {
@@ -101,6 +108,25 @@ export default function AdminSchedule() {
   function fmt(s?: string | null) {
     return s ? new Date(s).toLocaleString() : '';
   }
+
+  // ✅ Upcoming filter:
+  // upcoming if (end_time > now) OR (no end_time AND start_time >= now)
+  const upcoming = useMemo(() => {
+    const now = Date.now();
+    return rows
+      .filter(r => {
+        const start = r.start_time ? Date.parse(r.start_time) : NaN;
+        const end   = r.end_time   ? Date.parse(r.end_time)   : NaN;
+        if (!isNaN(end))   return end   >= now;
+        if (!isNaN(start)) return start >= now;
+        return false;
+      })
+      .sort((a, b) => {
+        const as = a.start_time ? Date.parse(a.start_time) : 0;
+        const bs = b.start_time ? Date.parse(b.start_time) : 0;
+        return as - bs; // soonest first
+      });
+  }, [rows]);
 
   async function createShift() {
     if (!adminId) return alert('Sign in as admin first.');
@@ -265,6 +291,7 @@ export default function AdminSchedule() {
 
       <div className="center" style={{ marginBottom: 12 }}>
         <Link href="/admin-schedule-past" className="nav-link">View Past Shifts</Link>
+        <button className="topbar-btn" style={{ marginLeft: 8 }} onClick={loadRows}>Refresh</button>
       </div>
 
       {err && <div className="alert error">{err}</div>}
@@ -302,55 +329,192 @@ export default function AdminSchedule() {
         </div>
       </div>
 
-      {/* Upcoming Shifts */}
+      {/* Upcoming Shifts (auto-filters by time) */}
       <div className="mt-lg">
         <h2 className="center" style={{ fontSize: 18, marginBottom: 8 }}>Upcoming Scheduled Shifts</h2>
         {loading && <div className="toast">Loading…</div>}
-        {!loading && rows.length === 0 && !err && (
+        {!loading && upcoming.length === 0 && !err && (
           <div className="card" style={{ padding: 12 }}>
-            <div className="muted">No scheduled shifts yet.</div>
+            <div className="muted">No upcoming scheduled shifts.</div>
           </div>
         )}
 
-        <div className="table-wrap">
-          <table className="table table--admin">
-            <thead>
-              <tr>
-                <th>Start</th>
-                <th>End</th>
-                <th>Job</th>
-                <th>Location</th>
-                <th>Address</th>
-                <th>Status</th>
-                <th className="col-hide-md">Notes</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {rows.map(r => (
-                <tr key={r.id}>
-                  <td>{fmt(r.start_time)}</td>
-                  <td>{fmt(r.end_time)}</td>
-                  <td>{r.job_type}</td>
-                  <td>{r.location_name}</td>
-                  <td>{r.address}</td>
-                  <td>{r.status}</td>
-                  <td className="col-hide-md">{r.notes}</td>
-                  <td>
-                    <div className="actions">
-                      <button className="btn-edit" onClick={() => openEdit(r)}>Edit</button>
-                      <button className="btn-edit" onClick={() => openAssign(r)}>Assign</button>
-                      <button className="btn-delete" onClick={() => deleteRow(r.id)} disabled={deleting}>
-                        {deleting ? 'Deleting…' : 'Delete'}
-                      </button>
-                    </div>
-                  </td>
+        {upcoming.length > 0 && (
+          <div className="table-wrap">
+            <table className="table table--admin">
+              <thead>
+                <tr>
+                  <th>Start</th>
+                  <th>End</th>
+                  <th>Job</th>
+                  <th>Location</th>
+                  <th>Address</th>
+                  <th>Status</th>
+                  <th className="col-hide-md">Notes</th>
+                  <th>Actions</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
-        </div>
+              </thead>
+              <tbody>
+                {upcoming.map(r => (
+                  <tr key={r.id}>
+                    <td>{fmt(r.start_time)}</td>
+                    <td>{fmt(r.end_time)}</td>
+                    <td>{r.job_type}</td>
+                    <td>{r.location_name}</td>
+                    <td>{r.address}</td>
+                    <td>{r.status}</td>
+                    <td className="col-hide-md">{r.notes}</td>
+                    <td>
+                      <div className="actions">
+                        <button className="btn-edit" onClick={() => openEdit(r)}>Edit</button>
+                        <button className="btn-edit" onClick={() => openAssign(r)}>Assign</button>
+                        <button className="btn-delete" onClick={() => deleteRow(r.id)} disabled={deleting}>
+                          {deleting ? 'Deleting…' : 'Delete'}
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
+
+      {/* Edit Drawer */}
+      {drawerOpen && edit && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,.25)',
+            display: 'flex', justifyContent: 'flex-end', zIndex: 50
+          }}
+          onClick={() => setDrawerOpen(false)}
+        >
+          <div
+            className="card"
+            style={{ width: 'min(520px, 96vw)', height: '100%', padding: 16, overflow: 'auto' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="row between">
+              <strong>Edit Scheduled Shift</strong>
+              <button className="topbar-btn" onClick={() => setDrawerOpen(false)}>Close</button>
+            </div>
+
+            <label className="mt-lg">Start</label>
+            <input
+              type="datetime-local"
+              value={edit.start_time ? new Date(edit.start_time).toISOString().slice(0,16) : ''}
+              onChange={(e) => setEdit({ ...edit, start_time: e.target.value })}
+            />
+
+            <label className="mt-lg">End (optional)</label>
+            <input
+              type="datetime-local"
+              value={edit.end_time ? new Date(edit.end_time).toISOString().slice(0,16) : ''}
+              onChange={(e) => setEdit({ ...edit, end_time: e.target.value })}
+            />
+
+            <label className="mt-lg">Location Name</label>
+            <input
+              value={edit.location_name ?? ''}
+              onChange={(e) => setEdit({ ...edit, location_name: e.target.value })}
+            />
+
+            <label className="mt-lg">Address</label>
+            <input
+              value={edit.address ?? ''}
+              onChange={(e) => setEdit({ ...edit, address: e.target.value })}
+            />
+
+            <label className="mt-lg">Job Type</label>
+            <select
+              value={edit.job_type ?? 'setup'}
+              onChange={(e) => setEdit({ ...edit, job_type: e.target.value as any })}
+            >
+              <option value="setup">Setup</option>
+              <option value="event">Event</option>
+              <option value="breakdown">Breakdown</option>
+              <option value="other">Other</option>
+            </select>
+
+            <label className="mt-lg">Status</label>
+            <select
+              value={edit.status ?? 'draft'}
+              onChange={(e) => setEdit({ ...edit, status: e.target.value as any })}
+            >
+              <option value="draft">Draft</option>
+              <option value="confirmed">Confirmed</option>
+              <option value="changed">Changed</option>
+            </select>
+
+            <label className="mt-lg">Notes</label>
+            <textarea
+              value={edit.notes ?? ''}
+              onChange={(e) => setEdit({ ...edit, notes: e.target.value })}
+            />
+
+            <div className="mt-lg">
+              <button className="btn-primary" onClick={saveEdit} disabled={saving}>
+                {saving ? 'Saving…' : 'Save Changes'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Assign Panel */}
+      {assignOpen && assignShiftId && (
+        <div
+          style={{
+            position: 'fixed', inset: 0, background: 'rgba(0,0,0,.25)',
+            display: 'flex', justifyContent: 'center', alignItems: 'center', zIndex: 50
+          }}
+          onClick={() => setAssignOpen(false)}
+        >
+          <div
+            className="card"
+            style={{ width: 'min(760px, 96vw)', maxHeight: '92vh', padding: 16, overflow: 'auto' }}
+            onClick={e => e.stopPropagation()}
+          >
+            <div className="row between">
+              <strong>Assign Employees</strong>
+              <button className="topbar-btn" onClick={() => setAssignOpen(false)}>Close</button>
+            </div>
+
+            <input
+              className="mt-lg"
+              placeholder="Search name or email…"
+              value={search}
+              onChange={(e) => setSearch(e.target.value)}
+            />
+
+            <div
+              className="mt-lg"
+              style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}
+            >
+              {filteredEmps.map(e => (
+                <label key={e.id} className="inline-check card" style={{ padding: 10 }}>
+                  <input
+                    type="checkbox"
+                    checked={assignees.includes(e.id)}
+                    onChange={() => toggleEmp(e.id)}
+                  />
+                  <span>
+                    {e.full_name || e.id.slice(0, 8)}
+                    {e.email ? <span className="muted"> • {e.email}</span> : null}
+                  </span>
+                </label>
+              ))}
+            </div>
+
+            <div className="mt-lg">
+              <button className="btn-primary" onClick={saveAssignments}>
+                Save Assignments
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
