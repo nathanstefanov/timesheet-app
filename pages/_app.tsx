@@ -84,9 +84,6 @@ export default function App({ Component, pageProps }: AppProps) {
     router.replace('/');
   }
 
-  // helper to mark active link
-  const isActive = (href: string) => router.pathname === href;
-
   return (
     <>
       <header className="topbar">
@@ -103,27 +100,17 @@ export default function App({ Component, pageProps }: AppProps) {
           {/* While checking, don't render nav to avoid flicker */}
           {!checking && profile && (
             <nav className="nav">
-              <Link href="/dashboard" className={`nav-link ${isActive('/dashboard') ? 'active' : ''}`}>
-                Dashboard
-              </Link>
+              {/* Everyone */}
+              <Link href="/dashboard" className="nav-link">Dashboard</Link>
+              <Link href="/new-shift" className="nav-link">Log Shift</Link>
+              <Link href="/me/schedule" className="nav-link">My Schedule</Link>
 
-              <Link href="/new-shift" className={`nav-link ${isActive('/new-shift') ? 'active' : ''}`}>
-                Log Shift
-              </Link>
-
-              {/* Everyone: personal schedule */}
-              <Link href="/me/schedule" className={`nav-link ${isActive('/me/schedule') ? 'active' : ''}`}>
-                My Schedule
-              </Link>
-
-              {/* Admin-only: scheduling console */}
+              {/* Admin-only */}
               {profile.role === 'admin' && (
-                <Link
-                  href="/admin-schedule"
-                  className={`nav-link ${isActive('/admin-schedule') ? 'active' : ''}`}
-                >
-                  Schedule
-                </Link>
+                <>
+                  <Link href="/admin" className="nav-link">Admin Dashboard</Link>
+                  <Link href="/admin-schedule" className="nav-link">Schedule</Link>
+                </>
               )}
 
               <button className="signout" onClick={handleSignOut}>Sign out</button>
