@@ -1,101 +1,89 @@
 // pages/me/schedule.tsx
-import useSWR from 'swr';
 import { useEffect, useState } from 'react';
-import { supabase } from '../../lib/supabaseClient';
+import { supabase } from '../lib/supabaseClient';
 
-type RosterPerson = { id: string; full_name?: string | null };
-type Shift = {
+type Mate = { id: string; full_name?: string | null };
+type Row = {
   id: string;
-  time_in: string;
+  time_in: string | null;
   time_out: string | null;
-  notes?: string | null;
+  job_type?: string | null;
   location_name?: string | null;
   address?: string | null;
-  job_type?: 'setup' | 'event' | 'breakdown' | 'other' | null;
-  roster?: RosterPerson[];
+  status?: string | null;
+  mates?: Mate[];
 };
 
-const fetcher = (u: string) => fetch(u).then(r => r.json());
-const fmt = (s?: string | null) => (s ? new Date(s).toLocaleString() : '');
-const cap = (s?: string | null) => (s ? s[0].toUpperCase() + s.slice(1) : '');
-
-export default function MySchedulePage() {
-  const [userId, setUserId] = useState<string | null>(null);
+export default function MySchedule() {
+  const [rows, setRows] = useState<Row[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [err, setErr] = useState<string | null>(null);
 
   useEffect(() => {
+    let alive = true;
     (async () => {
-      const { data } = await supabase.auth.getSession();
-      setUserId(data.session?.user?.id ?? null);
+      try {
+        const res = await fetch('/api/schedule/me');
+        // Always try JSON, but fall back to []
+        let j: any = [];
+        try { j = await res.json(); } catch { j = []; }
+        const list: Row[] = Array.isArray(j) ? j : Array.isArray(j?.data) ? j.data : [];
+        if (!alive) return;
+        setRows(list);
+      } catch (e: any) {
+        if (!alive) return;
+        setErr(e.message || 'Failed to load schedule');
+      } finally {
+        if (alive) setLoading(false);
+      }
     })();
+    return () => { alive = false; };
   }, []);
 
-  const { data, error } = useSWR<Shift[]>(
-    userId ? `/api/schedule/me?employee_id=${userId}` : null,
-    fetcher
-  );
-
-  if (!userId) return <div className="page center">Loading…</div>;
-  if (error) return <div className="page center">Error loading schedule.</div>;
-  if (!data) return <div className="page center">Loading…</div>;
+  const fmt = (s?: string | null) => (s ? new Date(s).toLocaleString() : '');
 
   return (
     <div className="page">
       <h1 className="page__title">My Schedule</h1>
+      {err && <div className="alert error">{err}</div>}
+      {loading ? <div className="toast">Loading…</div> : null}
 
-      {data.length === 0 && (
+      {!loading && rows.length === 0 && !err && (
         <div className="card" style={{ padding: 12 }}>
-          No upcoming shifts.
+          <div className="muted">No assigned shifts yet.</div>
         </div>
       )}
 
       <div className="mt-lg" style={{ display: 'grid', gap: 12 }}>
-        {data.map((s) => (
+        {rows.map((s) => (
           <div key={s.id} className="card" style={{ padding: 12 }}>
             {/* Time + job/location */}
             <div className="row wrap gap-md" style={{ alignItems: 'baseline' }}>
-              <div className="font-medium">
-                {fmt(s.time_in)} {s.time_out ? `– ${fmt(s.time_out)}` : '(start only)'}
-              </div>
-              <div className="muted">
-                {s.job_type ? cap(s.job_type) : '—'}
-                {s.location_name ? ` • ${s.location_name}` : ''}
-              </div>
+              <strong>{fmt(s.time_in)}</strong>
+              {s.time_out ? <span className="muted">→ {fmt(s.time_out)}</span> : null}
+              {s.job_type ? <span className="chip">{s.job_type}</span> : null}
+              {s.status ? <span className="badge">{s.status}</span> : null}
             </div>
 
-            {/* Address + Google Maps */}
-            {(s.address || s.location_name) && (
-              <div className="row wrap gap-md mt-lg">
-                <div className="muted">{s.address || s.location_name}</div>
-                {s.address && (
-                  <a
-                    className="nav-link"
-                    href={`https://www.google.com/maps/search/?api=1&query=${encodeURIComponent(
-                      s.address
-                    )}`}
-                    target="_blank"
-                    rel="noreferrer"
-                  >
-                    Open in Maps
-                  </a>
-                )}
+            {(s.location_name || s.address) && (
+              <div className="muted" style={{ marginTop: 6 }}>
+                {s.location_name ? <span>{s.location_name}</span> : null}
+                {s.location_name && s.address ? ' • ' : null}
+                {s.address ? <span>{s.address}</span> : null}
               </div>
             )}
 
-            {/* Notes */}
-            {s.notes && <div className="mt-lg">{s.notes}</div>}
-
-            {/* Roster */}
-            <div className="mt-lg">
-              <span className="font-medium">Who’s on:</span>{' '}
-              {(s.roster ?? []).length === 0
-                ? '—'
-                : (s.roster ?? []).map((p, i) => (
-                    <span key={p.id}>
-                      {i > 0 ? ', ' : ''}
-                      {p.full_name || p.id.slice(0, 8)}
-                    </span>
+            {/* Mates */}
+            {s.mates && s.mates.length > 0 && (
+              <div className="mt-lg">
+                <div className="muted" style={{ marginBottom: 6 }}>Who’s on:</div>
+                <div className="row wrap gap-sm">
+                  {s.mates.map((m) => (
+                    <span key={m.id} className="pill">{m.full_name || m.id.slice(0, 6)}</span>
                   ))}
-            </div>
+                </div>
+              </div>
+            )}
           </div>
         ))}
       </div>
