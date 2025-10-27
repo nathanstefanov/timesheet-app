@@ -1,6 +1,6 @@
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { z } from 'zod';
-import { supabaseAdmin } from '../../../../../lib/supabaseAdmin';
+import { supabaseAdmin } from '../../../../../lib/lib/supabaseAdmin';
 
 const AssignSchema = z.object({
   employee_ids: z.array(z.string().uuid()).min(1),

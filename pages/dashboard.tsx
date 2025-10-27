@@ -2,7 +2,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
-import { supabase } from '../lib/supabaseClient';
+import { supabase } from '../lib/lib/supabaseClient';
 import {
   startOfWeek, endOfWeek, addWeeks,
   startOfMonth, endOfMonth, addMonths,
