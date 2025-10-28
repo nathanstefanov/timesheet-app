@@ -2,7 +2,7 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import { Loader } from '@googlemaps/js-api-loader';
+import { setOptions, importLibrary } from '@googlemaps/js-api-loader';
 
 type Emp = { id: string; full_name?: string | null; email?: string | null };
 
@@ -49,36 +49,48 @@ function LocationPicker({
   onSelect: (payload: { name: string; address: string }) => void;
 }) {
   const inputRef = useRef<HTMLInputElement | null>(null);
+  const acRef = useRef<any>(null);
   const [loaded, setLoaded] = useState(false);
   const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
   useEffect(() => {
     let isMounted = true;
     if (!key) return;
-    const loader = new Loader({
-      apiKey: key,
-      version: 'weekly',
-      libraries: ['places'],
-    });
-    loader.load().then(() => {
-      if (!isMounted || !inputRef.current) return;
-      // @ts-ignore
-      const ac = new google.maps.places.Autocomplete(inputRef.current, {
-        fields: ['name', 'formatted_address', 'address_components', 'geometry'],
-        types: ['establishment', 'geocode'],
+    // New loader API: set options and import the 'places' library
+    setOptions({ apiKey: key, version: 'weekly' });
+    importLibrary('places')
+      .then(() => {
+        if (!isMounted || !inputRef.current) return;
+        const g = (window as any).google;
+        if (!g?.maps?.places) {
+          setLoaded(false);
+          return;
+        }
+        const ac = new g.maps.places.Autocomplete(inputRef.current, {
+          fields: ['name', 'formatted_address', 'address_components', 'geometry'],
+          types: ['establishment', 'geocode'],
+        });
+        acRef.current = ac;
+        ac.addListener('place_changed', () => {
+          const place = ac.getPlace();
+          const name = place?.name || '';
+          const addr = place?.formatted_address || '';
+          if (name || addr) onSelect({ name, address: addr });
+        });
+        setLoaded(true);
+      })
+      .catch(() => {
+        setLoaded(false);
       });
-      // @ts-ignore
-      ac.addListener('place_changed', () => {
-        // @ts-ignore
-        const place = ac.getPlace();
-        const name = place?.name || '';
-        const addr = place?.formatted_address || '';
-        if (name || addr) onSelect({ name, address: addr });
-      });
-      setLoaded(true);
-    });
     return () => {
       isMounted = false;
+      // cleanup autocomplete listeners if created
+      try {
+        const g = (window as any).google;
+        if (acRef.current && g?.maps?.event?.clearInstanceListeners) {
+          g.maps.event.clearInstanceListeners(acRef.current);
+        }
+      } catch {}
     };
   }, [key]);
 
