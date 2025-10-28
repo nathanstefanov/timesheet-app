@@ -20,33 +20,47 @@ export default function MySchedule() {
 
   // Filters
   const [q, setQ] = useState('');
-  const [typeFilter, setTypeFilter] = useState<'all' | 'setup' | 'Lights' | 'breakdown' | 'other'>('all');
+  const [typeFilter, setTypeFilter] =
+    useState<'all' | 'setup' | 'Lights' | 'breakdown' | 'other'>('all');
 
   // Heartbeat (auto-roll to Past)
   const [, setTick] = useState(0);
   useEffect(() => {
-    const id = setInterval(() => setTick(t => t + 1), 60000);
+    const id = setInterval(() => setTick(t => t + 1), 60_000);
     return () => clearInterval(id);
   }, []);
 
   const fmtDate = (s?: string | null) =>
-    s ? new Date(s).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }) : '';
+    s
+      ? new Date(s).toLocaleDateString(undefined, {
+          weekday: 'short',
+          month: 'short',
+          day: 'numeric',
+        })
+      : '';
   const fmtTime = (s?: string | null) =>
-    s ? new Date(s).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }) : '';
+    s
+      ? new Date(s).toLocaleTimeString(undefined, {
+          hour: 'numeric',
+          minute: '2-digit',
+        })
+      : '';
 
-  // Bigger, more prominent job-type badge
-  const JobBadgeBig = ({ text }: { text?: string | null }) => {
+  // BIG, centered job-type badge
+  const JobBadgeXL = ({ text }: { text?: string | null }) => {
     if (!text) return null;
     const label = text[0].toUpperCase() + text.slice(1);
     return (
       <span
         className="badge"
         style={{
-          minWidth: 0,
-          fontSize: 14,        // larger text
-          padding: '6px 12px', // bigger pill
-          fontWeight: 800,
-          letterSpacing: '.2px'
+          display: 'inline-flex',
+          fontSize: 16,
+          fontWeight: 900,
+          padding: '8px 16px',
+          letterSpacing: '.3px',
+          textTransform: 'none',
+          boxShadow: 'var(--shadow-sm)',
         }}
       >
         {label}
@@ -56,7 +70,11 @@ export default function MySchedule() {
 
   async function parseMaybeJson(r: Response) {
     const ct = r.headers.get('content-type') || '';
-    if (ct.includes('application/json')) { try { return await r.json(); } catch {} }
+    if (ct.includes('application/json')) {
+      try {
+        return await r.json();
+      } catch {}
+    }
     const raw = await r.text();
     return { raw };
   }
@@ -79,7 +97,9 @@ export default function MySchedule() {
       setLoading(false);
     }
   }
-  useEffect(() => { load(); }, []);
+  useEffect(() => {
+    load();
+  }, []);
 
   const filtered = useMemo(() => {
     const text = q.trim().toLowerCase();
@@ -90,8 +110,10 @@ export default function MySchedule() {
         r.location_name ?? '',
         r.address ?? '',
         r.job_type ?? '',
-        ...(r.mates || []).map(m => m.full_name ?? '')
-      ].join('  ').toLowerCase();
+        ...(r.mates || []).map(m => m.full_name ?? ''),
+      ]
+        .join('  ')
+        .toLowerCase();
       return hay.includes(text);
     });
   }, [rows, q, typeFilter]);
@@ -103,14 +125,23 @@ export default function MySchedule() {
     filtered.forEach(s => {
       const sMs = s.start_time ? Date.parse(s.start_time) : NaN;
       const eMs = s.end_time ? Date.parse(s.end_time) : NaN;
-      const isPast = !isNaN(eMs) ? eMs < now : (!isNaN(sMs) ? sMs < now : false);
+      const isPast = !isNaN(eMs) ? eMs < now : !isNaN(sMs) ? sMs < now : false;
       (isPast ? p : u).push(s);
     });
-    u.sort((a,b) => (Date.parse(a.start_time ?? '') || 0) - (Date.parse(b.start_time ?? '') || 0));
-    p.sort((a,b) => (Date.parse(b.end_time ?? b.start_time ?? '') || 0) - (Date.parse(a.end_time ?? a.start_time ?? '') || 0));
+    u.sort(
+      (a, b) =>
+        (Date.parse(a.start_time ?? '') || 0) -
+        (Date.parse(b.start_time ?? '') || 0)
+    );
+    p.sort(
+      (a, b) =>
+        (Date.parse(b.end_time ?? b.start_time ?? '') || 0) -
+        (Date.parse(a.end_time ?? a.start_time ?? '') || 0)
+    );
     return { upcoming: u, past: p };
   }, [filtered]);
 
+  // Group upcoming by calendar day
   const upcomingGroups = useMemo(() => {
     const map = new Map<string, Shift[]>();
     upcoming.forEach(s => {
@@ -124,15 +155,30 @@ export default function MySchedule() {
   }, [upcoming]);
 
   const Teammates = ({ mates }: { mates?: Mate[] }) => {
-    if (!mates || mates.length === 0) return <span className="muted">Just you</span>;
+    if (!mates || mates.length === 0)
+      return <span className="muted">Just you</span>;
     return (
-      <div className="row wrap gap-sm" aria-label="Teammates">
+      <div
+        className="row wrap gap-sm"
+        aria-label="Teammates"
+        style={{ justifyContent: 'center' }}
+      >
         {mates.map(m => {
           const name = m.full_name || 'Teammate';
-          const initials = name.split(' ').map(p => p[0]).join('').slice(0,2).toUpperCase();
+          const initials = name
+            .split(' ')
+            .map(p => p[0])
+            .join('')
+            .slice(0, 2)
+            .toUpperCase();
           return (
             <div key={m.id} className="pill" title={name}>
-              <span className="pill__num" style={{ minWidth: 22, textAlign:'center' }}>{initials}</span>
+              <span
+                className="pill__num"
+                style={{ minWidth: 22, textAlign: 'center' }}
+              >
+                {initials}
+              </span>
               <span className="pill__label">{name}</span>
             </div>
           );
@@ -146,25 +192,30 @@ export default function MySchedule() {
     const start = fmtTime(s.start_time);
     const end = fmtTime(s.end_time);
     return (
-      <div className="card" style={{ padding: 14 }}>
-        {/* Row 1: BIG job-type on the left, time on the right */}
-        <div className="row between wrap" style={{ alignItems: 'center' }}>
-          <div className="row gap-sm">
-            <JobBadgeBig text={s.job_type ?? undefined} />
-          </div>
-          <div className="row wrap gap-md">
-            <strong style={{ fontSize: 16 }}>{day}</strong>
-            <span className="muted">{start}{end ? ` – ${end}` : ''}</span>
-          </div>
+      <div className="card" style={{ padding: 16, textAlign: 'center' }}>
+        {/* Row 1: big centered job type */}
+        <div>
+          <JobBadgeXL text={s.job_type ?? undefined} />
         </div>
 
-        {/* Row 2: location */}
-        <div className="row wrap gap-md" style={{ marginTop: 10 }}>
-          <div><strong>{s.location_name || 'Location TBD'}</strong></div>
+        {/* Row 2: centered date/time */}
+        <div className="row wrap gap-md" style={{ marginTop: 8, justifyContent: 'center' }}>
+          <strong style={{ fontSize: 16 }}>{day}</strong>
+          <span className="muted">
+            {start}
+            {end ? ` – ${end}` : ''}
+          </span>
+        </div>
+
+        {/* Row 3: centered location */}
+        <div className="row wrap gap-md" style={{ marginTop: 8, justifyContent: 'center' }}>
+          <div>
+            <strong>{s.location_name || 'Location TBD'}</strong>
+          </div>
           {s.address && <div className="muted">• {s.address}</div>}
         </div>
 
-        {/* Row 3: teammates */}
+        {/* Row 4: teammates */}
         <div className="mt-lg">
           <Teammates mates={s.mates} />
         </div>
@@ -184,14 +235,19 @@ export default function MySchedule() {
           onChange={e => setQ(e.target.value)}
           style={{ minWidth: 260 }}
         />
-        <select value={typeFilter} onChange={e => setTypeFilter(e.target.value as any)}>
+        <select
+          value={typeFilter}
+          onChange={e => setTypeFilter(e.target.value as any)}
+        >
           <option value="all">All types</option>
           <option value="setup">Setup</option>
           <option value="Lights">Lights</option>
           <option value="breakdown">Breakdown</option>
           <option value="other">Other</option>
         </select>
-        <button className="topbar-btn" onClick={load}>Refresh</button>
+        <button className="topbar-btn" onClick={load}>
+          Refresh
+        </button>
       </div>
 
       {err && <div className="alert error">{err}</div>}
@@ -210,7 +266,7 @@ export default function MySchedule() {
         </div>
 
         {!loading && upcoming.length === 0 && (
-          <div className="card" style={{ padding: 12, marginTop: 8 }}>
+          <div className="card" style={{ padding: 12, marginTop: 8, textAlign: 'center' }}>
             <span className="muted">No upcoming shifts.</span>
           </div>
         )}
@@ -218,16 +274,27 @@ export default function MySchedule() {
         <div style={{ display: 'grid', gap: 16, marginTop: 10 }}>
           {upcomingGroups.map(([dayKey, list]) => (
             <div key={dayKey} className="card" style={{ padding: 12 }}>
-              <div className="row between wrap">
+              <div
+                className="row between wrap"
+                style={{ justifyContent: 'center', gap: 8 }}
+              >
                 <strong>
                   {dayKey === 'TBD'
                     ? 'Date TBD'
-                    : new Date(dayKey).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}
+                    : new Date(dayKey).toLocaleDateString(undefined, {
+                        weekday: 'long',
+                        month: 'long',
+                        day: 'numeric',
+                      })}
                 </strong>
-                <span className="muted">{list.length} shift{list.length > 1 ? 's' : ''}</span>
+                <span className="muted">
+                  {list.length} shift{list.length > 1 ? 's' : ''}
+                </span>
               </div>
               <div style={{ display: 'grid', gap: 12, marginTop: 10 }}>
-                {list.map(s => <ShiftCard key={s.id} s={s} />)}
+                {list.map(s => (
+                  <ShiftCard key={s.id} s={s} />
+                ))}
               </div>
             </div>
           ))}
@@ -247,18 +314,21 @@ export default function MySchedule() {
         </div>
 
         {!loading && past.length === 0 && (
-          <div className="card" style={{ padding: 12, marginTop: 8 }}>
+          <div className="card" style={{ padding: 12, marginTop: 8, textAlign: 'center' }}>
             <span className="muted">No past shifts yet.</span>
           </div>
         )}
 
         <div style={{ display: 'grid', gap: 12, marginTop: 8 }}>
-          {past.map(s => <ShiftCard key={s.id} s={s} />)}
+          {past.map(s => (
+            <ShiftCard key={s.id} s={s} />
+          ))}
         </div>
       </section>
 
       <div className="mt-lg center muted" style={{ fontSize: 12 }}>
-        Scheduling is separate from payroll. You still log your own hours on <strong>Log Shift</strong>.
+        Scheduling is separate from payroll. You still log your own hours on{' '}
+        <strong>Log Shift</strong>.
       </div>
     </div>
   );
