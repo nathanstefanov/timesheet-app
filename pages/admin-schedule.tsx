@@ -57,7 +57,8 @@ function LocationPicker({
     let isMounted = true;
     if (!key) return;
     // New loader API: set options and import the 'places' library
-    setOptions({ apiKey: key, version: 'weekly' });
+    // NOTE: the option name expected by the types is `key`
+    setOptions({ key, version: 'weekly' });
     importLibrary('places')
       .then(() => {
         if (!isMounted || !inputRef.current) return;
