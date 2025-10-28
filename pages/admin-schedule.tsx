@@ -5,17 +5,19 @@ import { supabase } from '../lib/supabaseClient';
 
 type Emp = { id: string; full_name?: string | null; email?: string | null };
 
+// Strong job-type union used everywhere
+type JobType = 'setup' | 'Lights' | 'breakdown' | 'other';
+const JOB_TYPES: JobType[] = ['setup', 'Lights', 'breakdown', 'other'];
+
 type SRow = {
   id: string;
   start_time: string | null;
   end_time: string | null;
   location_name?: string | null;
   address?: string | null;
-  job_type?: 'setup' | 'Lights' | 'breakdown' | 'other' | null;
+  job_type?: JobType | null;
   notes?: string | null;
 };
-
-const JOB_TYPES: Array<SRow['job_type']> = ['setup', 'Lights', 'breakdown', 'other'];
 
 export default function AdminSchedule() {
   // ---------- Auth ----------
@@ -34,12 +36,19 @@ export default function AdminSchedule() {
   const [assignedMap, setAssignedMap] = useState<Record<string, Emp[]>>({});
 
   // ---------- Create form ----------
-  const [form, setForm] = useState({
-    start_time: '',                // datetime-local
-    end_time: '',                  // datetime-local
+  const [form, setForm] = useState<{
+    start_time: string;
+    end_time: string;
+    location_name: string;
+    address: string;
+    job_type: JobType;
+    notes: string;
+  }>({
+    start_time: '',
+    end_time: '',
     location_name: '',
     address: '',
-    job_type: 'setup' as 'setup' | 'Lights' | 'breakdown' | 'other',
+    job_type: 'setup',
     notes: '',
   });
   const [creating, setCreating] = useState(false);
@@ -65,9 +74,10 @@ export default function AdminSchedule() {
 
   // ---------- Helpers ----------
   const fmt = (s?: string | null) => (s ? new Date(s).toLocaleString() : '');
-  const nowLocalInput = () => new Date(Date.now() - new Date().getTimezoneOffset() * 60000)
-    .toISOString()
-    .slice(0, 16);
+  const nowLocalInput = () =>
+    new Date(Date.now() - new Date().getTimezoneOffset() * 60000)
+      .toISOString()
+      .slice(0, 16);
 
   function setDuration(hours: number) {
     if (!form.start_time) {
@@ -81,6 +91,7 @@ export default function AdminSchedule() {
     const d = new Date(localDateTime);
     d.setHours(d.getHours() + hours);
     return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+    // Note: we rely on the browser to interpret datetime-local correctly.
   }
 
   async function parseMaybeJson(r: Response) {
@@ -346,9 +357,7 @@ export default function AdminSchedule() {
               <button
                 type="button"
                 className="topbar-btn"
-                onClick={() =>
-                  setForm((f) => ({ ...f, start_time: nowLocalInput(), end_time: '' }))
-                }
+                onClick={() => setForm((f) => ({ ...f, start_time: nowLocalInput(), end_time: '' }))}
                 title="Start now"
               >
                 Start Now
@@ -373,7 +382,9 @@ export default function AdminSchedule() {
           >
             {/* Time */}
             <div>
-              <label>Start <span className="muted">(required)</span></label>
+              <label>
+                Start <span className="muted">(required)</span>
+              </label>
               <input
                 type="datetime-local"
                 value={form.start_time}
@@ -381,7 +392,9 @@ export default function AdminSchedule() {
               />
             </div>
             <div>
-              <label>End <span className="muted">(optional)</span></label>
+              <label>
+                End <span className="muted">(optional)</span>
+              </label>
               <input
                 type="datetime-local"
                 value={form.end_time}
@@ -411,7 +424,7 @@ export default function AdminSchedule() {
             <div style={{ gridColumn: '1 / -1' }}>
               <label>Job Type</label>
               <div className="row wrap" style={{ gap: 8, marginTop: 6 }}>
-                {JOB_TYPES.map((jt) => (
+                {JOB_TYPES.map((jt: JobType) => (
                   <button
                     key={jt}
                     type="button"
@@ -419,16 +432,12 @@ export default function AdminSchedule() {
                     onClick={() => setForm({ ...form, job_type: jt })}
                     style={{
                       border:
-                        form.job_type === jt
-                          ? '2px solid var(--brand-border)'
-                          : '1px solid var(--border)',
+                        form.job_type === jt ? '2px solid var(--brand-border)' : '1px solid var(--border)',
                       fontWeight: form.job_type === jt ? 700 : 500,
                       padding: '6px 10px',
                     }}
                   >
-                    <span className="pill__label">
-                      {jt![0].toUpperCase() + jt!.slice(1)}
-                    </span>
+                    <span className="pill__label">{jt[0].toUpperCase() + jt.slice(1)}</span>
                   </button>
                 ))}
               </div>
@@ -448,12 +457,7 @@ export default function AdminSchedule() {
           {formError && <div className="alert error mt-lg">{formError}</div>}
 
           <div className="mt-lg row gap-sm">
-            <button
-              type="button"
-              className="btn-primary"
-              onClick={createShift}
-              disabled={creating || !adminId}
-            >
+            <button type="button" className="btn-primary" onClick={createShift} disabled={creating || !adminId}>
               {creating ? 'Creating…' : 'Create Scheduled Shift'}
             </button>
             <button
@@ -591,7 +595,7 @@ export default function AdminSchedule() {
               <label>Job Type</label>
               <select
                 value={edit.job_type ?? 'setup'}
-                onChange={(e) => setEdit({ ...edit, job_type: e.target.value as any })}
+                onChange={(e) => setEdit({ ...edit, job_type: e.target.value as JobType })}
               >
                 <option value="setup">Setup</option>
                 <option value="Lights">Lights</option>
