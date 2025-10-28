@@ -18,34 +18,45 @@ export default function MySchedule() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
 
-  // Lightweight UI filters
+  // Filters
   const [q, setQ] = useState('');
   const [typeFilter, setTypeFilter] = useState<'all' | 'setup' | 'Lights' | 'breakdown' | 'other'>('all');
 
-  // 60s heartbeat so things roll to Past automatically
+  // Heartbeat (auto-roll to Past)
   const [, setTick] = useState(0);
   useEffect(() => {
     const id = setInterval(() => setTick(t => t + 1), 60000);
     return () => clearInterval(id);
   }, []);
 
-  // Helpers
   const fmtDate = (s?: string | null) =>
     s ? new Date(s).toLocaleDateString(undefined, { weekday: 'short', month: 'short', day: 'numeric' }) : '';
   const fmtTime = (s?: string | null) =>
     s ? new Date(s).toLocaleTimeString(undefined, { hour: 'numeric', minute: '2-digit' }) : '';
 
-  const JobBadge = ({ text }: { text?: string | null }) => {
+  // Bigger, more prominent job-type badge
+  const JobBadgeBig = ({ text }: { text?: string | null }) => {
     if (!text) return null;
     const label = text[0].toUpperCase() + text.slice(1);
-    return <span className="badge" style={{ minWidth: 0 }}>{label}</span>;
+    return (
+      <span
+        className="badge"
+        style={{
+          minWidth: 0,
+          fontSize: 14,        // larger text
+          padding: '6px 12px', // bigger pill
+          fontWeight: 800,
+          letterSpacing: '.2px'
+        }}
+      >
+        {label}
+      </span>
+    );
   };
 
   async function parseMaybeJson(r: Response) {
     const ct = r.headers.get('content-type') || '';
-    if (ct.includes('application/json')) {
-      try { return await r.json(); } catch {}
-    }
+    if (ct.includes('application/json')) { try { return await r.json(); } catch {} }
     const raw = await r.text();
     return { raw };
   }
@@ -70,7 +81,6 @@ export default function MySchedule() {
   }
   useEffect(() => { load(); }, []);
 
-  // Filter + split into upcoming/past
   const filtered = useMemo(() => {
     const text = q.trim().toLowerCase();
     return rows.filter(r => {
@@ -101,7 +111,6 @@ export default function MySchedule() {
     return { upcoming: u, past: p };
   }, [filtered]);
 
-  // Group upcoming by calendar date
   const upcomingGroups = useMemo(() => {
     const map = new Map<string, Shift[]>();
     upcoming.forEach(s => {
@@ -138,19 +147,19 @@ export default function MySchedule() {
     const end = fmtTime(s.end_time);
     return (
       <div className="card" style={{ padding: 14 }}>
-        {/* Row 1: time + job */}
-        <div className="row between wrap">
+        {/* Row 1: BIG job-type on the left, time on the right */}
+        <div className="row between wrap" style={{ alignItems: 'center' }}>
+          <div className="row gap-sm">
+            <JobBadgeBig text={s.job_type ?? undefined} />
+          </div>
           <div className="row wrap gap-md">
             <strong style={{ fontSize: 16 }}>{day}</strong>
             <span className="muted">{start}{end ? ` – ${end}` : ''}</span>
           </div>
-          <div className="row gap-sm">
-            <JobBadge text={s.job_type ?? undefined} />
-          </div>
         </div>
 
         {/* Row 2: location */}
-        <div className="row wrap gap-md" style={{ marginTop: 8 }}>
+        <div className="row wrap gap-md" style={{ marginTop: 10 }}>
           <div><strong>{s.location_name || 'Location TBD'}</strong></div>
           {s.address && <div className="muted">• {s.address}</div>}
         </div>
@@ -167,7 +176,7 @@ export default function MySchedule() {
     <div className="page page--center">
       <h1 className="page__title">My Schedule</h1>
 
-      {/* Toolbar: search + type filter + refresh */}
+      {/* Toolbar */}
       <div className="toolbar">
         <input
           placeholder="Search location, address, teammates…"
@@ -188,7 +197,7 @@ export default function MySchedule() {
       {err && <div className="alert error">{err}</div>}
       {loading && <div className="toast">Loading…</div>}
 
-      {/* UPCOMING (grouped by date) */}
+      {/* UPCOMING (grouped) */}
       <section className="mt-lg full">
         <div className="section-bar card" style={{ padding: 10 }}>
           <div className="section-bar__left">
@@ -210,7 +219,11 @@ export default function MySchedule() {
           {upcomingGroups.map(([dayKey, list]) => (
             <div key={dayKey} className="card" style={{ padding: 12 }}>
               <div className="row between wrap">
-                <strong>{dayKey === 'TBD' ? 'Date TBD' : new Date(dayKey).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}</strong>
+                <strong>
+                  {dayKey === 'TBD'
+                    ? 'Date TBD'
+                    : new Date(dayKey).toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' })}
+                </strong>
                 <span className="muted">{list.length} shift{list.length > 1 ? 's' : ''}</span>
               </div>
               <div style={{ display: 'grid', gap: 12, marginTop: 10 }}>
