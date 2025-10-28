@@ -1,11 +1,12 @@
 // pages/admin-schedule.tsx
 import Link from 'next/link';
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
+import { Loader } from '@googlemaps/js-api-loader';
 
 type Emp = { id: string; full_name?: string | null; email?: string | null };
 
-// Strong job-type union used everywhere
+// Strong job-type union
 type JobType = 'setup' | 'Lights' | 'breakdown' | 'other';
 const JOB_TYPES: JobType[] = ['setup', 'Lights', 'breakdown', 'other'];
 
@@ -18,6 +19,102 @@ type SRow = {
   job_type?: JobType | null;
   notes?: string | null;
 };
+
+// ---------- Small utilities ----------
+const toLocalInput = (d: Date) =>
+  new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+
+const combineLocalDateTime = (date: string, time: string | undefined) => {
+  // date: "YYYY-MM-DD", time: "HH:MM"
+  // If time missing, default to 09:00
+  const t = time && time.length >= 5 ? time : '09:00';
+  return `${date}T${t}`;
+};
+
+const addHoursToLocalInput = (localDateTime: string, hours: number) => {
+  // localDateTime: "YYYY-MM-DDTHH:MM"
+  const d = new Date(localDateTime);
+  d.setHours(d.getHours() + hours);
+  return toLocalInput(d).slice(0, 16);
+};
+
+// ---------- Location picker (Google Places Autocomplete) ----------
+function LocationPicker({
+  valueName,
+  valueAddr,
+  onSelect,
+}: {
+  valueName: string;
+  valueAddr: string;
+  onSelect: (payload: { name: string; address: string }) => void;
+}) {
+  const inputRef = useRef<HTMLInputElement | null>(null);
+  const [loaded, setLoaded] = useState(false);
+  const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+
+  useEffect(() => {
+    let isMounted = true;
+    if (!key) return;
+    const loader = new Loader({
+      apiKey: key,
+      version: 'weekly',
+      libraries: ['places'],
+    });
+    loader.load().then(() => {
+      if (!isMounted || !inputRef.current) return;
+      // @ts-ignore
+      const ac = new google.maps.places.Autocomplete(inputRef.current, {
+        fields: ['name', 'formatted_address', 'address_components', 'geometry'],
+        types: ['establishment', 'geocode'],
+      });
+      // @ts-ignore
+      ac.addListener('place_changed', () => {
+        // @ts-ignore
+        const place = ac.getPlace();
+        const name = place?.name || '';
+        const addr = place?.formatted_address || '';
+        if (name || addr) onSelect({ name, address: addr });
+      });
+      setLoaded(true);
+    });
+    return () => {
+      isMounted = false;
+    };
+  }, [key]);
+
+  return (
+    <div style={{ display: 'grid', gap: 8 }}>
+      <label>Search Location</label>
+      <input
+        ref={inputRef}
+        placeholder="Type a place or address (autocomplete)…"
+        defaultValue=""
+      />
+      <div className="muted" style={{ fontSize: 12 }}>
+        {loaded
+          ? 'Pick a result to auto-fill the fields below.'
+          : 'Loading places… (requires valid Google Maps API key)'}
+      </div>
+
+      <div
+        className="row wrap"
+        style={{
+          gap: 12,
+          gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)',
+        }}
+      >
+        <div style={{ flex: 1 }}>
+          <label>Location Name</label>
+          <input value={valueName} readOnly />
+        </div>
+        <div style={{ flex: 1 }}>
+          <label>Address</label>
+          <input value={valueAddr} readOnly />
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export default function AdminSchedule() {
   // ---------- Auth ----------
@@ -35,22 +132,38 @@ export default function AdminSchedule() {
   const [err, setErr] = useState<string | null>(null);
   const [assignedMap, setAssignedMap] = useState<Record<string, Emp[]>>({});
 
-  // ---------- Create form ----------
+  // ---------- Create form (refined state) ----------
   const [form, setForm] = useState<{
-    start_time: string;
-    end_time: string;
+    start_date: string;     // "YYYY-MM-DD"
+    start_time: string;     // "HH:MM"
+    use_duration: boolean;  // toggle between duration vs explicit end
+    duration_hours: number; // used when use_duration = true
+
+    end_date: string;       // "YYYY-MM-DD" (when explicit end)
+    end_time: string;       // "HH:MM" (when explicit end)
+
     location_name: string;
     address: string;
     job_type: JobType;
     notes: string;
-  }>({
-    start_time: '',
-    end_time: '',
-    location_name: '',
-    address: '',
-    job_type: 'setup',
-    notes: '',
+  }>(() => {
+    const now = new Date();
+    const defaultDate = toLocalInput(now).slice(0, 10);     // YYYY-MM-DD
+    const defaultTime = toLocalInput(now).slice(11, 16);    // HH:MM
+    return {
+      start_date: defaultDate,
+      start_time: defaultTime,
+      use_duration: true,
+      duration_hours: 2,
+      end_date: defaultDate,
+      end_time: '',
+      location_name: '',
+      address: '',
+      job_type: 'setup',
+      notes: '',
+    };
   });
+
   const [creating, setCreating] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
@@ -74,25 +187,6 @@ export default function AdminSchedule() {
 
   // ---------- Helpers ----------
   const fmt = (s?: string | null) => (s ? new Date(s).toLocaleString() : '');
-  const nowLocalInput = () =>
-    new Date(Date.now() - new Date().getTimezoneOffset() * 60000)
-      .toISOString()
-      .slice(0, 16);
-
-  function setDuration(hours: number) {
-    if (!form.start_time) {
-      const start = nowLocalInput();
-      setForm((f) => ({ ...f, start_time: start, end_time: addHoursInput(start, hours) }));
-      return;
-    }
-    setForm((f) => ({ ...f, end_time: addHoursInput(f.start_time, hours) }));
-  }
-  function addHoursInput(localDateTime: string, hours: number) {
-    const d = new Date(localDateTime);
-    d.setHours(d.getHours() + hours);
-    return new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
-    // Note: we rely on the browser to interpret datetime-local correctly.
-  }
 
   async function parseMaybeJson(r: Response) {
     const ct = r.headers.get('content-type') || '';
@@ -183,11 +277,16 @@ export default function AdminSchedule() {
 
   // ---------- Actions ----------
   function validateForm() {
-    if (!form.start_time) return 'Start time is required.';
-    if (form.end_time) {
-      const s = new Date(form.start_time).getTime();
-      const e = new Date(form.end_time).getTime();
-      if (e <= s) return 'End time must be after start time.';
+    if (!form.start_date) return 'Start date is required.';
+    // If explicit end, both end fields must be present
+    if (!form.use_duration) {
+      if (!form.end_date || !form.end_time) return 'End date and time are required.';
+      const startLocal = combineLocalDateTime(form.start_date, form.start_time);
+      const endLocal = combineLocalDateTime(form.end_date, form.end_time);
+      if (new Date(endLocal) <= new Date(startLocal))
+        return 'End time must be after start time.';
+    } else {
+      if (form.duration_hours <= 0) return 'Duration must be greater than 0 hours.';
     }
     return null;
   }
@@ -200,15 +299,26 @@ export default function AdminSchedule() {
 
     setCreating(true);
     try {
+      // Build start_time and end_time (local -> ISO)
+      const startLocal = combineLocalDateTime(form.start_date, form.start_time);
+      let endLocal: string | null = null;
+
+      if (form.use_duration) {
+        endLocal = addHoursToLocalInput(startLocal, form.duration_hours).slice(0, 16);
+      } else {
+        endLocal = combineLocalDateTime(form.end_date, form.end_time);
+      }
+
       const body = {
-        start_time: new Date(form.start_time).toISOString(),
-        end_time: form.end_time ? new Date(form.end_time).toISOString() : null,
+        start_time: new Date(startLocal).toISOString(),
+        end_time: endLocal ? new Date(endLocal).toISOString() : null,
         location_name: form.location_name || undefined,
         address: form.address || undefined,
         job_type: form.job_type || undefined,
         notes: form.notes || undefined,
         created_by: adminId,
       };
+
       const r = await fetch('/api/schedule/shifts', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -216,8 +326,17 @@ export default function AdminSchedule() {
       });
       const j: any = await parseMaybeJson(r);
       if (!r.ok) throw new Error(j?.error || j?.raw || `HTTP ${r.status}`);
+
+      // Reset form
+      const now = new Date();
+      const defaultDate = toLocalInput(now).slice(0, 10);
+      const defaultTime = toLocalInput(now).slice(11, 16);
       setForm({
-        start_time: '',
+        start_date: defaultDate,
+        start_time: defaultTime,
+        use_duration: true,
+        duration_hours: 2,
+        end_date: defaultDate,
         end_time: '',
         location_name: '',
         address: '',
@@ -349,109 +468,155 @@ export default function AdminSchedule() {
 
       {/* === Two-column: Form (left) | Upcoming (right) === */}
       <div className="row wrap" style={{ gap: 16 }}>
-        {/* ---------- Create form (refined layout) ---------- */}
-        <div className="card" style={{ padding: 14, flex: '1 1 360px', maxWidth: 560 }}>
+        {/* ---------- Create form (clean & organized) ---------- */}
+        <div className="card" style={{ padding: 14, flex: '1 1 380px', maxWidth: 620 }}>
           <div className="row between wrap" style={{ alignItems: 'center' }}>
             <strong style={{ fontSize: 16 }}>Create Scheduled Shift</strong>
             <div className="row gap-sm">
               <button
                 type="button"
                 className="topbar-btn"
-                onClick={() => setForm((f) => ({ ...f, start_time: nowLocalInput(), end_time: '' }))}
-                title="Start now"
+                onClick={() => {
+                  const now = new Date();
+                  setForm((f) => ({
+                    ...f,
+                    start_date: toLocalInput(now).slice(0, 10),
+                    start_time: toLocalInput(now).slice(11, 16),
+                  }));
+                }}
+                title="Set start to now"
               >
                 Start Now
-              </button>
-              <button type="button" className="topbar-btn" onClick={() => setDuration(2)}>
-                +2h
-              </button>
-              <button type="button" className="topbar-btn" onClick={() => setDuration(4)}>
-                +4h
               </button>
             </div>
           </div>
 
-          {/* Grid form */}
+          {/* Time grid */}
           <div
             className="mt-lg"
             style={{
               display: 'grid',
               gap: 12,
-              gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))',
             }}
           >
-            {/* Time */}
             <div>
-              <label>
-                Start <span className="muted">(required)</span>
-              </label>
+              <label>Start Date</label>
               <input
-                type="datetime-local"
+                type="date"
+                value={form.start_date}
+                onChange={(e) => setForm({ ...form, start_date: e.target.value })}
+              />
+            </div>
+            <div>
+              <label>Start Time</label>
+              <input
+                type="time"
                 value={form.start_time}
                 onChange={(e) => setForm({ ...form, start_time: e.target.value })}
               />
             </div>
-            <div>
-              <label>
-                End <span className="muted">(optional)</span>
+
+            <div style={{ alignSelf: 'end' }}>
+              <label className="inline-check">
+                <input
+                  type="checkbox"
+                  checked={form.use_duration}
+                  onChange={(e) => setForm({ ...form, use_duration: e.target.checked })}
+                />
+                <span>Use duration</span>
               </label>
-              <input
-                type="datetime-local"
-                value={form.end_time}
-                onChange={(e) => setForm({ ...form, end_time: e.target.value })}
-              />
             </div>
 
-            {/* Location */}
-            <div>
-              <label>Location Name</label>
-              <input
-                placeholder="e.g., Party Setup – Warehouse"
-                value={form.location_name}
-                onChange={(e) => setForm({ ...form, location_name: e.target.value })}
-              />
-            </div>
-            <div>
-              <label>Address</label>
-              <input
-                placeholder="123 Main St, City"
-                value={form.address}
-                onChange={(e) => setForm({ ...form, address: e.target.value })}
-              />
-            </div>
-
-            {/* Job type pills (full width) */}
-            <div style={{ gridColumn: '1 / -1' }}>
-              <label>Job Type</label>
-              <div className="row wrap" style={{ gap: 8, marginTop: 6 }}>
-                {JOB_TYPES.map((jt: JobType) => (
-                  <button
-                    key={jt}
-                    type="button"
-                    className="pill"
-                    onClick={() => setForm({ ...form, job_type: jt })}
-                    style={{
-                      border:
-                        form.job_type === jt ? '2px solid var(--brand-border)' : '1px solid var(--border)',
-                      fontWeight: form.job_type === jt ? 700 : 500,
-                      padding: '6px 10px',
-                    }}
-                  >
-                    <span className="pill__label">{jt[0].toUpperCase() + jt.slice(1)}</span>
-                  </button>
-                ))}
+            {form.use_duration ? (
+              <div>
+                <label>Duration (hours)</label>
+                <input
+                  type="number"
+                  min={0.5}
+                  step={0.5}
+                  value={form.duration_hours}
+                  onChange={(e) =>
+                    setForm({ ...form, duration_hours: Number(e.target.value || 0) })
+                  }
+                />
+                <div className="row gap-sm" style={{ marginTop: 6 }}>
+                  {[2, 3, 4].map((h) => (
+                    <button
+                      key={h}
+                      type="button"
+                      className="pill"
+                      onClick={() => setForm({ ...form, duration_hours: h })}
+                    >
+                      <span className="pill__label">+{h}h</span>
+                    </button>
+                  ))}
+                </div>
               </div>
-            </div>
+            ) : (
+              <>
+                <div>
+                  <label>End Date</label>
+                  <input
+                    type="date"
+                    value={form.end_date}
+                    onChange={(e) => setForm({ ...form, end_date: e.target.value })}
+                  />
+                </div>
+                <div>
+                  <label>End Time</label>
+                  <input
+                    type="time"
+                    value={form.end_time}
+                    onChange={(e) => setForm({ ...form, end_time: e.target.value })}
+                  />
+                </div>
+              </>
+            )}
+          </div>
 
-            {/* Notes (full width) */}
-            <div style={{ gridColumn: '1 / -1' }}>
-              <label>Notes</label>
-              <textarea
-                placeholder="Optional instructions (e.g., bring ladder; load truck)"
-                value={form.notes}
-                onChange={(e) => setForm({ ...form, notes: e.target.value })}
-              />
+          {/* Location search with autofill */}
+          <div className="mt-lg">
+            <LocationPicker
+              valueName={form.location_name}
+              valueAddr={form.address}
+              onSelect={({ name, address }) =>
+                setForm((f) => ({ ...f, location_name: name, address }))
+              }
+            />
+          </div>
+
+          {/* Job type pills */}
+          <div className="mt-lg">
+            <label>Job Type</label>
+            <div className="row wrap" style={{ gap: 8, marginTop: 6 }}>
+              {JOB_TYPES.map((jt) => (
+                <button
+                  key={jt}
+                  type="button"
+                  className="pill"
+                  onClick={() => setForm({ ...form, job_type: jt })}
+                  style={{
+                    border:
+                      form.job_type === jt ? '2px solid var(--brand-border)' : '1px solid var(--border)',
+                    fontWeight: form.job_type === jt ? 700 : 500,
+                    padding: '6px 10px',
+                  }}
+                >
+                  <span className="pill__label">{jt[0].toUpperCase() + jt.slice(1)}</span>
+                </button>
+              ))}
             </div>
+          </div>
+
+          {/* Notes */}
+          <div className="mt-lg">
+            <label>Notes</label>
+            <textarea
+              placeholder="Optional instructions (e.g., bring ladder; load truck)"
+              value={form.notes}
+              onChange={(e) => setForm({ ...form, notes: e.target.value })}
+            />
           </div>
 
           {formError && <div className="alert error mt-lg">{formError}</div>}
@@ -463,16 +628,24 @@ export default function AdminSchedule() {
             <button
               type="button"
               className="topbar-btn"
-              onClick={() =>
+              onClick={() => {
+                const now = new Date();
+                const defaultDate = toLocalInput(now).slice(0, 10);
+                const defaultTime = toLocalInput(now).slice(11, 16);
                 setForm({
-                  start_time: '',
+                  start_date: defaultDate,
+                  start_time: defaultTime,
+                  use_duration: true,
+                  duration_hours: 2,
+                  end_date: defaultDate,
                   end_time: '',
                   location_name: '',
                   address: '',
                   job_type: 'setup',
                   notes: '',
-                })
-              }
+                });
+                setFormError(null);
+              }}
             >
               Clear
             </button>
@@ -568,7 +741,7 @@ export default function AdminSchedule() {
               <label>Start</label>
               <input
                 type="datetime-local"
-                value={edit.start_time ? new Date(edit.start_time).toISOString().slice(0, 16) : ''}
+                value={edit.start_time ? toLocalInput(new Date(edit.start_time)) : ''}
                 onChange={(e) => setEdit({ ...edit, start_time: e.target.value })}
               />
             </div>
@@ -576,7 +749,7 @@ export default function AdminSchedule() {
               <label>End (optional)</label>
               <input
                 type="datetime-local"
-                value={edit.end_time ? new Date(edit.end_time).toISOString().slice(0, 16) : ''}
+                value={edit.end_time ? toLocalInput(new Date(edit.end_time)) : ''}
                 onChange={(e) => setEdit({ ...edit, end_time: e.target.value })}
               />
             </div>
