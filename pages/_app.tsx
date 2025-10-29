@@ -1,4 +1,5 @@
 // pages/_app.tsx
+import '../styles/tables.css';
 import type { AppProps } from 'next/app';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
