@@ -171,7 +171,7 @@ export default function AdminSchedulePast() {
 
       {past.length > 0 && (
         <div className="table-wrap">
-          <table className="table table--admin">
+          <table className="table table--admin table--stack">
             <thead>
               <tr>
                 <th>Start</th><th>End</th><th>Job</th><th>Location</th><th>Address</th>
@@ -186,14 +186,14 @@ export default function AdminSchedulePast() {
                   : '—';
                 return (
                   <tr key={r.id}>
-                    <td>{fmt(r.start_time)}</td>
-                    <td>{fmt(r.end_time)}</td>
-                    <td>{r.job_type}</td>
-                    <td>{r.location_name}</td>
-                    <td>{r.address}</td>
-                    <td>{assignedLabel}</td>
-                    <td className="col-hide-md">{r.notes}</td>
-                    <td>
+                    <td data-label="Start">{fmt(r.start_time)}</td>
+                    <td data-label="End">{fmt(r.end_time)}</td>
+                    <td data-label="Job">{r.job_type}</td>
+                    <td data-label="Location">{r.location_name}</td>
+                    <td data-label="Address">{r.address}</td>
+                    <td data-label="Assigned">{assignedLabel}</td>
+                    <td className="col-hide-md" data-label="Notes">{r.notes}</td>
+                    <td data-label="Actions">
                       <div className="actions">
                         <button type="button" className="btn-edit" onClick={() => openEdit(r)}>Edit</button>
                         <button type="button" className="btn-delete" onClick={() => deleteRow(r.id)}>Delete</button>
