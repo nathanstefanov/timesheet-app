@@ -100,36 +100,20 @@ export default function App({ Component, pageProps }: AppProps) {
           {/* While checking, don't render nav to avoid flicker */}
           {!checking && profile && (
             <nav className="nav">
-              <ul className="nav__list">
-                {[
-                  { href: '/dashboard', label: 'Dashboard' },
-                  { href: '/new-shift', label: 'Log Shift' },
-                  { href: '/me/schedule', label: 'My Schedule' },
-                  ...(profile.role === 'admin'
-                    ? [
-                        { href: '/admin', label: 'Admin Dashboard' },
-                        { href: '/admin-schedule', label: 'Schedule' },
-                      ]
-                    : []),
-                ].map(({ href, label }) => {
-                  const isActive =
-                    router.pathname === href || router.pathname.startsWith(`${href}/`);
-                  return (
-                    <li key={href} className="nav__item">
-                      <Link
-                        href={href}
-                        className={`nav-link${isActive ? ' nav-link--active' : ''}`}
-                      >
-                        {label}
-                      </Link>
-                    </li>
-                  );
-                })}
-              </ul>
+              {/* Everyone */}
+              <Link href="/dashboard" className="nav-link">Dashboard</Link>
+              <Link href="/new-shift" className="nav-link">Log Shift</Link>
+              <Link href="/me/schedule" className="nav-link">My Schedule</Link>
 
-              <button className="signout nav__signout" onClick={handleSignOut}>
-                Sign out
-              </button>
+              {/* Admin-only */}
+              {profile.role === 'admin' && (
+                <>
+                  <Link href="/admin" className="nav-link">Admin Dashboard</Link>
+                  <Link href="/admin-schedule" className="nav-link">Schedule</Link>
+                </>
+              )}
+
+              <button className="signout" onClick={handleSignOut}>Sign out</button>
             </nav>
           )}
         </div>
