@@ -744,14 +744,20 @@ button{ font: inherit; }
 .logo{ height:44px; width:auto; object-fit:contain; }
 .brand{ font-weight:800; color:#111827; letter-spacing:.2px; }
 
-.nav{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+.nav{ display:flex; gap:16px; align-items:center; justify-content:flex-end; }
+.nav__list{
+  display:flex; align-items:center; gap:8px; flex-wrap:wrap;
+  margin:0; padding:0; list-style:none;
+}
+.nav__item{ display:flex; }
 .nav-link{
-  padding:8px 12px; border-radius:10px; color:#1f2937;
+  padding:8px 14px; border-radius:999px; color:#1f2937;
   border:1px solid transparent; transition: background .15s, border-color .15s, color .15s;
-  font-weight: 600;
+  font-weight:600; line-height:1;
 }
 .nav-link:hover{ background:#f3f4f6; border-color:var(--border); }
-.nav-link.active{ background:var(--brand-weak); color:#3730a3; border-color:var(--brand-border); }
+.nav-link--active{ background:var(--brand-weak); color:#3730a3; border-color:var(--brand-border); }
+.nav__signout{ min-width:120px; text-align:center; }
 
 .topbar-btn, .signout{
   padding:8px 12px; border-radius:10px; font-weight:700;
@@ -767,10 +773,9 @@ button{ font: inherit; }
   .shell{ flex-direction:column; align-items:center; gap:6px; }
   .logo{ height:36px; }
   .brand{ font-size:16px; }
-  .nav{ width:100%; justify-content:center; gap:8px; }
-  .brand-wrap{ order:1; }
-  .nav{ order:2; }
-  .signout{ order:3; }
+  .nav{ width:100%; flex-direction:column; align-items:stretch; gap:10px; }
+  .nav__list{ justify-content:center; }
+  .nav__signout{ width:100%; }
 }
 
 /* ======================================================
