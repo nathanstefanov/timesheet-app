@@ -179,26 +179,26 @@ function LocationPicker({
   }
 
   return (
-    <div style={{ display: 'grid', gap: 10 }}>
+    <div className="grid gap-10">
       <label>Search Location</label>
       <input
+        aria-label="Location search"
         placeholder="Type a place or address…"
         value={q}
         onChange={(e) => setQ(e.target.value)}
       />
       {!ready && !errorText && (
-        <div className="muted" style={{ fontSize: 12 }}>Loading Places…</div>
+        <div className="muted fs-12">Loading Places…</div>
       )}
-      {errorText && <div className="alert error" style={{ fontSize: 12 }}>{errorText}</div>}
+      {errorText && <div className="alert error fs-12">{errorText}</div>}
 
       {preds.length > 0 && (
-        <div className="card" style={{ padding: 6, maxHeight: 220, overflowY: 'auto' }}>
+        <div className="card p-6 maxh-220 ovf-y-auto">
           {preds.map((p) => (
             <button
               key={p.place_id}
               type="button"
-              className="list-item"
-              style={{ width: '100%', textAlign: 'left', padding: '6px 8px' }}
+              className="list-item btn-list"
               onClick={() => pickPlace(p.place_id)}
             >
               {p.description}
@@ -207,14 +207,14 @@ function LocationPicker({
         </div>
       )}
 
-      <div className="row wrap" style={{ gap: 12 }}>
-        <div style={{ flex: 1, minWidth: 220 }}>
+      <div className="row wrap gap-10">
+        <div className="flex-1-min220">
           <label>Location Name</label>
-          <input value={valueName} readOnly />
+          <input aria-label="Location name" value={valueName} readOnly />
         </div>
-        <div style={{ flex: 1, minWidth: 220 }}>
+        <div className="flex-1-min220">
           <label>Address</label>
-          <input value={valueAddr} readOnly />
+          <input aria-label="Address" value={valueAddr} readOnly />
         </div>
       </div>
     </div>
