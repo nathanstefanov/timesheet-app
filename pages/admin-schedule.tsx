@@ -20,29 +20,33 @@ type SRow = {
 };
 
 // ---- Google Maps loader (script tag; no @googlemaps/js-api-loader needed) ----
-declare global {
-  interface Window {
-    google?: any;
-  }
-}
+declare global { interface Window { google?: any } }
 
+// Async script loader that uses loading=async and the Places library
 const loadGoogleMaps = (() => {
   let promise: Promise<any> | null = null;
+
   return () => {
     if (typeof window === 'undefined') return Promise.resolve(null);
-    if (window.google?.maps) return Promise.resolve(window.google.maps);
+    if (window.google?.maps?.places) return Promise.resolve(window.google.maps);
 
     if (!promise) {
       const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-      if (!key) {
-        return Promise.reject(new Error('Missing NEXT_PUBLIC_GOOGLE_MAPS_API_KEY'));
-      }
+      if (!key) return Promise.reject(new Error('Missing NEXT_PUBLIC_GOOGLE_MAPS_API_KEY'));
+
       promise = new Promise((resolve, reject) => {
+        const id = 'gmaps-js';
+        if (document.getElementById(id)) return resolve(window.google?.maps);
+
         const s = document.createElement('script');
-        s.src = `https://maps.googleapis.com/maps/api/js?key=${key}&libraries=places&v=weekly`;
+        s.id = id;
+        // loading=async silences the console perf warning
+        s.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(
+          key
+        )}&libraries=places&v=weekly&loading=async`;
         s.async = true;
-        s.onload = () => resolve(window.google.maps);
         s.onerror = () => reject(new Error('Failed to load Google Maps JS API'));
+        s.onload = () => resolve(window.google?.maps);
         document.head.appendChild(s);
       });
     }
@@ -50,24 +54,7 @@ const loadGoogleMaps = (() => {
   };
 })();
 
-// ---------- Small time utilities ----------
-const toLocalInput = (d: Date) =>
-  new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
-
-const combineLocalDateTime = (date: string, time: string | undefined) => {
-  // date: "YYYY-MM-DD", time: "HH:MM"
-  const t = time && time.length >= 5 ? time : '09:00';
-  return `${date}T${t}`;
-};
-
-const addHoursToLocalInput = (localDateTime: string, hours: number) => {
-  // localDateTime: "YYYY-MM-DDTHH:MM"
-  const d = new Date(localDateTime);
-  d.setHours(d.getHours() + hours);
-  return toLocalInput(d).slice(0, 16);
-};
-
-// ---------- Location picker (Google Places Autocomplete) ----------
+// --- NEW LocationPicker using PlaceAutocompleteElement ---
 function LocationPicker({
   valueName,
   valueAddr,
@@ -77,53 +64,82 @@ function LocationPicker({
   valueAddr: string;
   onSelect: (payload: { name: string; address: string }) => void;
 }) {
-  const inputRef = useRef<HTMLInputElement | null>(null);
-  const [loaded, setLoaded] = useState(false);
+  const hostRef = useRef<HTMLDivElement | null>(null);
+  const [status, setStatus] = useState<'loading' | 'ready' | 'error'>('loading');
+  const [errorText, setErrorText] = useState<string | null>(null);
 
   useEffect(() => {
-    let listener: any = null;
+    let el: any | null = null;
+
     (async () => {
       try {
-        const maps = await loadGoogleMaps();
-        if (!maps || !inputRef.current) return;
+        await loadGoogleMaps();
+        // Ensure Places is ready via the new functional API
+        // (noop if already available)
+        await (window as any).google.maps.importLibrary('places');
 
-        const ac = new window.google.maps.places.Autocomplete(inputRef.current, {
-          fields: ['name', 'formatted_address', 'geometry'],
-          types: ['establishment', 'geocode'],
-        });
+        if (!hostRef.current) return;
 
-        listener = ac.addListener('place_changed', () => {
-          const place = ac.getPlace?.() || {};
-          const name = place.name || '';
-          const formatted = place.formatted_address || '';
-          if (name || formatted) onSelect({ name, address: formatted });
-        });
+        // Create the new web-component
+        // https://developers.google.com/maps/documentation/javascript/place-autocomplete#place_autocomplete_element
+        el = new (window as any).google.maps.places.PlaceAutocompleteElement();
 
-        setLoaded(true);
-      } catch {
-        // If Maps fails to load, user can still type manually.
-        setLoaded(false);
+        // Optional: Bias to US; delete this line to allow global results
+        el.componentRestrictions = { country: 'us' };
+
+        // Fields we care about
+        el.fields = ['name', 'formatted_address', 'place_id', 'geometry'];
+
+        // Styling hooks (optional): make it look like your inputs
+        el.style.width = '100%';
+        el.setAttribute('placeholder', 'Type a place or address…');
+
+        // Listen for selection
+        const handler = () => {
+          // In the new element, the selection is exposed as `value`
+          const place = el?.value || {};
+          const name = place.name || place.displayName || '';
+          const addr = place.formatted_address || place.formattedAddress || '';
+          if (name || addr) onSelect({ name, address: addr });
+        };
+        el.addEventListener('gmpx-placechange', handler);
+
+        // Mount into our host container
+        hostRef.current.innerHTML = '';
+        hostRef.current.appendChild(el);
+
+        setStatus('ready');
+      } catch (err: any) {
+        setStatus('error');
+        setErrorText(
+          err?.message ||
+            'Could not initialize Google Places. Check API key, enabled APIs, billing, and referrers.'
+        );
       }
     })();
 
     return () => {
-      if (listener && listener.remove) listener.remove();
+      if (el?.remove) el.remove();
     };
-  }, []);
+  }, [onSelect]);
 
   return (
-    <div style={{ display: 'grid', gap: 8 }}>
+    <div style={{ display: 'grid', gap: 10 }}>
       <label>Search Location</label>
-      <input
-        ref={inputRef}
-        placeholder="Type a place or address (autocomplete)…"
-        defaultValue=""
-      />
-      <div className="muted" style={{ fontSize: 12 }}>
-        {loaded
-          ? 'Pick a result to auto-fill the fields below.'
-          : 'Loading places… (requires valid Google Maps API key)'}
-      </div>
+      {/* Google’s web component will render inside this host */}
+      <div ref={hostRef} />
+
+      {status === 'loading' && (
+        <div className="muted" style={{ fontSize: 12 }}>Loading Places…</div>
+      )}
+      {status === 'error' && (
+        <div className="alert error" style={{ fontSize: 12 }}>{errorText}</div>
+      )}
+      {status === 'ready' && (
+        <div className="muted" style={{ fontSize: 12 }}>
+          Choose a result to auto-fill below.
+        </div>
+      )}
 
       <div className="row wrap" style={{ gap: 12 }}>
         <div style={{ flex: 1, minWidth: 220 }}>
