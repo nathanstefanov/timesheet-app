@@ -96,7 +96,7 @@ export default function Admin() {
   const [tab, setTab] = useState<Tab>('unpaid'); // default unpaid
   const [sortBy, setSortBy] = useState<SortBy>('name');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
-  const [userSorted, setUserSorted] = useState(false); // track if user chose a sort
+  const [userSorted, setUserSorted] = useState(false);
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | undefined>();
   const [bulkBusy, setBulkBusy] = useState<Record<string, boolean>>({});
@@ -189,7 +189,7 @@ export default function Admin() {
 
   // ---- Auto sort per tab (unpaid/paid) unless user overrides ----
   useEffect(() => {
-    if (userSorted) return; // don't override user's manual choice
+    if (userSorted) return;
     if (tab === 'unpaid') {
       setSortBy('unpaid'); // show most unpaid first
       setSortDir('desc');
@@ -450,7 +450,7 @@ export default function Admin() {
       </div>
 
       {/* Date / Week Filters */}
-  <div className="card card--tight full center mt-10 p-12">
+      <div className="card card--tight full center mt-10 p-12">
         <div className="filters">
           <div className="filters-row">
             <label className="inline">
@@ -548,6 +548,14 @@ export default function Admin() {
 
         <div className="table-wrap">
           <table className="table table--center table--compact table--admin center">
+            {/* fixed, sensible column widths */}
+            <colgroup>
+              <col style={{ width: '18rem' }} /> {/* Employee */}
+              <col style={{ width: '8rem' }} />  {/* Hours */}
+              <col style={{ width: '8rem' }} />  {/* Pay */}
+              <col style={{ width: '9rem' }} />  {/* Unpaid */}
+            </colgroup>
+
             <thead>
               <tr>
                 <th>Employee</th>
@@ -586,7 +594,7 @@ export default function Admin() {
       </div>
 
       {/* Shifts */}
-  <div className="card card--tight full center mt-10">
+      <div className="card card--tight full center mt-10">
         <div className="card__header center">
           <h3>Shifts</h3>
         </div>
@@ -595,6 +603,20 @@ export default function Admin() {
 
         <div className="table-wrap">
           <table className="table table--center table--compact table--admin table--stack center">
+            {/* fixed, sensible column widths */}
+            <colgroup>
+              <col style={{ width: '18rem' }} /> {/* Employee */}
+              <col style={{ width: '8rem' }} />  {/* Date */}
+              <col style={{ width: '7rem' }} />  {/* Type */}
+              <col style={{ width: '7rem' }} />  {/* In */}
+              <col style={{ width: '7rem' }} />  {/* Out */}
+              <col style={{ width: '6.5rem' }} />{/* Hours */}
+              <col style={{ width: '8rem' }} />  {/* Pay */}
+              <col style={{ width: '7.5rem' }} />{/* Paid? */}
+              <col />                            {/* Paid at (auto) */}
+              <col style={{ width: '14rem' }} /> {/* Actions */}
+            </colgroup>
+
             <thead>
               <tr>
                 <th>Employee</th>
@@ -867,31 +889,50 @@ export default function Admin() {
           line-height:1;
         }
 
-        .emp-cell { display:flex; align-items:center; justify-content:center; gap:6px; }
+        .emp-cell { display:inline-flex; align-items:center; gap:6px; } /* inline-flex is fine inside cell */
 
-  /* Table: center everything and make rows compact + single-line */
-  .table th, .table td { text-align:center; vertical-align:middle; }
-  .table thead th, .table tbody td { font-size:13px; }
-  .table tbody td { display:flex; align-items:center; justify-content:center; gap:10px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
-  .table { table-layout: fixed; }
-
-  /* Center the table block within the page and ensure headers/totals are centered */
-  .table { margin: 0 auto; width: 100%; max-width: 980px; }
-  .table thead th { text-align: center; }
-  .section-head td { text-align: center; }
-  .subtotal td { text-align: center; }
-
-  /* Use CSS grid for section header: left actions, centered name, right controls */
-  .section-bar { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; }
-  .section-bar__left { grid-column: 1; display:flex; align-items:center; gap:10px; }
-  .section-bar__right { grid-column: 3; display:flex; align-items:center; gap:10px; justify-content:flex-end; }
-  .employee-name { grid-column: 2; justify-self: center; font-size:16px; font-weight:800; }
-
-        /* Section bar */
-        .section-bar {
-          display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+        /* --- TABLE RESET: let the table size itself and scroll when needed --- */
+        .table-wrap {
+          width: 100%;
+          overflow-x: auto;   /* allows horizontal scroll instead of squish */
         }
-        .section-bar__left, .section-bar__right { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
+
+        .table {
+          table-layout: auto; /* was: fixed (forced equal/narrow columns) */
+          width: 100%;
+          min-width: 980px;   /* breathing room for all columns */
+          margin: 0;          /* wrapper handles the centering/scrolling */
+          border-collapse: separate;
+          border-spacing: 0;
+        }
+
+        .table th,
+        .table td {
+          text-align: center;
+          vertical-align: middle;
+          padding: 6px 8px;
+          font-size: 13px;
+          white-space: nowrap;
+          overflow: hidden;
+          text-overflow: ellipsis;
+        }
+
+        /* make sure cells act like table cells (not flex) */
+        .table thead th,
+        .table tbody td {
+          display: table-cell;
+        }
+
+        /* center table block and headers/totals text (visual) */
+        .table thead th { text-align: center; }
+        .section-head td { text-align: center; }
+        .subtotal td { text-align: center; }
+
+        /* Use grid for the section header bar */
+        .section-bar { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; }
+        .section-bar__left { grid-column: 1; display:flex; align-items:center; gap:10px; }
+        .section-bar__right { grid-column: 3; display:flex; align-items:center; gap:10px; justify-content:flex-end; }
+        .employee-name { grid-column: 2; justify-self: center; font-size:16px; font-weight:800; }
 
         /* Mobile-only badges under the name */
         .mobile-badges{ display:none; }
@@ -910,73 +951,13 @@ export default function Admin() {
           }
         }
 
-  /* Job / Type cell and general table polish */
-  .job-cell{ display:flex; align-items:center; justify-content:center; min-height:28px; }
-  /* allow employee cell to be left aligned on wider screens for readability */
-  .emp-cell{ display:flex; align-items:center; justify-content:center; gap:6px; }
-  @media(min-width:720px){ .emp-cell{ justify-content:flex-start; } }
+        /* keep small buttons and badges tidy */
+        .btn, .topbar-btn { height:30px; padding:0 8px; font-size:13px; }
+        .badge, .badge-job, .badge-paid, .badge-unpaid, .badge-min { font-size:12px; padding:3px 8px; }
+        .pay-min{ margin-left: 6px; display:inline-flex; }
 
-  /* spacing for table cells (compact) */
-  .table th, .table td { padding: 6px 8px; }
-
-  /* make small buttons and badges fit in one row */
-  .btn, .topbar-btn { height:30px; padding:0 8px; font-size:13px; }
-  .badge, .badge-job, .badge-paid, .badge-unpaid, .badge-min { font-size:12px; padding:3px 8px; }
-
-  /* MIN badge spacing (replaces inline style) */
-  .pay-min{ margin-left: 6px; display:inline-flex; }
-
-  /* Subtotal row styling */
-  .subtotal td:first-child{ text-align:center; font-weight:800; }
-
-  /* tighten section header spacing */
-  .section-bar { gap: 8px; }
-
-
-        /* Modal */
-        .modal-backdrop{
-          position:fixed; inset:0; background:rgba(0,0,0,0.4);
-          display:flex; align-items:center; justify-content:center; z-index:1000;
-        }
-        .modal{
-          width:min(640px, 92vw); background:white; border-radius:16px; padding:16px;
-          box-shadow:0 10px 25px rgba(0,0,0,0.2); display:flex; flex-direction:column; gap:12px;
-        }
-        .modal-header{ display:flex; align-items:center; justify-content:center; }
-        .modal-title{ font-weight:800; }
-        .modal-body{ display:flex; flex-direction:column; align-items:center; }
-        .modal-body textarea{
-          width:100%; min-height:140px; border-radius:12px; padding:10px;
-          border:1px solid var(--border); resize:vertical; font:inherit;
-        }
-        .modal-note{ margin-top:8px; }
-        .modal-actions{
-          display:flex; align-items:center; justify-content:center; gap:10px;
-        }
-
-        /* Badges & pills */
-        .pill{
-          display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:999px;
-          background:#f3f4f6; border:1px solid var(--border);
-        }
-        .pill__num{ font-weight:800; }
-
-        .badge-min{
-          display:inline-flex; align-items:center; justify-content:center;
-          padding:2px 8px; border-radius:999px; border:1px solid #f6ca00; background:#fffbe6; color:#6b5800; font-weight:700;
-        }
-        .badge-flag{
-          display:inline-flex; align-items:center; justify-content:center;
-          padding:2px 8px; border-radius:999px; border:1px solid #f59e0b; background:#fffbeb; color:#92400e; font-weight:700;
-        }
-        .badge-paid{
-          display:inline-flex; align-items:center; justify-content:center;
-          padding:2px 8px; border-radius:999px; border:1px solid #16a34a; background:#ecfdf5; color:#065f46; font-weight:700;
-        }
-        .badge-unpaid{
-          display:inline-flex; align-items:center; justify-content:center;
-          padding:2px 8px; border-radius:999px; border:1px solid #ef4444; background:#fef2f2; color:#7f1d1d; font-weight:700;
-        }
+        /* Subtotal row styling */
+        .subtotal td:first-child{ text-align:center; font-weight:800; }
 
         /* Softer flagged row */
         .row-flagged { background:#fff7ed; } /* warm, subtle (amber-50) */
@@ -985,7 +966,7 @@ export default function Admin() {
         .divider { width:1px; height:24px; background:var(--border); opacity:0.5; }
         .muted { color:#6b7280; }
         .inline { display:inline-flex; align-items:center; gap:6px; }
-        .actions { display:flex; align-items:center; justify-content:center; gap:6px; flex-wrap:wrap; }
+        .actions { display:inline-flex; align-items:center; gap:6px; flex-wrap:wrap; }
       `}</style>
     </main>
   );

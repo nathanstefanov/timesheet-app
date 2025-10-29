@@ -1115,3 +1115,56 @@ textarea{ min-height:80px; resize:vertical; }
 /* globals.css (or wherever your nav styles live) */
 .nav { display:flex; gap:1rem; flex-wrap:wrap; overflow:visible; }
 .nav-link { display:inline-block; }
+/* ===== Overrides: Upcoming Scheduled Shifts ===== */
+
+/* 1) Make rows more compact */
+.upcoming-table th,
+.upcoming-table td {
+  padding: 6px 8px !important;   /* tighter */
+  line-height: 1.25 !important;
+}
+
+/* Optional: reduce min-heights from helper wrappers */
+.upcoming-table .cell-flex,
+.upcoming-table .upcoming-table-cell-flex,
+.upcoming-table-td,
+.upcoming-table-td-middle,
+.upcoming-table-td-top,
+.upcoming-table-td-actions {
+  height: auto !important;
+  min-height: 0 !important;
+}
+
+/* Buttons and gaps a bit smaller so rows stay tight */
+.upcoming-table .actions { gap: 8px !important; }
+.upcoming-table .btn-edit,
+.upcoming-table .btn-delete {
+  height: 30px !important;
+  min-width: 68px !important;
+  padding: 0 8px !important;
+  font-size: 13px !important;
+  border-radius: 8px;
+}
+
+/* 2) Kill the green background for Assigned badges */
+.upcoming-table .badge-assigned,
+.upcoming-table-assigned-badge,
+.upcoming-table-assigned-badge-wrap {
+  background: #f3f4f6 !important;     /* neutral gray chip */
+  border: 1px solid #e5e7eb !important;
+  color: var(--ink) !important;
+  background-image: none !important;  /* remove any gradients */
+  box-shadow: none !important;
+}
+
+/* Keep badges centered in their cells */
+.upcoming-table .badge-job,
+.upcoming-table .badge-unassigned,
+.upcoming-table .badge-assigned {
+  margin: 0 auto;
+}
+
+/* Slightly softer hover so compact rows don’t feel crowded */
+.upcoming-table tbody tr:hover {
+  background: #f9fafb !important;
+}
