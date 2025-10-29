@@ -22,6 +22,25 @@ type SRow = {
 // ---- Google Maps loader (script tag; no @googlemaps/js-api-loader needed) ----
 declare global { interface Window { google?: any } }
 
+// Helper: convert a Date -> ISO string adjusted so slicing provides local values
+function toLocalInput(d: Date) {
+  const offsetMs = d.getTimezoneOffset() * 60000;
+  // Subtract offset so ISO string represents local time (useful for datetime-local inputs)
+  return new Date(d.getTime() - offsetMs).toISOString();
+}
+
+// Combine date "YYYY-MM-DD" + time "HH:MM" -> local datetime string "YYYY-MM-DDTHH:MM"
+function combineLocalDateTime(dateStr: string, timeStr: string) {
+  return `${dateStr}T${timeStr}`;
+}
+
+// Add hours to a local-input-style datetime string (returns same format as toLocalInput)
+function addHoursToLocalInput(localInput: string, hours: number) {
+  const d = new Date(localInput);
+  d.setHours(d.getHours() + hours);
+  return toLocalInput(d);
+}
+
 // Async script loader that uses loading=async and the Places library
 const loadGoogleMaps = (() => {
   let promise: Promise<any> | null = null;
