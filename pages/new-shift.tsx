@@ -78,166 +78,87 @@ export default function NewShift() {
   }
 
   return (
-    <main className="wrap">
-      <section className="card">
-        <h1>Log Shift</h1>
+    <main className="page page--center">
+      <h1 className="page__title">Log Shift</h1>
 
-        <div className="field">
-          <label>Date</label>
-          <input
-            className="input"
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-          />
-        </div>
+      <div className="form-container">
+        <section className="form-card" aria-labelledby="log-shift-heading">
+          <div className="card__header">
+            <div>
+              <h2 id="log-shift-heading" className="title">Shift details</h2>
+              <p className="form-intro">Record your shift information so payroll stays accurate.</p>
+            </div>
+          </div>
 
-        <div className="field">
-          <label>Shift Type</label>
-          <select
-            className="input select"
-            value={type}
-            onChange={(e) => setType(e.target.value as ShiftType)}
-          >
-            <option>Setup</option>
-            <option>Breakdown</option>
-            <option>Shop</option>
-          </select>
-        </div>
-
-        <div className="grid">
-          <div className="field">
-            <label>Time In</label>
+          <div className="form-field">
+            <label htmlFor="shift-date">Date</label>
             <input
+              id="shift-date"
               className="input"
-              type="time"
-              value={tin}
-              onChange={(e) => setTin(e.target.value)}
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
             />
           </div>
-          <div className="field">
-            <label>Time Out</label>
-            <input
-              className="input"
-              type="time"
-              value={tout}
-              onChange={(e) => setTout(e.target.value)}
+
+          <div className="form-field">
+            <label htmlFor="shift-type">Shift type</label>
+            <select
+              id="shift-type"
+              className="select"
+              value={type}
+              onChange={(e) => setType(e.target.value as ShiftType)}
+            >
+              <option>Setup</option>
+              <option>Breakdown</option>
+              <option>Shop</option>
+            </select>
+          </div>
+
+          <div className="grid-two-cols">
+            <div className="form-field">
+              <label htmlFor="time-in">Time in</label>
+              <input
+                id="time-in"
+                className="input"
+                type="time"
+                value={tin}
+                onChange={(e) => setTin(e.target.value)}
+              />
+            </div>
+            <div className="form-field">
+              <label htmlFor="time-out">Time out</label>
+              <input
+                id="time-out"
+                className="input"
+                type="time"
+                value={tout}
+                onChange={(e) => setTout(e.target.value)}
+              />
+            </div>
+          </div>
+
+          <div className="form-field">
+            <label htmlFor="shift-notes">Notes (optional)</label>
+            <textarea
+              id="shift-notes"
+              className="textarea"
+              value={notes}
+              onChange={(e) => setNotes(e.target.value)}
+              placeholder="Anything to add…"
             />
           </div>
-        </div>
 
-        <div className="field">
-          <label>Notes (optional)</label>
-          <textarea
-            className="input textarea"
-            value={notes}
-            onChange={(e) => setNotes(e.target.value)}
-            placeholder="Anything to add…"
-          />
-        </div>
+          {err && <div className="alert error" role="alert">{err}</div>}
 
-        {err && <p className="alert">{err}</p>}
+          <div className="form-actions">
+            <button className="btn btn-primary" onClick={submit} disabled={saving} type="button">
+              {saving ? 'Saving…' : 'Save shift'}
+            </button>
+          </div>
+        </section>
+      </div>
 
-        <button className="primary" onClick={submit} disabled={saving}>
-          {saving ? 'Saving…' : 'Save'}
-        </button>
-      </section>
-
-      <style jsx>{`
-        /* Container */
-        .wrap {
-          max-width: 720px;
-          margin: 24px auto;
-          padding: 0 16px;
-        }
-        .card {
-          background: #fff;
-          border: 1px solid #edf2f7;
-          border-radius: 16px;
-          box-shadow: 0 10px 30px rgba(0,0,0,.04);
-          padding: 20px;
-          font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-        }
-        h1 {
-          margin: 0 0 16px;
-          font-size: clamp(22px, 3.4vw, 32px);
-        }
-
-        /* Fields */
-        .field { margin-bottom: 12px; }
-        label {
-          display: block;
-          margin: 0 0 6px;
-          font-weight: 600;
-          color: #1f2937;
-        }
-        .input {
-          width: 100%;
-          box-sizing: border-box;
-          height: 48px;
-          padding: 12px 14px;
-          border: 1px solid #d1d5db;
-          border-radius: 12px;
-          background: #fff;
-          font-size: 16px;
-          line-height: 1.2;
-          -webkit-appearance: none;
-          appearance: none;
-        }
-        .input:focus {
-          outline: none;
-          border-color: #6366f1;
-          box-shadow: 0 0 0 3px rgba(99,102,241,.15);
-        }
-        .textarea {
-          height: 120px;
-          resize: vertical;
-          padding-top: 10px;
-          padding-bottom: 10px;
-        }
-
-        .select {
-          padding-right: 36px;
-          background-image:
-            linear-gradient(45deg, transparent 50%, #6b7280 50%),
-            linear-gradient(135deg, #6b7280 50%, transparent 50%);
-          background-position:
-            calc(100% - 18px) 50%,
-            calc(100% - 12px) 50%;
-          background-size: 6px 6px, 6px 6px;
-          background-repeat: no-repeat;
-        }
-
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-
-        @media (max-width: 560px) {
-          .wrap { margin: 16px auto; }
-          .card { padding: 16px; border-radius: 14px; }
-          .grid { grid-template-columns: 1fr; }  /* stack time fields */
-          .input { height: 50px; }
-        }
-
-        .primary {
-          width: 100%;
-          height: 52px;
-          border: 0;
-          border-radius: 12px;
-          background: #2563eb;
-          color: #fff;
-          font-weight: 700;
-          cursor: pointer;
-        }
-        .primary:disabled { opacity: .6; cursor: not-allowed; }
-
-        .alert {
-          color: #b91c1c;
-          background: #fee2e2;
-          border: 1px solid #fecaca;
-          padding: 10px 12px;
-          border-radius: 10px;
-          margin-bottom: 10px;
-        }
-      `}</style>
     </main>
   );
 }
