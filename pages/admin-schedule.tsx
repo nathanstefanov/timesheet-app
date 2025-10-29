@@ -176,7 +176,7 @@ export default function AdminSchedule() {
     return {
       start_date: defaultDate,
       start_time: defaultTime,
-      use_duration: true,
+      use_duration: false,
       duration_hours: 2,
       end_date: defaultDate,
       end_time: '',
