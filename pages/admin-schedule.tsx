@@ -152,14 +152,14 @@ function LocationPicker({
         (res: any, status: any) => {
           if (status !== window.google.maps.places.PlacesServiceStatus.OK || !res) {
             setPreds([]);
-            return (
-              <div className="page">
-                <h1 className="page__title">Admin – Scheduling (separate from payroll)</h1>
-
-                <div className="center mb-12">
-                  <Link href="/admin-schedule-past" className="nav-link">View Past Shifts</Link>
-                  <button type="button" className="topbar-btn ml-8" onClick={loadRows}>Refresh</button>
-                </div>
+            return;
+          }
+          setPreds(res.map((p: any) => ({ description: p.description, place_id: p.place_id })));
+        }
+      );
+    }, 150);
+    return () => clearTimeout(handle);
+  }, [q, ready]);
 
   function pickPlace(placeId: string) {
     detailsSvcRef.current.getDetails(
@@ -220,7 +220,6 @@ function LocationPicker({
     </div>
   );
 }
-
 export default function AdminSchedule() {
   // ---------- Auth ----------
   const [adminId, setAdminId] = useState<string | null>(null);
