@@ -406,6 +406,10 @@ textarea{ min-height:80px; resize:vertical; }
 .p-14{ padding:14px; }
 .p-16{ padding:16px; }
 .p-10{ padding:10px; }
+.p-6{ padding:6px; }
+.maxh-220{ max-height:220px; }
+.ovf-y-auto{ overflow-y:auto; }
+.btn-list{ width:100%; text-align:left; padding:6px 8px; }
 .mb-12{ margin-bottom:12px; }
 .ml-8{ margin-left:8px; }
 .gap-16{ gap:16px; }
