@@ -426,8 +426,8 @@ export default function Admin() {
       </div>
 
       {/* Tabs */}
-      <div className="card card--tight full center" style={{ marginTop: 10, padding: 10 }}>
-        <div className="tabs tabs--center" style={{ margin: 0 }}>
+      <div className="card card--tight full center mt-10 p-10">
+        <div className="tabs tabs--center">
           <button
             className={tab === 'unpaid' ? 'active' : ''}
             onClick={() => { setTab('unpaid'); setUserSorted(false); }}
@@ -450,7 +450,7 @@ export default function Admin() {
       </div>
 
       {/* Date / Week Filters */}
-      <div className="card card--tight full center" style={{ marginTop: 10, padding: 12 }}>
+  <div className="card card--tight full center mt-10 p-12">
         <div className="filters">
           <div className="filters-row">
             <label className="inline">
@@ -564,15 +564,15 @@ export default function Admin() {
                   <tr key={t.id}>
                     <td data-label="Employee">
                       {t.name}
-                      {t.minCount > 0 && <span className="muted" style={{ marginLeft: 8 }}>({t.minCount}× MIN)</span>}
-                      {t.flaggedCount > 0 && <span className="muted" style={{ marginLeft: 8 }}>({t.flaggedCount}× Flagged)</span>}
+                      {t.minCount > 0 && <span className="muted ml-8">({t.minCount}× MIN)</span>}
+                      {t.flaggedCount > 0 && <span className="muted ml-8">({t.flaggedCount}× Flagged)</span>}
                     </td>
                     <td data-label="Hours">{t.hours.toFixed(2)}</td>
                     <td data-label="Pay">${t.pay.toFixed(2)}</td>
                     <td data-label="Unpaid">
                       ${t.unpaid.toFixed(2)}
                       {hasUnpaid && vHref && (
-                        <a className="btn-venmo" href={vHref} target="_blank" rel="noopener noreferrer" style={{ marginLeft: 8 }}>
+                        <a className="btn-venmo ml-8" href={vHref} target="_blank" rel="noopener noreferrer">
                           Venmo
                         </a>
                       )}
@@ -586,7 +586,7 @@ export default function Admin() {
       </div>
 
       {/* Shifts */}
-      <div className="card card--tight full center" style={{ marginTop: 12 }}>
+  <div className="card card--tight full center mt-10">
         <div className="card__header center">
           <h3>Shifts</h3>
         </div>
@@ -697,7 +697,11 @@ export default function Admin() {
                             </div>
                           </td>
                           <td data-label="Date">{s.shift_date}</td>
-                          <td data-label="Type">{s.shift_type}</td>
+                          <td data-label="Type">
+                            <div className="job-cell">
+                              <span className="badge badge-job">{s.shift_type}</span>
+                            </div>
+                          </td>
                           <td data-label="In">
                             {s.time_in ? new Date(s.time_in).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
                           </td>
@@ -709,9 +713,8 @@ export default function Admin() {
                             ${pay.toFixed(2)}{' '}
                             {minApplied && (
                               <span
-                                className="badge badge-min"
+                                className="badge badge-min pay-min"
                                 title={`Breakdown minimum applied (base ${base.toFixed(2)} < $50)`}
-                                style={{ marginLeft: 6 }}
                               >
                                 MIN $50
                               </span>
@@ -744,7 +747,7 @@ export default function Admin() {
                                 className={`btn ${isFlagged ? 'btn-flag-on' : 'btn-flag'}`}
                                 title={isFlagged ? 'Unflag (manual flag only)' : 'Flag for attention'}
                                 onClick={() => toggleAdminFlag(s, !Boolean(s.admin_flag))}
-                                aria-pressed={isFlagged}
+                                aria-pressed={isFlagged ? 'true' : 'false'}
                               >
                                 {isFlagged ? '★ Flagged' : '☆ Flag'}
                               </button>
@@ -764,7 +767,7 @@ export default function Admin() {
                     })}
 
                     <tr className="subtotal">
-                      <td colSpan={5} style={{ textAlign: 'center' }}>Total — {name}</td>
+                      <td colSpan={5}>Total — {name}</td>
                       <td>{subtotal.hours.toFixed(2)}</td>
                       <td>${subtotal.pay.toFixed(2)}</td>
                       <td colSpan={3}></td>
@@ -790,7 +793,7 @@ export default function Admin() {
                 onChange={(e) => setNoteDraft(e.target.value)}
                 placeholder="Add a private admin note…"
               />
-              <p className="muted" style={{ marginTop: 8 }}>
+              <p className="muted modal-note"> 
                 Notes are only visible to admins on this page.
               </p>
             </div>
@@ -866,8 +869,23 @@ export default function Admin() {
 
         .emp-cell { display:flex; align-items:center; justify-content:center; gap:6px; }
 
-        /* Table: center everything */
-        .table th, .table td { text-align:center; vertical-align:middle; }
+  /* Table: center everything and make rows compact + single-line */
+  .table th, .table td { text-align:center; vertical-align:middle; }
+  .table thead th, .table tbody td { font-size:13px; }
+  .table tbody td { display:flex; align-items:center; justify-content:center; gap:10px; white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+  .table { table-layout: fixed; }
+
+  /* Center the table block within the page and ensure headers/totals are centered */
+  .table { margin: 0 auto; width: 100%; max-width: 980px; }
+  .table thead th { text-align: center; }
+  .section-head td { text-align: center; }
+  .subtotal td { text-align: center; }
+
+  /* Use CSS grid for section header: left actions, centered name, right controls */
+  .section-bar { display: grid; grid-template-columns: 1fr auto 1fr; align-items: center; gap: 12px; }
+  .section-bar__left { grid-column: 1; display:flex; align-items:center; gap:10px; }
+  .section-bar__right { grid-column: 3; display:flex; align-items:center; gap:10px; justify-content:flex-end; }
+  .employee-name { grid-column: 2; justify-self: center; font-size:16px; font-weight:800; }
 
         /* Section bar */
         .section-bar {
@@ -892,6 +910,29 @@ export default function Admin() {
           }
         }
 
+  /* Job / Type cell and general table polish */
+  .job-cell{ display:flex; align-items:center; justify-content:center; min-height:28px; }
+  /* allow employee cell to be left aligned on wider screens for readability */
+  .emp-cell{ display:flex; align-items:center; justify-content:center; gap:6px; }
+  @media(min-width:720px){ .emp-cell{ justify-content:flex-start; } }
+
+  /* spacing for table cells (compact) */
+  .table th, .table td { padding: 6px 8px; }
+
+  /* make small buttons and badges fit in one row */
+  .btn, .topbar-btn { height:30px; padding:0 8px; font-size:13px; }
+  .badge, .badge-job, .badge-paid, .badge-unpaid, .badge-min { font-size:12px; padding:3px 8px; }
+
+  /* MIN badge spacing (replaces inline style) */
+  .pay-min{ margin-left: 6px; display:inline-flex; }
+
+  /* Subtotal row styling */
+  .subtotal td:first-child{ text-align:center; font-weight:800; }
+
+  /* tighten section header spacing */
+  .section-bar { gap: 8px; }
+
+
         /* Modal */
         .modal-backdrop{
           position:fixed; inset:0; background:rgba(0,0,0,0.4);
@@ -908,6 +949,7 @@ export default function Admin() {
           width:100%; min-height:140px; border-radius:12px; padding:10px;
           border:1px solid var(--border); resize:vertical; font:inherit;
         }
+        .modal-note{ margin-top:8px; }
         .modal-actions{
           display:flex; align-items:center; justify-content:center; gap:10px;
         }

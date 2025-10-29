@@ -166,7 +166,11 @@ function LocationPicker({
             setPreds([]);
             return;
           }
-          setPreds(res.map((p: any) => ({ description: p.description, place_id: p.place_id })));
+          // Only allow predictions with ', IL' in the description (Illinois)
+          const ilPreds = res.filter((p: any) =>
+            typeof p.description === 'string' && p.description.includes(', IL')
+          ).map((p: any) => ({ description: p.description, place_id: p.place_id }));
+          setPreds(ilPreds);
         }
       );
     }, 150);
@@ -191,42 +195,43 @@ function LocationPicker({
   }
 
   return (
-    <div className="grid gap-10">
-      <label>Search Location</label>
-      <input
-        aria-label="Location search"
-        placeholder="Type a place or address…"
-        value={q}
-        onChange={(e) => setQ(e.target.value)}
-      />
-      {!ready && !errorText && (
-        <div className="muted fs-12">Loading Places…</div>
-      )}
-      {errorText && <div className="alert error fs-12">{errorText}</div>}
-
-      {preds.length > 0 && (
-        <div className="card p-6 maxh-220 ovf-y-auto">
-          {preds.map((p) => (
-            <button
-              key={p.place_id}
-              type="button"
-              className="list-item btn-list"
-              onClick={() => pickPlace(p.place_id)}
-            >
-              {p.description}
-            </button>
-          ))}
+    <div className="location-picker-card card p-18">
+      <div className="location-picker-section">
+        <label className="location-picker-label">Search Location</label>
+        <input
+          aria-label="Location search"
+          className="location-picker-input"
+          placeholder="Type a place or address…"
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+        />
+        {!ready && !errorText && (
+          <div className="muted fs-12">Loading Places…</div>
+        )}
+        {errorText && <div className="alert error fs-12">{errorText}</div>}
+        {preds.length > 0 && (
+          <div className="card p-6 maxh-220 ovf-y-auto location-picker-preds">
+            {preds.map((p) => (
+              <button
+                key={p.place_id}
+                type="button"
+                className="list-item btn-list"
+                onClick={() => pickPlace(p.place_id)}
+              >
+                {p.description}
+              </button>
+            ))}
+          </div>
+        )}
+      </div>
+      <div className="location-picker-fields">
+        <div className="location-picker-field">
+          <label className="location-picker-label">Location Name</label>
+          <input aria-label="Location name" className="location-picker-input" value={valueName} readOnly />
         </div>
-      )}
-
-      <div className="row wrap gap-10">
-        <div className="flex-1-min220">
-          <label>Location Name</label>
-          <input aria-label="Location name" value={valueName} readOnly />
-        </div>
-        <div className="flex-1-min220">
-          <label>Address</label>
-          <input aria-label="Address" value={valueAddr} readOnly />
+        <div className="location-picker-field">
+          <label className="location-picker-label">Address</label>
+          <input aria-label="Address" className="location-picker-input" value={valueAddr} readOnly />
         </div>
       </div>
     </div>
@@ -252,8 +257,6 @@ export default function AdminSchedule() {
   const [form, setForm] = useState<{
     start_date: string;
     start_time: string;
-    use_duration: boolean;
-    duration_hours: number;
     end_date: string;
     end_time: string;
     location_name: string;
@@ -267,8 +270,6 @@ export default function AdminSchedule() {
     return {
       start_date: defaultDate,
       start_time: defaultTime,
-      use_duration: true,
-      duration_hours: 2,
       end_date: defaultDate,
       end_time: '',
       location_name: '',
@@ -385,14 +386,10 @@ export default function AdminSchedule() {
   // ---------- Actions ----------
   function validateForm() {
     if (!form.start_date) return 'Start date is required.';
-    if (!form.use_duration) {
-      if (!form.end_date || !form.end_time) return 'End date and time are required.';
-      const startLocal = combineLocalDateTime(form.start_date, form.start_time);
-      const endLocal = combineLocalDateTime(form.end_date, form.end_time);
-      if (new Date(endLocal) <= new Date(startLocal)) return 'End time must be after start time.';
-    } else {
-      if (form.duration_hours <= 0) return 'Duration must be greater than 0 hours.';
-    }
+    if (!form.end_date || !form.end_time) return 'End date and time are required.';
+    const startLocal = combineLocalDateTime(form.start_date, form.start_time);
+    const endLocal = combineLocalDateTime(form.end_date, form.end_time);
+    if (new Date(endLocal) <= new Date(startLocal)) return 'End time must be after start time.';
     return null;
   }
 
@@ -405,13 +402,7 @@ export default function AdminSchedule() {
     setCreating(true);
     try {
       const startLocal = combineLocalDateTime(form.start_date, form.start_time);
-      let endLocal: string | null = null;
-
-      if (form.use_duration) {
-        endLocal = addHoursToLocalInput(startLocal, form.duration_hours).slice(0, 16);
-      } else {
-        endLocal = combineLocalDateTime(form.end_date, form.end_time);
-      }
+      const endLocal = combineLocalDateTime(form.end_date, form.end_time);
 
       const body = {
         start_time: new Date(startLocal).toISOString(),
@@ -435,8 +426,6 @@ export default function AdminSchedule() {
       setForm({
         start_date: defaultDate,
         start_time: defaultTime,
-        use_duration: true,
-        duration_hours: 2,
         end_date: defaultDate,
         end_time: '',
         location_name: '',
@@ -559,10 +548,10 @@ export default function AdminSchedule() {
 
       {err && <div className="alert error">{err}</div>}
 
-      {/* Two-column: Form | Upcoming */}
-  <div className="row wrap gap-md">
-        {/* Create form */}
-        <div className="card p-14 flex-1-380 maxw-620">
+      {/* Create form (centered) */}
+      <div className="form-container">
+        <div className="card form-card">
+          
           <div className="row between wrap align-items-center">
             <strong className="fs-16">Create Scheduled Shift</strong>
             <div className="row gap-sm">
@@ -593,46 +582,14 @@ export default function AdminSchedule() {
               <label>Start Time</label>
               <input type="time" value={form.start_time} onChange={(e) => setForm({ ...form, start_time: e.target.value })} />
             </div>
-            <div className="align-self-end">
-              <label className="inline-check">
-                <input
-                  type="checkbox"
-                  checked={form.use_duration}
-                  onChange={(e) => setForm({ ...form, use_duration: e.target.checked })}
-                />
-                <span>Use duration</span>
-              </label>
+            <div>
+              <label>End Date</label>
+              <input type="date" value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value })} />
             </div>
-            {form.use_duration ? (
-              <div>
-                <label>Duration (hours)</label>
-                <input
-                  type="number"
-                  min={0.5}
-                  step={0.5}
-                  value={form.duration_hours}
-                  onChange={(e) => setForm({ ...form, duration_hours: Number(e.target.value || 0) })}
-                />
-                <div className="row gap-sm mt-6">
-                  {[2, 3, 4].map((h) => (
-                    <button key={h} type="button" className="pill" onClick={() => setForm({ ...form, duration_hours: h })}>
-                      <span className="pill__label">+{h}h</span>
-                    </button>
-                  ))}
-                </div>
-              </div>
-            ) : (
-              <>
-                <div>
-                  <label>End Date</label>
-                  <input type="date" value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value })} />
-                </div>
-                <div>
-                  <label>End Time</label>
-                  <input type="time" value={form.end_time} onChange={(e) => setForm({ ...form, end_time: e.target.value })} />
-                </div>
-              </>
-            )}
+            <div>
+              <label>End Time <span className="muted">(Optional)</span></label>
+              <input type="time" value={form.end_time} onChange={(e) => setForm({ ...form, end_time: e.target.value })} />
+            </div>
           </div>
 
           {/* Location search with autofill */}
@@ -673,7 +630,7 @@ export default function AdminSchedule() {
 
           {formError && <div className="alert error mt-lg">{formError}</div>}
 
-          <div className="mt-lg row gap-sm">
+          <div className="mt-lg form-actions">
             <button type="button" className="btn-primary" onClick={createShift} disabled={creating || !adminId}>
               {creating ? 'Creating…' : 'Create Scheduled Shift'}
             </button>
@@ -687,8 +644,6 @@ export default function AdminSchedule() {
                 setForm({
                   start_date: defaultDate,
                   start_time: defaultTime,
-                  use_duration: true,
-                  duration_hours: 2,
                   end_date: defaultDate,
                   end_time: '',
                   location_name: '',
@@ -703,70 +658,90 @@ export default function AdminSchedule() {
             </button>
           </div>
         </div>
+      </div>
 
-        {/* Upcoming table */}
-        <div className="card" style={{ padding: 12, flex: '2 1 520px' }}>
-          <div className="row between">
-            <strong>Upcoming Scheduled Shifts</strong>
-            <span className="pill">
-              <span className="pill__num">{upcoming.length}</span>
-              <span className="pill__label">total</span>
-            </span>
-          </div>
-
-          {loading && <div className="toast" style={{ marginTop: 10 }}>Loading…</div>}
-
-          {!loading && upcoming.length === 0 && !err && (
-            <div className="card" style={{ padding: 12, marginTop: 10 }}>
-              <div className="muted">No upcoming scheduled shifts.</div>
-            </div>
-          )}
-
-          {upcoming.length > 0 && (
-            <div className="table-wrap" style={{ marginTop: 10 }}>
-              <table className="table table--admin">
-                <thead>
-                  <tr>
-                    <th>Start</th>
-                    <th>End</th>
-                    <th>Job</th>
-                    <th>Location</th>
-                    <th>Address</th>
-                    <th>Assigned</th>
-                    <th className="col-hide-md">Notes</th>
-                    <th>Actions</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {upcoming.map((r) => {
-                    const emps = assignedMap[r.id] || [];
-                    const assignedLabel = emps.length
-                      ? emps.map((e) => e.full_name || e.email || e.id.slice(0, 8)).join(', ')
-                      : '—';
-                    return (
-                      <tr key={r.id}>
-                        <td>{fmt(r.start_time)}</td>
-                        <td>{fmt(r.end_time)}</td>
-                        <td>{r.job_type}</td>
-                        <td>{r.location_name}</td>
-                        <td>{r.address}</td>
-                        <td>{assignedLabel}</td>
-                        <td className="col-hide-md">{r.notes}</td>
-                        <td>
-                          <div className="actions">
-                            <button type="button" className="btn-edit" onClick={() => openEdit(r)}>Edit</button>
-                            <button type="button" className="btn-edit" onClick={() => openAssign(r)}>Assign</button>
-                            <button type="button" className="btn-delete" onClick={() => deleteRow(r.id)}>Delete</button>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-          )}
+      {/* Upcoming table */}
+      <div className="card upcoming-table-card">
+        <div className="upcoming-table-header row between">
+          <strong className="fs-16">Upcoming Scheduled Shifts</strong>
+          <span className="pill">
+            <span className="pill__num">{upcoming.length}</span>
+            <span className="pill__label">total</span>
+          </span>
         </div>
+
+        {loading && <div className="toast mt-10">Loading…</div>}
+
+        {!loading && upcoming.length === 0 && !err && (
+          <div className="card upcoming-table-empty">
+            <div className="muted">No upcoming scheduled shifts.</div>
+          </div>
+        )}
+
+        {upcoming.length > 0 && (
+          <div className="table-wrap mt-10">
+            <table className="table table--admin table--striped table--compact table--stack upcoming-table">
+              <thead>
+                <tr>
+                  <th>Start</th>
+                  <th>End</th>
+                  <th>Job</th>
+                  <th>Location</th>
+                  <th>Address</th>
+                  <th>Assigned</th>
+                  <th className="col-hide-md">Notes</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
+              <tbody>
+                {upcoming.map((r, i) => {
+                  const emps = assignedMap[r.id] || [];
+                  const assignedLabel = emps.length
+                    ? emps.map((e) => e.full_name || e.email || e.id.slice(0, 8)).join(', ')
+                    : '—';
+                  return (
+                     <tr key={r.id} className={i % 2 === 1 ? 'row-alt' : ''}>
+                      <td data-label="Start" className="upcoming-table-td upcoming-table-td-middle">
+                        <span className="upcoming-table-cell-main">{fmt(r.start_time)}</span>
+                      </td>
+                      <td data-label="End" className="upcoming-table-td upcoming-table-td-middle">
+                        <span className="upcoming-table-cell-main">{fmt(r.end_time)}</span>
+                      </td>
+                      <td data-label="Job" className="upcoming-table-td upcoming-table-td-middle">
+                        <div className="job-cell">
+                          <span className="badge badge-job">{r.job_type}</span>
+                        </div>
+                      </td>
+                      <td data-label="Location" className="upcoming-table-td upcoming-table-td-middle">
+                        <span className="upcoming-table-cell-main">{r.location_name}</span>
+                      </td>
+                      <td data-label="Address" className="upcoming-table-td upcoming-table-td-middle">
+                        <span className="upcoming-table-cell-main">{r.address}</span>
+                      </td>
+                      <td data-label="Assigned" className="upcoming-table-td upcoming-table-td-middle">
+                        {emps.length > 0 ? (
+                          <span className="badge badge-assigned upcoming-table-assigned-badge-wrap">{assignedLabel}</span>
+                        ) : (
+                          <span className="badge badge-unassigned">—</span>
+                        )}
+                      </td>
+                      <td className="col-hide-md upcoming-table-td upcoming-table-td-top" data-label="Notes">
+                        <span className="cell-notes upcoming-table-notes">{r.notes}</span>
+                      </td>
+                      <td data-label="Actions" className="upcoming-table-td upcoming-table-td-actions">
+                        <div className="upcoming-table-actions-vert">
+                          <button type="button" className="btn-edit" onClick={() => openEdit(r)}>Edit</button>
+                          <button type="button" className="btn-edit" onClick={() => openAssign(r)}>Assign</button>
+                          <button type="button" className="btn-delete" onClick={() => deleteRow(r.id)}>Delete</button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
       </div>
 
       {/* Edit panel */}
