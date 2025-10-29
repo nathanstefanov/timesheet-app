@@ -865,7 +865,12 @@ textarea{ min-height:80px; resize:vertical; }
   box-shadow: var(--shadow-sm);
   table-layout: auto;
 }
-.table th, .table td{ padding:12px; border-top:1px solid var(--border-soft); }
+.table th, .table td{
+  padding:12px;
+  border-top:1px solid var(--border-soft);
+  white-space: normal;
+  word-break: break-word;
+}
 .table thead th{
   background:#f8fafc; border-top:0; text-align:left; font-weight:700; color: var(--ink-subtle);
 }
@@ -940,7 +945,7 @@ textarea{ min-height:80px; resize:vertical; }
    MOBILE: Card-style rows for stacked tables
    (Clean, centered, professional)
 ====================================================== */
-@media (max-width: 700px){
+@media (max-width: 960px){
   .page{ max-width:100%; padding: 10px 12px; margin: 16px auto; }
   .card{ border-radius: 14px; }
   .card__header{ padding: 8px 10px; }
