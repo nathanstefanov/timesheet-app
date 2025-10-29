@@ -152,14 +152,14 @@ function LocationPicker({
         (res: any, status: any) => {
           if (status !== window.google.maps.places.PlacesServiceStatus.OK || !res) {
             setPreds([]);
-            return;
-          }
-          setPreds(res.map((p: any) => ({ description: p.description, place_id: p.place_id })));
-        }
-      );
-    }, 150);
-    return () => clearTimeout(handle);
-  }, [q, ready]);
+            return (
+              <div className="page">
+                <h1 className="page__title">Admin – Scheduling (separate from payroll)</h1>
+
+                <div className="center mb-12">
+                  <Link href="/admin-schedule-past" className="nav-link">View Past Shifts</Link>
+                  <button type="button" className="topbar-btn ml-8" onClick={loadRows}>Refresh</button>
+                </div>
 
   function pickPlace(placeId: string) {
     detailsSvcRef.current.getDetails(
@@ -549,11 +549,11 @@ export default function AdminSchedule() {
       {err && <div className="alert error">{err}</div>}
 
       {/* Two-column: Form | Upcoming */}
-      <div className="row wrap" style={{ gap: 16 }}>
+  <div className="row wrap gap-md">
         {/* Create form */}
-        <div className="card" style={{ padding: 14, flex: '1 1 380px', maxWidth: 620 }}>
-          <div className="row between wrap" style={{ alignItems: 'center' }}>
-            <strong style={{ fontSize: 16 }}>Create Scheduled Shift</strong>
+        <div className="card p-14 flex-1-380 maxw-620">
+          <div className="row between wrap align-items-center">
+            <strong className="fs-16">Create Scheduled Shift</strong>
             <div className="row gap-sm">
               <button
                 type="button"
@@ -573,7 +573,7 @@ export default function AdminSchedule() {
           </div>
 
           {/* Time grid */}
-          <div className="mt-lg" style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))' }}>
+          <div className="mt-lg grid-auto-fit-160">
             <div>
               <label>Start Date</label>
               <input type="date" value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} />
@@ -582,7 +582,7 @@ export default function AdminSchedule() {
               <label>Start Time</label>
               <input type="time" value={form.start_time} onChange={(e) => setForm({ ...form, start_time: e.target.value })} />
             </div>
-            <div style={{ alignSelf: 'end' }}>
+            <div className="align-self-end">
               <label className="inline-check">
                 <input
                   type="checkbox"
@@ -602,7 +602,7 @@ export default function AdminSchedule() {
                   value={form.duration_hours}
                   onChange={(e) => setForm({ ...form, duration_hours: Number(e.target.value || 0) })}
                 />
-                <div className="row gap-sm" style={{ marginTop: 6 }}>
+                <div className="row gap-sm mt-6">
                   {[2, 3, 4].map((h) => (
                     <button key={h} type="button" className="pill" onClick={() => setForm({ ...form, duration_hours: h })}>
                       <span className="pill__label">+{h}h</span>
@@ -634,20 +634,15 @@ export default function AdminSchedule() {
           </div>
 
           {/* Job type pills */}
-          <div className="mt-lg">
+            <div className="mt-lg">
             <label>Job Type</label>
-            <div className="row wrap" style={{ gap: 8, marginTop: 6 }}>
-              {JOB_TYPES.map((jt) => (
+            <div className="row wrap gap-sm mt-6">
+              {JOB_TYPES.map(jt => (
                 <button
                   key={jt}
                   type="button"
-                  className="pill"
+                  className={`pill ${form.job_type === jt ? 'pill-active' : ''}`}
                   onClick={() => setForm({ ...form, job_type: jt })}
-                  style={{
-                    border: form.job_type === jt ? '2px solid var(--brand-border)' : '1px solid var(--border)',
-                    fontWeight: form.job_type === jt ? 700 : 500,
-                    padding: '6px 10px',
-                  }}
                 >
                   <span className="pill__label">{jt[0].toUpperCase() + jt.slice(1)}</span>
                 </button>
