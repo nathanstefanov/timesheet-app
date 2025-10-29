@@ -141,24 +141,24 @@ function LocationPicker({
   }, [onSelect]);
 
   return (
-    <div style={{ display: 'grid', gap: 10 }}>
+    <div className="grid gap-10">
       <label>Search Location</label>
       <div ref={hostRef} />
 
-      {status === 'loading' && <div className="muted" style={{ fontSize: 12 }}>Loading Places…</div>}
-      {status === 'error' && <div className="alert error" style={{ fontSize: 12 }}>{errorText}</div>}
+      {status === 'loading' && <div className="muted fs-12">Loading Places…</div>}
+      {status === 'error' && <div className="alert error fs-12">{errorText}</div>}
       {status === 'ready' && (
-        <div className="muted" style={{ fontSize: 12 }}>Choose a result to auto-fill below.</div>
+        <div className="muted fs-12">Choose a result to auto-fill below.</div>
       )}
 
-      <div className="row wrap" style={{ gap: 12 }}>
-        <div style={{ flex: 1, minWidth: 220 }}>
+      <div className="row wrap">
+        <div className="flex-1-min220">
           <label>Location Name</label>
-          <input value={valueName} readOnly />
+          <input value={valueName} readOnly aria-label="Location Name" />
         </div>
-        <div style={{ flex: 1, minWidth: 220 }}>
+        <div className="flex-1-min220">
           <label>Address</label>
-          <input value={valueAddr} readOnly />
+          <input value={valueAddr} readOnly aria-label="Address" />
         </div>
       </div>
     </div>
@@ -447,18 +447,18 @@ export default function AdminSchedule() {
     <div className="page">
       <h1 className="page__title">Admin – Scheduling (separate from payroll)</h1>
 
-      <div className="center" style={{ marginBottom: 12 }}>
+      <div className="center mb-12">
         <Link href="/admin-schedule-past" className="nav-link">View Past Shifts</Link>
-        <button type="button" className="topbar-btn" style={{ marginLeft: 8 }} onClick={loadRows}>Refresh</button>
+        <button type="button" className="topbar-btn ml-8" onClick={loadRows}>Refresh</button>
       </div>
 
       {err && <div className="alert error">{err}</div>}
 
-      <div className="row wrap" style={{ gap: 16 }}>
+  <div className="row wrap gap-md">
         {/* Create form */}
-        <div className="card" style={{ padding: 14, flex: '1 1 380px', maxWidth: 620 }}>
-          <div className="row between wrap" style={{ alignItems: 'center' }}>
-            <strong style={{ fontSize: 16 }}>Create Scheduled Shift</strong>
+        <div className="card p-14 flex-1-380 maxw-620">
+          <div className="row between wrap">
+            <strong className="fs-16">Create Scheduled Shift</strong>
             <div className="row gap-sm">
               <button
                 type="button"
@@ -479,22 +479,23 @@ export default function AdminSchedule() {
           </div>
 
           {/* Time grid */}
-          <div className="mt-lg" style={{ display: 'grid', gap: 12, gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))' }}>
+          <div className="mt-lg grid-auto-fit-160">
             <div>
               <label>Start Date</label>
-              <input type="date" value={form.start_date} onChange={e => setForm({ ...form, start_date: e.target.value })}/>
+              <input aria-label="Start Date" type="date" value={form.start_date} onChange={e => setForm({ ...form, start_date: e.target.value })}/>
             </div>
             <div>
               <label>Start Time</label>
-              <input type="time" value={form.start_time} onChange={e => setForm({ ...form, start_time: e.target.value })}/>
+              <input aria-label="Start Time" type="time" value={form.start_time} onChange={e => setForm({ ...form, start_time: e.target.value })}/>
             </div>
 
-            <div style={{ alignSelf: 'end' }}>
+            <div className="align-self-end">
               <label className="inline-check">
                 <input
                   type="checkbox"
                   checked={form.use_duration}
                   onChange={e => setForm({ ...form, use_duration: e.target.checked })}
+                  aria-label="Use duration"
                 />
                 <span>Use duration</span>
               </label>
@@ -504,13 +505,14 @@ export default function AdminSchedule() {
               <div>
                 <label>Duration (hours)</label>
                 <input
+                  aria-label="Duration hours"
                   type="number"
                   min={0.5}
                   step={0.5}
                   value={form.duration_hours}
                   onChange={e => setForm({ ...form, duration_hours: Number(e.target.value || 0) })}
                 />
-                <div className="row gap-sm" style={{ marginTop: 6 }}>
+                <div className="row gap-sm mt-6">
                   {[2, 3, 4].map(h => (
                     <button key={h} type="button" className="pill" onClick={() => setForm({ ...form, duration_hours: h })}>
                       <span className="pill__label">+{h}h</span>
@@ -522,11 +524,11 @@ export default function AdminSchedule() {
               <>
                 <div>
                   <label>End Date</label>
-                  <input type="date" value={form.end_date} onChange={e => setForm({ ...form, end_date: e.target.value })}/>
+                  <input aria-label="End Date" type="date" value={form.end_date} onChange={e => setForm({ ...form, end_date: e.target.value })}/>
                 </div>
                 <div>
                   <label>End Time</label>
-                  <input type="time" value={form.end_time} onChange={e => setForm({ ...form, end_time: e.target.value })}/>
+                  <input aria-label="End Time" type="time" value={form.end_time} onChange={e => setForm({ ...form, end_time: e.target.value })}/>
                 </div>
               </>
             )}
@@ -542,20 +544,15 @@ export default function AdminSchedule() {
           </div>
 
           {/* Job type pills */}
-          <div className="mt-lg">
+            <div className="mt-lg">
             <label>Job Type</label>
-            <div className="row wrap" style={{ gap: 8, marginTop: 6 }}>
+            <div className="row wrap gap-sm mt-6">
               {JOB_TYPES.map(jt => (
                 <button
                   key={jt}
                   type="button"
-                  className="pill"
+                  className={`pill ${form.job_type === jt ? 'pill-active' : ''}`}
                   onClick={() => setForm({ ...form, job_type: jt })}
-                  style={{
-                    border: form.job_type === jt ? '2px solid var(--brand-border)' : '1px solid var(--border)',
-                    fontWeight: form.job_type === jt ? 700 : 500,
-                    padding: '6px 10px',
-                  }}
                 >
                   <span className="pill__label">{jt[0].toUpperCase() + jt.slice(1)}</span>
                 </button>
@@ -567,6 +564,7 @@ export default function AdminSchedule() {
           <div className="mt-lg">
             <label>Notes</label>
             <textarea
+              aria-label="Notes"
               placeholder="Optional instructions (e.g., bring ladder; load truck)"
               value={form.notes}
               onChange={e => setForm({ ...form, notes: e.target.value })}
@@ -607,22 +605,22 @@ export default function AdminSchedule() {
         </div>
 
         {/* Upcoming table */}
-        <div className="card" style={{ padding: 12, flex: '2 1 520px' }}>
+        <div className="card p-12 flex-2-520">
           <div className="row between">
             <strong>Upcoming Scheduled Shifts</strong>
             <span className="pill"><span className="pill__num">{upcoming.length}</span><span className="pill__label">total</span></span>
           </div>
 
-          {loading && <div className="toast" style={{ marginTop: 10 }}>Loading…</div>}
+          {loading && <div className="toast mt-10">Loading…</div>}
 
           {!loading && upcoming.length === 0 && !err && (
-            <div className="card" style={{ padding: 12, marginTop: 10 }}>
+            <div className="card p-12 mt-10">
               <div className="muted">No upcoming scheduled shifts.</div>
             </div>
           )}
 
           {upcoming.length > 0 && (
-            <div className="table-wrap" style={{ marginTop: 10 }}>
+            <div className="table-wrap table-wrap-mt10">
               <table className="table table--admin">
                 <thead>
                   <tr>
@@ -670,45 +668,47 @@ export default function AdminSchedule() {
 
       {/* Edit panel */}
       {edit && (
-        <div id="edit-panel" className="card mt-lg" style={{ padding: 16 }}>
+        <div id="edit-panel" className="card mt-lg p-16">
           <div className="row between">
             <strong>Edit Scheduled Shift</strong>
             <button type="button" className="topbar-btn" onClick={() => setEdit(null)}>Close</button>
           </div>
 
-          <div className="mt-lg" style={{ display: 'grid', gap: 12, gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)' }}>
+          <div className="mt-lg grid-two-cols">
             <div>
               <label>Start</label>
               <input type="datetime-local"
+                aria-label="Edit start"
                 value={edit.start_time ? toLocalInput(new Date(edit.start_time)) : ''}
                 onChange={e => setEdit({ ...edit, start_time: e.target.value })}/>
             </div>
             <div>
               <label>End (optional)</label>
               <input type="datetime-local"
+                aria-label="Edit end"
                 value={edit.end_time ? toLocalInput(new Date(edit.end_time)) : ''}
                 onChange={e => setEdit({ ...edit, end_time: e.target.value })}/>
             </div>
             <div>
               <label>Location Name</label>
-              <input value={edit.location_name ?? ''} onChange={e => setEdit({ ...edit, location_name: e.target.value })}/>
+              <input aria-label="Edit location name" value={edit.location_name ?? ''} onChange={e => setEdit({ ...edit, location_name: e.target.value })}/>
             </div>
             <div>
               <label>Address</label>
-              <input value={edit.address ?? ''} onChange={e => setEdit({ ...edit, address: e.target.value })}/>
+              <input aria-label="Edit address" value={edit.address ?? ''} onChange={e => setEdit({ ...edit, address: e.target.value })}/>
             </div>
-            <div style={{ gridColumn: '1 / -1' }}>
+            <div className="grid-col-span">
               <label>Job Type</label>
-              <select value={edit.job_type ?? 'setup'} onChange={e => setEdit({ ...edit, job_type: e.target.value as JobType })}>
+              <select aria-label="Job Type" value={edit.job_type ?? 'setup'} onChange={e => setEdit({ ...edit, job_type: e.target.value as JobType })}>
                 <option value="setup">Setup</option>
                 <option value="Lights">Lights</option>
                 <option value="breakdown">Breakdown</option>
                 <option value="other">Other</option>
               </select>
             </div>
-            <div style={{ gridColumn: '1 / -1' }}>
+            <div className="grid-col-span">
               <label>Notes</label>
-              <textarea value={edit.notes ?? ''} onChange={e => setEdit({ ...edit, notes: e.target.value })}/>
+              <textarea aria-label="Edit notes" value={edit.notes ?? ''} onChange={e => setEdit({ ...edit, notes: e.target.value })}/>
             </div>
           </div>
 
@@ -722,7 +722,7 @@ export default function AdminSchedule() {
 
       {/* Assign panel */}
       {assignShift && (
-        <div id="assign-panel" className="card mt-lg" style={{ padding: 16 }}>
+  <div id="assign-panel" className="card mt-lg p-16">
           <div className="row between">
             <strong>
               Assign Employees — {assignShift.location_name || 'Shift'} ({fmt(assignShift.start_time)})
@@ -730,12 +730,12 @@ export default function AdminSchedule() {
             <button type="button" className="topbar-btn" onClick={() => setAssignShift(null)}>Close</button>
           </div>
 
-          <input className="mt-lg" placeholder="Search name or email…" value={search} onChange={e => setSearch(e.target.value)} />
+          <input aria-label="Search employees" className="mt-lg" placeholder="Search name or email…" value={search} onChange={e => setSearch(e.target.value)} />
 
-          <div className="mt-lg" style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(220px, 1fr))', gap:12 }}>
+          <div className="mt-lg grid-auto-fill-220">
             {filteredEmps.map(e => (
-              <label key={e.id} className="inline-check card" style={{ padding: 10 }}>
-                <input type="checkbox" checked={assignees.includes(e.id)} onChange={() => toggleEmp(e.id)} />
+              <label key={e.id} className="inline-check card p-10">
+                <input type="checkbox" aria-label={`Assign ${e.full_name || e.email || e.id}`} checked={assignees.includes(e.id)} onChange={() => toggleEmp(e.id)} />
                 <span>{e.full_name || e.email || e.id.slice(0,8)}</span>
               </label>
             ))}
