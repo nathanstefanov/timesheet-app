@@ -2,7 +2,6 @@
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { supabase } from '../lib/supabaseClient';
-import { setOptions, importLibrary } from '@googlemaps/js-api-loader';
 
 type Emp = { id: string; full_name?: string | null; email?: string | null };
 
@@ -20,13 +19,43 @@ type SRow = {
   notes?: string | null;
 };
 
-// ---------- Small utilities ----------
+// ---- Google Maps loader (script tag; no @googlemaps/js-api-loader needed) ----
+declare global {
+  interface Window {
+    google?: any;
+  }
+}
+
+const loadGoogleMaps = (() => {
+  let promise: Promise<any> | null = null;
+  return () => {
+    if (typeof window === 'undefined') return Promise.resolve(null);
+    if (window.google?.maps) return Promise.resolve(window.google.maps);
+
+    if (!promise) {
+      const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
+      if (!key) {
+        return Promise.reject(new Error('Missing NEXT_PUBLIC_GOOGLE_MAPS_API_KEY'));
+      }
+      promise = new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = `https://maps.googleapis.com/maps/api/js?key=${key}&libraries=places&v=weekly`;
+        s.async = true;
+        s.onload = () => resolve(window.google.maps);
+        s.onerror = () => reject(new Error('Failed to load Google Maps JS API'));
+        document.head.appendChild(s);
+      });
+    }
+    return promise;
+  };
+})();
+
+// ---------- Small time utilities ----------
 const toLocalInput = (d: Date) =>
   new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
 
 const combineLocalDateTime = (date: string, time: string | undefined) => {
   // date: "YYYY-MM-DD", time: "HH:MM"
-  // If time missing, default to 09:00
   const t = time && time.length >= 5 ? time : '09:00';
   return `${date}T${t}`;
 };
@@ -49,51 +78,38 @@ function LocationPicker({
   onSelect: (payload: { name: string; address: string }) => void;
 }) {
   const inputRef = useRef<HTMLInputElement | null>(null);
-  const acRef = useRef<any>(null);
   const [loaded, setLoaded] = useState(false);
-  const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
 
   useEffect(() => {
-    let isMounted = true;
-    if (!key) return;
-    // New loader API: set options and import the 'places' library
-    // NOTE: the option name expected by the types is `key`
-    setOptions({ key });
-    importLibrary('places')
-      .then(() => {
-        if (!isMounted || !inputRef.current) return;
-        const g = (window as any).google;
-        if (!g?.maps?.places) {
-          setLoaded(false);
-          return;
-        }
-        const ac = new g.maps.places.Autocomplete(inputRef.current, {
-          fields: ['name', 'formatted_address', 'address_components', 'geometry'],
+    let listener: any = null;
+    (async () => {
+      try {
+        const maps = await loadGoogleMaps();
+        if (!maps || !inputRef.current) return;
+
+        const ac = new window.google.maps.places.Autocomplete(inputRef.current, {
+          fields: ['name', 'formatted_address', 'geometry'],
           types: ['establishment', 'geocode'],
         });
-        acRef.current = ac;
-        ac.addListener('place_changed', () => {
-          const place = ac.getPlace();
-          const name = place?.name || '';
-          const addr = place?.formatted_address || '';
-          if (name || addr) onSelect({ name, address: addr });
+
+        listener = ac.addListener('place_changed', () => {
+          const place = ac.getPlace?.() || {};
+          const name = place.name || '';
+          const formatted = place.formatted_address || '';
+          if (name || formatted) onSelect({ name, address: formatted });
         });
+
         setLoaded(true);
-      })
-      .catch(() => {
+      } catch {
+        // If Maps fails to load, user can still type manually.
         setLoaded(false);
-      });
+      }
+    })();
+
     return () => {
-      isMounted = false;
-      // cleanup autocomplete listeners if created
-      try {
-        const g = (window as any).google;
-        if (acRef.current && g?.maps?.event?.clearInstanceListeners) {
-          g.maps.event.clearInstanceListeners(acRef.current);
-        }
-      } catch {}
+      if (listener && listener.remove) listener.remove();
     };
-  }, [key]);
+  }, []);
 
   return (
     <div style={{ display: 'grid', gap: 8 }}>
@@ -109,18 +125,12 @@ function LocationPicker({
           : 'Loading places… (requires valid Google Maps API key)'}
       </div>
 
-      <div
-        className="row wrap"
-        style={{
-          gap: 12,
-          gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)',
-        }}
-      >
-        <div style={{ flex: 1 }}>
+      <div className="row wrap" style={{ gap: 12 }}>
+        <div style={{ flex: 1, minWidth: 220 }}>
           <label>Location Name</label>
           <input value={valueName} readOnly />
         </div>
-        <div style={{ flex: 1 }}>
+        <div style={{ flex: 1, minWidth: 220 }}>
           <label>Address</label>
           <input value={valueAddr} readOnly />
         </div>
@@ -161,8 +171,8 @@ export default function AdminSchedule() {
     notes: string;
   }>(() => {
     const now = new Date();
-    const defaultDate = toLocalInput(now).slice(0, 10);     // YYYY-MM-DD
-    const defaultTime = toLocalInput(now).slice(11, 16);    // HH:MM
+    const defaultDate = toLocalInput(now).slice(0, 10);
+    const defaultTime = toLocalInput(now).slice(11, 16);
     return {
       start_date: defaultDate,
       start_time: defaultTime,
@@ -291,7 +301,6 @@ export default function AdminSchedule() {
   // ---------- Actions ----------
   function validateForm() {
     if (!form.start_date) return 'Start date is required.';
-    // If explicit end, both end fields must be present
     if (!form.use_duration) {
       if (!form.end_date || !form.end_time) return 'End date and time are required.';
       const startLocal = combineLocalDateTime(form.start_date, form.start_time);
