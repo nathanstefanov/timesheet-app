@@ -34,34 +34,46 @@ const addHoursToLocalInput = (localDateTime: string, hours: number) => {
   return toLocalInput(d).slice(0, 16);
 };
 
-// ---- Google Maps loader (script tag; no @googlemaps/js-api-loader) ----
+// ---- Google Maps loader (uses @googlemaps/js-api-loader for deterministic loading) ----
 declare global { interface Window { google?: any } }
 
 const loadGoogleMaps = (() => {
   let promise: Promise<any> | null = null;
 
-  return () => {
+  return async () => {
     if (typeof window === 'undefined') return Promise.resolve(null);
-    if (window.google?.maps?.places) return Promise.resolve(window.google.maps);
+    if (window.google?.maps) return Promise.resolve(window.google.maps);
 
     if (!promise) {
       const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
       if (!key) return Promise.reject(new Error('Missing NEXT_PUBLIC_GOOGLE_MAPS_API_KEY'));
 
-      promise = new Promise((resolve, reject) => {
-        const id = 'gmaps-js';
-        if (document.getElementById(id)) return resolve(window.google?.maps);
+      promise = (async () => {
+        try {
+          // dynamic import so SSR doesn't load the package
+          const mod = await import('@googlemaps/js-api-loader');
+          const Loader = (mod as any).Loader ?? (mod as any).default?.Loader ?? (mod as any).default;
+          if (!Loader) throw new Error('Could not load @googlemaps/js-api-loader');
 
-        const s = document.createElement('script');
-        s.id = id;
-        s.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(
-          key
-        )}&libraries=places&v=weekly&loading=async`;
-        s.async = true;
-        s.onerror = () => reject(new Error('Failed to load Google Maps JS API'));
-        s.onload = () => resolve(window.google?.maps);
-        document.head.appendChild(s);
-      });
+          const loader = new Loader({ apiKey: key, libraries: ['places'], version: 'weekly' });
+          await loader.load();
+          return window.google?.maps;
+        } catch (err) {
+          // Fall back to script tag as a last resort
+          const id = 'gmaps-js';
+          if (document.getElementById(id)) return window.google?.maps;
+          const s = document.createElement('script');
+          s.id = id;
+          s.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&libraries=places&v=weekly`;
+          s.async = true;
+          await new Promise<void>((resolve, reject) => {
+            s.onerror = () => reject(new Error('Failed to load Google Maps JS API'));
+            s.onload = () => resolve();
+            document.head.appendChild(s);
+          });
+          return window.google?.maps;
+        }
+      })();
     }
     return promise;
   };
