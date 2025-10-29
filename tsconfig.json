@@ -13,9 +13,12 @@
     "isolatedModules": true,
     "jsx": "preserve",
     "incremental": true,
-    "paths": {
-      "@/lib/supabaseClient@/*": ["./*"]
-    }
+
+    // ⬇️ Add this
+    "types": ["google.maps", "node"],
+
+    // ⬇️ Remove the accidental alias (it was incorrect)
+    "paths": {}
   },
   "include": ["next-env.d.ts", "**/*.ts", "**/*.tsx"],
   "exclude": ["node_modules"]

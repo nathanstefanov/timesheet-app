@@ -1,4 +1,5 @@
 // pages/_app.tsx
+import '../styles/tables.css';
 import type { AppProps } from 'next/app';
 import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
@@ -11,7 +12,7 @@ type Profile = { id: string; full_name?: string | null; role: 'employee' | 'admi
 export default function App({ Component, pageProps }: AppProps) {
   const router = useRouter();
   const [profile, setProfile] = useState<Profile | null>(null);
-  const [checking, setChecking] = useState(true); // gate UI + redirects until initial session resolves
+  const [checking, setChecking] = useState(true);
   const [err, setErr] = useState<string | null>(null);
 
   const mounted = useRef(false);
@@ -22,7 +23,8 @@ export default function App({ Component, pageProps }: AppProps) {
       .from('profiles')
       .select('id, full_name, role')
       .eq('id', userId)
-      .maybeSingle(); // ✅ doesn't throw if RLS/session is still warming up
+      .maybeSingle();
+
     if (error) {
       setErr(error.message);
       setProfile(null);
@@ -50,17 +52,15 @@ export default function App({ Component, pageProps }: AppProps) {
   useEffect(() => {
     if (mounted.current) return;
     mounted.current = true;
-
     let alive = true;
 
     (async () => {
       const { data } = await supabase.auth.getSession();
       if (!alive) return;
       handleSession(data?.session ?? null);
-      setChecking(false); // ✅ initial session resolved
+      setChecking(false);
     })();
 
-    // React to all session-changing events (refreshes included)
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       if (!alive) return;
       if (
@@ -101,9 +101,19 @@ export default function App({ Component, pageProps }: AppProps) {
           {/* While checking, don't render nav to avoid flicker */}
           {!checking && profile && (
             <nav className="nav">
+              {/* Everyone */}
               <Link href="/dashboard" className="nav-link">Dashboard</Link>
               <Link href="/new-shift" className="nav-link">Log Shift</Link>
-              {profile.role === 'admin' && <Link href="/admin" className="nav-link">Admin</Link>}
+              <Link href="/me/schedule" className="nav-link">My Schedule</Link>
+
+              {/* Admin-only */}
+              {profile.role === 'admin' && (
+                <>
+                  <Link href="/admin" className="nav-link">Admin Dashboard</Link>
+                  <Link href="/admin-schedule" className="nav-link">Schedule</Link>
+                </>
+              )}
+
               <button className="signout" onClick={handleSignOut}>Sign out</button>
             </nav>
           )}
