@@ -18,26 +18,6 @@
   min-width: 120px;
   height: 56px;
 }
-.upcoming-table-assigned-badge-wrap {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  margin: 0 auto;
-  background: #dcfce7;
-  color: #065f46;
-  border: 1px solid #bbf7d0;
-  font-weight: 700;
-  font-size: 14px;
-  padding: 4px 10px;
-  border-radius: 8px;
-  white-space: pre-line;
-  word-break: break-word;
-  min-width: 96px;
-  max-width: 220px;
-  line-height: 1.5;
-  height: 36px;
-}
 .upcoming-table-actions-vert {
   display: flex;
   flex-direction: column;
@@ -733,7 +713,7 @@ button{ font: inherit; }
    Topbar (centered on mobile, inline on desktop)
 ====================================================== */
 .topbar{
-  position: sticky; top:0; z-index:20; background:var(--card);
+  position:sticky; top:0; z-index:20; background:var(--card);
   border-bottom:1px solid #eaecef; padding-top: env(safe-area-inset-top);
 }
 .shell{
@@ -744,7 +724,7 @@ button{ font: inherit; }
 .logo{ height:44px; width:auto; object-fit:contain; }
 .brand{ font-weight:800; color:#111827; letter-spacing:.2px; }
 
-.nav{ display:flex; gap:8px; flex-wrap:wrap; align-items:center; }
+.nav{ display:sticky; gap:8px; flex-wrap:wrap; align-items:center; }
 .nav-link{
   padding:8px 12px; border-radius:10px; color:#1f2937;
   border:1px solid transparent; transition: background .15s, border-color .15s, color .15s;
@@ -1150,7 +1130,7 @@ textarea{ min-height:80px; resize:vertical; }
 .upcoming-table .badge-assigned,
 .upcoming-table-assigned-badge,
 .upcoming-table-assigned-badge-wrap {
-  background: #f3f4f6 !important;     /* neutral gray chip */
+  background: #ffffff !important;     /* neutral gray chip */
   border: 1px solid #e5e7eb !important;
   color: var(--ink) !important;
   background-image: none !important;  /* remove any gradients */
@@ -1167,4 +1147,532 @@ textarea{ min-height:80px; resize:vertical; }
 /* Slightly softer hover so compact rows don’t feel crowded */
 .upcoming-table tbody tr:hover {
   background: #f9fafb !important;
+}
+/* ---------- Table shell ---------- */
+.table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.table.table--admin.upcoming-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed; /* consistent column widths */
+  background: #fff;
+}
+
+/* Row striping (already applied via row-alt, but normalize anyway) */
+.table--striped tbody tr:nth-child(2n) {
+  background: #fafafa;
+}
+
+/* ---------- Cells & headers ---------- */
+.upcoming-table th,
+.upcoming-table td {
+  padding: 12px 14px;
+  vertical-align: middle;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.35;
+  border-bottom: 1px solid #eee;
+}
+
+.upcoming-table th {
+  font-weight: 600;
+  font-size: 14px;
+  color: #222;
+  background: #f7f7f7;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+/* Tighten “Notes” wrapping but keep clean lines */
+.upcoming-table .upcoming-table-notes,
+.upcoming-table .cell-notes {
+  white-space: normal;
+  line-height: 1.4;
+}
+
+/* ---------- Column alignment (desktop) ---------- */
+.upcoming-table th:nth-child(1),
+.upcoming-table td:nth-child(1) { /* Start */
+  width: 170px;
+}
+.upcoming-table th:nth-child(2),
+.upcoming-table td:nth-child(2) { /* End */
+  width: 170px;
+}
+.upcoming-table th:nth-child(3),
+.upcoming-table td:nth-child(3) { /* Job */
+  width: 120px;
+}
+.upcoming-table th:nth-child(4),
+.upcoming-table td:nth-child(4) { /* Location */
+  width: 180px;
+}
+.upcoming-table th:nth-child(5),
+.upcoming-table td:nth-child(5) { /* Address */
+  width: 260px;
+}
+.upcoming-table th:nth-child(6),
+.upcoming-table td:nth-child(6) { /* Assigned */
+  width: 240px;
+}
+.upcoming-table th:nth-child(7),
+.upcoming-table td:nth-child(7) { /* Notes */
+  width: 280px;
+}
+.upcoming-table th:nth-child(8),
+.upcoming-table td:nth-child(8) { /* Actions */
+  width: 120px;
+  text-align: right;
+}
+
+/* Ensure the actions column is always right-aligned */
+.upcoming-table-td-actions {
+  text-align: right !important;
+}
+
+/* Middle/top helpers (normalize) */
+.upcoming-table-td-middle { vertical-align: middle !important; }
+.upcoming-table-td-top { vertical-align: top !important; }
+
+/* ---------- Badges & pills ---------- */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 12px;
+  line-height: 1.2;
+  border: 1px solid transparent;
+  max-width: 100%;
+}
+
+.badge-job {
+  background: #eef2ff;
+  border-color: #e0e7ff;
+  text-transform: capitalize;
+}
+
+.badge-assigned {
+  background: #dcfce7;
+  border-color: #bbf7d0;
+}
+
+.badge-unassigned {
+  background: #fee2e2;
+  border-color: #fecaca;
+}
+
+/* Keep the assigned list readable */
+.upcoming-table-assigned-badge-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 28px;
+  min-width: 96px;
+  max-width: 100%;
+  padding: 6px 10px;
+  white-space: normal;       /* allow wrap */
+  word-break: break-word;
+}
+
+/* Action buttons vertical stack stays tight but consistent */
+.upcoming-table-actions-vert {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-end;
+  padding-right: 10px;
+}
+
+/* ---------- Responsive (mobile ≤ 768px) ---------- */
+@media (max-width: 768px) {
+  /* Stack rows as cards while preserving alignment via data-labels */
+  .upcoming-table thead {
+    display: none;
+  }
+  .upcoming-table,
+  .upcoming-table tbody,
+  .upcoming-table tr,
+  .upcoming-table td {
+    display: block;
+    width: 100%;
+  }
+  .upcoming-table tr {
+    background: #fff;
+    border: 1px solid #eee;
+    border-radius: 12px;
+    margin: 10px 0;
+    padding: 8px 10px;
+  }
+  .upcoming-table td {
+    border: 0;
+    padding: 8px 0;
+    white-space: normal;
+  }
+  .upcoming-table td::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: #6b7280; /* muted */
+    margin-bottom: 4px;
+    text-transform: none;
+    letter-spacing: 0;
+  }
+  /* Make badges full-width when needed */
+  .upcoming-table-assigned-badge-wrap,
+  .badge-unassigned {
+    width: 100%;
+    justify-content: center;
+  }
+  /* Actions row pinned to bottom of card */
+  .upcoming-table-td-actions {
+    margin-top: 6px;
+    text-align: right !important;
+  }
+  .upcoming-table-actions-vert {
+    flex-direction: row;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  /* Looser widths (let content breathe on small screens) */
+  .upcoming-table td { width: 100% !important; }
+}
+
+/* ---------- Misc polish ---------- */
+.upcoming-table-header {
+  padding: 10px 0 0;
+}
+
+.pill {
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  padding: 4px 8px;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 999px;
+  font-size: 12px;
+  line-height: 1;
+}
+
+.pill__num {
+  font-weight: 700;
+}
+/* ===== Compact desktop: no horizontal scroll ===== */
+@media (min-width: 1440px) {
+  /* Let content wrap instead of forcing a scroll */
+  .table-wrap {
+    overflow-x: visible; /* disable the horizontal scroller on desktop */
+  }
+
+  .table.table--admin.upcoming-table {
+    table-layout: fixed;     /* keep columns aligned across rows */
+    width: auto;
+  }
+
+  /* Allow wrapping in text-heavy columns */
+  .upcoming-table th,
+  .upcoming-table td {
+    white-space: normal;      /* wrap lines when needed */
+    word-break: break-word;   /* break long chunks like addresses/emails */
+  }
+
+  /* Tighter vertical rhythm so wrapped rows still feel compact */
+  .upcoming-table th,
+  .upcoming-table td {
+    padding: 10px 12px;
+    line-height: 1.3;
+  }
+
+  /* Percentage widths that fit inside 100% total */
+  .upcoming-table th:nth-child(1),
+  .upcoming-table td:nth-child(1) { /* Start */
+    width: 13%;
+  }
+  .upcoming-table th:nth-child(2),
+  .upcoming-table td:nth-child(2) { /* End */
+    width: 12%;
+  }
+  .upcoming-table th:nth-child(3),
+  .upcoming-table td:nth-child(3) { /* Job */
+    width: 10%;
+  }
+  .upcoming-table th:nth-child(4),
+  .upcoming-table td:nth-child(4) { /* Location */
+    width: 13%;
+  }
+  .upcoming-table th:nth-child(5),
+  .upcoming-table td:nth-child(5) { /* Address (wraps) */
+    width: 20%;
+  }
+  .upcoming-table th:nth-child(6),
+  .upcoming-table td:nth-child(6) { /* Assigned (wraps) */
+    width: 16%;
+  }
+  .upcoming-table th:nth-child(7),
+  .upcoming-table td:nth-child(7) { /* Notes (wraps) */
+    width: 11%;
+  }
+  .upcoming-table th:nth-child(8),
+  .upcoming-table td:nth-child(8) { /* Actions */
+    width: 5%;
+    text-align: right;
+  }
+
+  /* Make the “Assigned” badge & Notes behave nicely when wrapping */
+  .upcoming-table-assigned-badge-wrap {
+    display: inline-flex;
+    padding: 4px 8px;
+    min-width: 0;
+  }
+  .upcoming-table .upcoming-table-notes,
+  .upcoming-table .cell-notes {
+    display: -webkit-box;
+    -webkit-line-clamp: 4; /* clamp to ~4 lines to keep rows tidy */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* Fit the action buttons inside 5% without cramping */
+  .upcoming-table-actions-vert {
+    gap: 4px;
+  }
+  .upcoming-table-td-actions .btn-edit,
+  .upcoming-table-td-actions .btn-delete {
+    font-size: 12px;
+    padding: 4px 8px;
+  }
+}
+/* ==== FIX DESKTOP WRAPS (append-only) ==== */
+
+/* Keep table visible and fixed layout */
+.upcoming-table-card { overflow: visible !important; }
+.table-wrap { overflow-x: visible !important; }
+.table.table--admin.upcoming-table { table-layout: fixed !important; width: 100% !important; }
+
+/* Let the text-heavy columns wrap; keep structural columns on one line */
+@media (min-width: 1024px) {
+  /* 1) Never wrap these columns */
+  .upcoming-table th:nth-child(1),
+  .upcoming-table td:nth-child(1), /* Start */
+  .upcoming-table th:nth-child(2),
+  .upcoming-table td:nth-child(2), /* End */
+  .upcoming-table th:nth-child(3),
+  .upcoming-table td:nth-child(3), /* Job */
+  .upcoming-table th:nth-child(4),
+  .upcoming-table td:nth-child(4), /* Location */
+  .upcoming-table th:nth-child(8),
+  .upcoming-table td:nth-child(8)  /* Actions */
+  { white-space: nowrap !important; word-break: normal !important; overflow: hidden !important; text-overflow: ellipsis !important; }
+
+  /* 2) Allow wrapping for Address / Assigned / Notes */
+  .upcoming-table th:nth-child(5),
+  .upcoming-table td:nth-child(5),
+  .upcoming-table th:nth-child(6),
+  .upcoming-table td:nth-child(6),
+  .upcoming-table th:nth-child(7),
+  .upcoming-table td:nth-child(7)
+  { white-space: normal !important; word-break: break-word !important; }
+
+  /* 3) Give Job/Actions a bit more elbow room so badges/buttons don't hard-wrap */
+  .upcoming-table th:nth-child(3),
+  .upcoming-table td:nth-child(3) { width: 11% !important; } /* was 10 */
+  .upcoming-table th:nth-child(8),
+  .upcoming-table td:nth-child(8) { width: 7%  !important; } /* was 5 */
+
+  /* Rebalance to keep total at ~100% */
+  .upcoming-table th:nth-child(5),
+  .upcoming-table td:nth-child(5) { width: 19% !important; } /* Address -1% */
+  .upcoming-table th:nth-child(7),
+  .upcoming-table td:nth-child(7) { width: 8%  !important; } /* Notes -1% */
+
+  /* 4) Stop “Breakdown” splitting inside the badge */
+  .upcoming-table .badge-job { white-space: nowrap !important; word-break: normal !important; min-width: 92px; }
+
+  /* 5) Make Actions fit inside its column without pushing layout */
+  .upcoming-table-td-actions { text-align: right !important; }
+  .upcoming-table-actions-vert { gap: 6px !important; }
+  .upcoming-table-td-actions .btn-edit,
+  .upcoming-table-td-actions .btn-delete {
+    height: 32px !important;
+    min-width: 72px !important;
+    padding: 0 10px !important;
+    font-size: 13px !important;
+  }
+}
+
+/* Assigned chip can wrap lines but stay compact & centered */
+.upcoming-table-assigned-badge-wrap {
+  white-space: normal !important;
+  word-break: break-word !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  margin: 0 auto !important;
+}
+
+/* Slightly tighter rows so multi-line cells don't look bulky */
+.upcoming-table th,
+.upcoming-table td { line-height: 1.3 !important; padding: 10px 12px !important; }
+/* === FIX: start/end clipping + actions truncation (append-only) === */
+
+/* 1) Let Start / End wrap to 2 lines on desktop (date, then time) */
+@media (min-width: 1024px) {
+  .table.table--admin.upcoming-table td:nth-child(1),
+  .table.table--admin.upcoming-table th:nth-child(1), /* Start */
+  .table.table--admin.upcoming-table td:nth-child(2),
+  .table.table--admin.upcoming-table th:nth-child(2)  /* End */
+  {
+    white-space: normal !important;      /* allow wrapping at comma/space */
+    word-break: normal !important;
+    overflow: visible !important;
+    text-overflow: unset !important;
+  }
+}
+
+/* 2) Give Actions a touch more room so header doesn't show "Actio..." */
+@media (min-width: 1024px) {
+  .upcoming-table th:nth-child(8),
+  .upcoming-table td:nth-child(8) { width: 8% !important; }   /* was 5–7% somewhere */
+  /* Rebalance by shaving 1% each from these: */
+  .upcoming-table th:nth-child(5),
+  .upcoming-table td:nth-child(5) { width: 18% !important; }  /* Address -1% */
+  .upcoming-table th:nth-child(7),
+  .upcoming-table td:nth-child(7) { width: 7%  !important; }  /* Notes -1% */
+}
+
+/* 3) Keep Job badge from splitting (“Breakdown”) */
+@media (min-width: 1024px) {
+  .upcoming-table .badge-job {
+    white-space: nowrap !important;
+    word-break: normal !important;
+    min-width: 92px;
+  }
+}
+
+/* 4) Make sure Assigned chip wraps nicely without stretching rows */
+.upcoming-table-assigned-badge-wrap {
+  white-space: normal !important;
+  word-break: break-word !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  margin: 0 auto !important;
+}
+
+/* 5) Slightly tighter rhythm so multi-line Start/End look clean */
+.upcoming-table th,
+.upcoming-table td {
+  line-height: 1.3 !important;
+  padding-top: 10px !important;
+  padding-bottom: 10px !important;
+}
+/* === Add right-side breathing room for Actions column === */
+.upcoming-table-td-actions {
+  padding-right: 16px !important; /* adds visual gap between buttons and table edge */
+}
+
+.upcoming-table th:nth-child(8) {
+  padding-right: 16px !important; /* keep header aligned with the body */
+}
+.upcoming-table-td-actions .upcoming-table-actions-vert {
+  align-items: flex-end !important;
+  margin-right: 6px; /* tiny offset for perfect optical balance */
+}
+/* === Center the "Assigned" column content perfectly (dash + names) === */
+
+/* Make the 6th column (Assigned) align middle + center */
+.upcoming-table td:nth-child(6) {
+  text-align: center !important;
+  vertical-align: middle !important;
+}
+
+/* Unassigned dash chip — keep it centered and same height as other badges */
+.upcoming-table td:nth-child(6) .badge-unassigned {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 36px !important;
+  min-width: 64px !important;
+  padding: 6px 10px !important;
+  line-height: 1.2 !important;
+  margin: 0 auto !important;
+}
+
+/* Assigned multi-name chip — same centering/tidy wrapping */
+.upcoming-table td:nth-child(6) .upcoming-table-assigned-badge-wrap,
+.upcoming-table td:nth-child(6) .badge-assigned {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 36px !important;
+  height: auto !important;
+  line-height: 1.2 !important;
+  margin: 0 auto !important;
+  white-space: normal !important;
+  word-break: break-word !important;
+  max-width: 100% !important;
+}
+/* === MOBILE: header should scroll with the page (not fixed/sticky) === */
+@media (max-width: 700px) {
+  /* kill any fixed/sticky set earlier with !important */
+  html body .topbar,
+  html body header.topbar,
+  html body [class*="topbar"] {
+    position: static !important;   /* not fixed, not sticky */
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    width: auto !important;
+    box-shadow: none !important;
+    border-bottom: 1px solid var(--border, #e5e7eb) !important; /* keep the divider */
+    padding-top: 0 !important;     /* no safe-area padding inside the bar */
+  }
+
+  /* remove the offset we added for fixed headers */
+  body {
+    padding-top: 0 !important;
+  }
+}
+/* === Fix mobile overflow of form inputs inside the card === */
+
+/* 1) Let grid items shrink so they don't spill past the card edges */
+.form-card .grid-auto-fit-160 > * {
+  min-width: 0 !important;
+}
+
+/* If you have other grid wrappers in the form, include them too */
+.form-card .grid-two-cols > *,
+.form-card .grid-auto-fill-220 > * {
+  min-width: 0 !important;
+}
+
+/* 2) Ensure controls never exceed the container width (iOS-safe) */
+.form-card input[type="text"],
+.form-card input[type="email"],
+.form-card input[type="time"],
+.form-card input[type="date"],
+.form-card select,
+.form-card textarea {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  /* Safari/iOS occasionally needs this to resolve rounding issues */
+  width: -webkit-fill-available;
+}
+
+/* 3) (Optional) prevent any tiny sub-pixel bleed on rounded cards */
+.form-card {
+  overflow: hidden;
 }
