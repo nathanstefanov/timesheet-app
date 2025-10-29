@@ -547,7 +547,7 @@ export default function Admin() {
         </div>
 
         <div className="table-wrap">
-          <table className="table table--center table--compact table--admin table--stack center">
+          <table className="table table--center table--compact table--admin center">
             {/* fixed, sensible column widths */}
             <colgroup>
               <col style={{ width: '18rem' }} /> {/* Employee */}
