@@ -91,14 +91,44 @@ function LocationPicker({
         await loadGoogleMaps();
         if (cancelled) return;
 
-        // Autocomplete predictor
-        svcRef.current = new window.google.maps.places.AutocompleteService();
-
-        // Place Details (needs a dummy div for constructor)
-        const dummy = document.createElement('div');
-        detailsSvcRef.current = new window.google.maps.places.PlacesService(dummy);
-
-        setReady(true);
+        // Initialize classical Places services used by this picker (AutocompleteService + PlacesService).
+        // Prefer the already-attached `window.google.maps.places` namespace; if it's not present
+        // but the new loader's importLibrary is available, try to obtain constructors from it.
+        if ((window as any).google?.maps?.places) {
+          svcRef.current = new (window as any).google.maps.places.AutocompleteService();
+          const dummy = document.createElement('div');
+          detailsSvcRef.current = new (window as any).google.maps.places.PlacesService(dummy);
+          setReady(true);
+        } else if ((window as any).google?.maps?.importLibrary) {
+          try {
+            const placesModule = await (window as any).google.maps.importLibrary('places');
+            const AutocompleteServiceCtor = placesModule?.AutocompleteService ?? (window as any).google?.maps?.places?.AutocompleteService;
+            const PlacesServiceCtor = placesModule?.PlacesService ?? (window as any).google?.maps?.places?.PlacesService;
+            if (AutocompleteServiceCtor && PlacesServiceCtor) {
+              svcRef.current = new AutocompleteServiceCtor();
+              const dummy = document.createElement('div');
+              detailsSvcRef.current = new PlacesServiceCtor(dummy);
+              setReady(true);
+            } else {
+              // importLibrary didn't provide constructors — fall back to manual entry mode with a helpful error
+              const msg = 'Google Maps Places API constructors unavailable via importLibrary; falling back to manual location entry. Check API key, enabled Places API, and that the loader exposes the places library.';
+              console.warn(msg, { google: !!(window as any).google, importLibrary: !!(window as any).google?.maps?.importLibrary });
+              setErrorText(msg);
+              setReady(false);
+            }
+          } catch (ex: any) {
+            const msg = `Failed to import Places via importLibrary: ${ex?.message || String(ex)}; falling back to manual location entry.`;
+            console.warn(msg, ex);
+            setErrorText(msg);
+            setReady(false);
+          }
+        } else {
+          // Places API not available on the page (neither global nor importLibrary)
+          const msg = 'Google Maps Places API not available; falling back to manual location entry. Ensure NEXT_PUBLIC_GOOGLE_MAPS_API_KEY is set, the Places API is enabled in Google Cloud, billing is active, and the script is loaded with &libraries=places.';
+          console.warn(msg, { google: !!(window as any).google, importLibrary: !!(window as any).google?.maps?.importLibrary });
+          setErrorText(msg);
+          setReady(false);
+        }
       } catch (err: any) {
         setErrorText(
           err?.message ||
