@@ -1,6 +1,7 @@
 // pages/admin-schedule.tsx
 import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState } from 'react';
+import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
 
 type Emp = { id: string; full_name?: string | null; email?: string | null };
@@ -237,7 +238,52 @@ function LocationPicker({
     </div>
   );
 }
+
 export default function AdminSchedule() {
+  const router = useRouter();
+  // ---------- Admin access gate ----------
+  const [authLoading, setAuthLoading] = useState(true);
+  const [allowed, setAllowed] = useState(false);
+
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.auth.getSession();
+      const user = data.session?.user;
+
+      if (!user) {
+        router.replace('/login');
+        return;
+      }
+
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+
+      if (error || !profile) {
+        router.replace('/login');
+        return;
+      }
+
+      if (profile.role === 'admin') {
+        setAllowed(true);
+      } else {
+        router.replace('/');
+        return;
+      }
+
+      setAuthLoading(false);
+    })();
+  }, [router]);
+
+  if (authLoading) {
+    return <div className="page"><p>Checking access…</p></div>;
+  }
+  if (!allowed) {
+    return null;
+  }
+
   // ---------- Auth ----------
   const [adminId, setAdminId] = useState<string | null>(null);
   useEffect(() => {
