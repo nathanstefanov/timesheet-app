@@ -51,16 +51,17 @@ const loadGoogleMaps = (() => {
 
       promise = (async () => {
         try {
-          // dynamic import so SSR doesn't load the package
           const mod = await import('@googlemaps/js-api-loader');
-          const Loader = (mod as any).Loader ?? (mod as any).default?.Loader ?? (mod as any).default;
+          const Loader =
+            (mod as any).Loader ??
+            (mod as any).default?.Loader ??
+            (mod as any).default;
           if (!Loader) throw new Error('Could not load @googlemaps/js-api-loader');
 
           const loader = new Loader({ apiKey: key, libraries: ['places'], version: 'weekly' });
           await loader.load();
           return window.google?.maps;
         } catch (err) {
-          // Fall back to script tag as a last resort
           const id = 'gmaps-js';
           if (document.getElementById(id)) return window.google?.maps;
           const s = document.createElement('script');
@@ -104,9 +105,6 @@ function LocationPicker({
         await loadGoogleMaps();
         if (cancelled) return;
 
-        // Initialize classical Places services used by this picker (AutocompleteService + PlacesService).
-        // Prefer the already-attached `window.google.maps.places` namespace; if it's not present
-        // but the new loader's importLibrary is available, try to obtain constructors from it.
         if ((window as any).google?.maps?.places) {
           svcRef.current = new (window as any).google.maps.places.AutocompleteService();
           const dummy = document.createElement('div');
@@ -116,11 +114,9 @@ function LocationPicker({
           try {
             const placesModule = await (window as any).google.maps.importLibrary('places');
             const AutocompleteServiceCtor =
-              (placesModule as any)?.AutocompleteService ??
-              (window as any).google?.maps?.places?.AutocompleteService;
+              (placesModule as any)?.AutocompleteService ?? (window as any).google?.maps?.places?.AutocompleteService;
             const PlacesServiceCtor =
-              (placesModule as any)?.PlacesService ??
-              (window as any).google?.maps?.places?.PlacesService;
+              (placesModule as any)?.PlacesService ?? (window as any).google?.maps?.places?.PlacesService;
             if (AutocompleteServiceCtor && PlacesServiceCtor) {
               svcRef.current = new AutocompleteServiceCtor();
               const dummy = document.createElement('div');
@@ -159,17 +155,12 @@ function LocationPicker({
         );
       }
     })();
-    return () => {
-      cancelled = true;
-    };
+    return () => { cancelled = true; };
   }, []);
 
   // Throttled fetch for predictions
   useEffect(() => {
-    if (!ready || !q.trim()) {
-      setPreds([]);
-      return;
-    }
+    if (!ready || !q.trim()) { setPreds([]); return; }
     const handle = setTimeout(() => {
       svcRef.current.getPlacePredictions(
         {
@@ -183,9 +174,7 @@ function LocationPicker({
             return;
           }
           const ilPreds = res
-            .filter(
-              (p: any) => typeof p.description === 'string' && p.description.includes(', IL')
-            )
+            .filter((p: any) => typeof p.description === 'string' && p.description.includes(', IL'))
             .map((p: any) => ({ description: p.description, place_id: p.place_id }));
           setPreds(ilPreds);
         }
@@ -196,10 +185,7 @@ function LocationPicker({
 
   function pickPlace(placeId: string) {
     detailsSvcRef.current.getDetails(
-      {
-        placeId,
-        fields: ['name', 'formatted_address'],
-      },
+      { placeId, fields: ['name', 'formatted_address'] },
       (place: any, status: any) => {
         if (status !== window.google.maps.places.PlacesServiceStatus.OK || !place) return;
         const name = place.name || '';
@@ -253,10 +239,24 @@ function LocationPicker({
   );
 }
 
+// Small fallback UI that actively redirects and shows a link (prevents 404/blank)
+function RedirectToLogin({ to }: { to: string }) {
+  const router = useRouter();
+  useEffect(() => {
+    router.replace(to);
+  }, [router, to]);
+  return (
+    <div className="page">
+      <p>Redirecting to sign in…</p>
+      <p><a href={to}>Click here if you’re not redirected.</a></p>
+    </div>
+  );
+}
+
 export default function AdminSchedule() {
   const router = useRouter();
 
-  // ---------- Admin access + auth (declare hooks FIRST; do not early-return before all hooks are declared) ----------
+  // ---------- Admin access + auth ----------
   const [authLoading, setAuthLoading] = useState(true);
   const [allowed, setAllowed] = useState(false);
   const [adminId, setAdminId] = useState<string | null>(null);
@@ -320,8 +320,7 @@ export default function AdminSchedule() {
       if (!user) {
         setAllowed(false);
         setAuthLoading(false);
-        router.replace('/login');
-        return;
+        return; // render RedirectToLogin below
       }
 
       const { data: profile, error } = await supabase
@@ -333,7 +332,6 @@ export default function AdminSchedule() {
       if (error || !profile) {
         setAllowed(false);
         setAuthLoading(false);
-        router.replace('/login');
         return;
       }
 
@@ -341,8 +339,9 @@ export default function AdminSchedule() {
         setAllowed(true);
         setAdminId(user.id);
       } else {
-        setAllowed(false);
+        // Signed in but not admin -> push home immediately
         router.replace('/');
+        setAllowed(false);
       }
 
       setAuthLoading(false);
@@ -360,9 +359,7 @@ export default function AdminSchedule() {
   async function parseMaybeJson(r: Response) {
     const ct = r.headers.get('content-type') || '';
     if (ct.includes('application/json')) {
-      try {
-        return await r.json();
-      } catch {}
+      try { return await r.json(); } catch {}
     }
     const raw = await r.text();
     return { raw };
@@ -420,10 +417,7 @@ export default function AdminSchedule() {
     (async () => {
       if (!allowed) return;
       const ids = upcoming.map((r) => r.id);
-      if (ids.length === 0) {
-        setAssignedMap({});
-        return;
-      }
+      if (ids.length === 0) { setAssignedMap({}); return; }
       const { data, error } = await supabase
         .from('schedule_assignments')
         .select('schedule_shift_id, profiles:employee_id ( id, full_name, email )')
@@ -438,12 +432,11 @@ export default function AdminSchedule() {
       });
       setAssignedMap(map);
     })();
-  }, [allowed, upcoming.length, supabase]);
+  }, [allowed, upcoming.length]);
 
   // ---------- Actions ----------
   function validateForm() {
     if (!form.start_date) return 'Start date is required.';
-    // End is optional. If BOTH end_date and end_time are provided, validate ordering.
     if (form.end_date && form.end_time) {
       const startLocal = combineLocalDateTime(form.start_date, form.start_time);
       const endLocal = combineLocalDateTime(form.end_date, form.end_time);
@@ -612,7 +605,9 @@ export default function AdminSchedule() {
     );
   }
   if (!allowed) {
-    return null;
+    // Not signed in → hard redirect to login with return URL.
+    const back = encodeURIComponent('/admin-schedule');
+    return <RedirectToLogin to={`/login?redirect=${back}`} />;
   }
 
   return (
@@ -682,7 +677,7 @@ export default function AdminSchedule() {
             />
           </div>
 
-          {/* Job type pills */}
+          {/* Job type pills (active styling shows selection) */}
           <div className="mt-lg">
             <label>Job Type</label>
             <div className="row wrap gap-sm mt-6">

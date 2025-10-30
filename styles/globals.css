@@ -1676,3 +1676,92 @@ textarea{ min-height:80px; resize:vertical; }
 .form-card {
   overflow: hidden;
 }
+/* Pills container can wrap already; no change needed */
+
+/* Base pill */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border: 2px solid #e5e7eb;         /* gray-200 */
+  border-radius: 9999px;              /* full */
+  background: #ffffff;
+  color: #111827;                     /* gray-900 */
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease, box-shadow .15s ease, color .15s ease;
+  user-select: none;
+}
+
+.pill:hover {
+  border-color: #cbd5e1;              /* gray-300 */
+  box-shadow: 0 1px 2px rgba(0,0,0,.04);
+}
+
+/* Selected/active pill */
+.pill-active {
+  background: #7596dd;                /* gray-900 */
+  color: #ffffff;
+  border-color: #111827;
+  box-shadow: 0 2px 8px rgba(17,24,39,.15);
+}
+
+/* Focus-visible for keyboard users */
+.pill:focus-visible {
+  outline: 3px solid #93c5fd;         /* blue-300 */
+  outline-offset: 2px;
+}
+
+/* Label + checkmark */
+.pill__label {
+  font-size: 14px;
+  text-transform: capitalize;
+}
+
+/* Small check glyph that appears only when selected */
+.pill__check {
+  width: 16px;
+  height: 16px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 9999px;
+  border: 2px solid currentColor;
+  font-size: 12px;
+  line-height: 1;
+  transform: translateY(-1px);
+  opacity: 0;
+  transition: opacity .15s ease, background .15s ease, color .15s ease, border-color .15s ease;
+}
+
+/* Visible + inverted when active */
+.pill-active .pill__check {
+  opacity: 1;
+  background: #ffffff;
+  color: #111827;
+  border-color: #ffffff;
+}
+
+/* Optional: color accents per job type using data-attrs or class if you want later
+   e.g., .pill[data-jt="lights"].pill-active { background:#f59e0b; border-color:#f59e0b; } */
+/* base pill */
+.pill {
+  color: #000 !important;          /* text color */
+}
+
+/* the span inside */
+.pill .pill__label {
+  color: inherit !important;       /* use the button's color */
+}
+
+/* active/selected pill */
+.pill.pill-active {
+  color: #000 !important;          /* keep text black when selected */
+  /* optional: your existing bg/border can stay */
+}
+
+/* if your gray look is from reduced opacity somewhere */
+.pill, .pill .pill__label {
+  opacity: 1 !important;
+}
