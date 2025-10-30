@@ -5,9 +5,9 @@ import { supabase } from '../lib/supabaseClient';
 
 type Emp = { id: string; full_name?: string | null; email?: string | null };
 
-// Strong job-type union
-type JobType = 'setup' | 'Lights' | 'breakdown' | 'other';
-const JOB_TYPES: JobType[] = ['setup', 'Lights', 'breakdown', 'other'];
+// Strong job-type union (must match DB CHECK constraint: lowercase)
+type JobType = 'setup' | 'lights' | 'breakdown' | 'other';
+const JOB_TYPES: JobType[] = ['setup', 'lights', 'breakdown', 'other'];
 
 type SRow = {
   id: string;
@@ -414,7 +414,7 @@ export default function AdminSchedule() {
         end_time: endLocal ? new Date(endLocal).toISOString() : null,
         location_name: form.location_name || undefined,
         address: form.address || undefined,
-        job_type: form.job_type || undefined,
+        job_type: form.job_type ? (form.job_type as string).toLowerCase() as JobType : undefined,
         notes: form.notes || undefined,
         created_by: adminId,
       };
@@ -462,7 +462,7 @@ export default function AdminSchedule() {
         end_time: edit.end_time ?? null,
         location_name: edit.location_name ?? undefined,
         address: edit.address ?? undefined,
-        job_type: edit.job_type ?? undefined,
+        job_type: edit.job_type ? (edit.job_type as string).toLowerCase() as JobType : undefined,
         notes: edit.notes ?? undefined,
       };
       if (body.start_time && !body.start_time.endsWith?.('Z'))
@@ -607,7 +607,7 @@ export default function AdminSchedule() {
           </div>
 
           {/* Job type pills */}
-            <div className="mt-lg">
+          <div className="mt-lg">
             <label>Job Type</label>
             <div className="row wrap gap-sm mt-6">
               {JOB_TYPES.map(jt => (
@@ -705,7 +705,7 @@ export default function AdminSchedule() {
                     ? emps.map((e) => e.full_name || e.email || e.id.slice(0, 8)).join(', ')
                     : '—';
                   return (
-                     <tr key={r.id} className={i % 2 === 1 ? 'row-alt' : ''}>
+                    <tr key={r.id} className={i % 2 === 1 ? 'row-alt' : ''}>
                       <td data-label="Start" className="upcoming-table-td upcoming-table-td-middle">
                         <span className="upcoming-table-cell-main">{fmt(r.start_time)}</span>
                       </td>
@@ -784,9 +784,12 @@ export default function AdminSchedule() {
             </div>
             <div style={{ gridColumn: '1 / -1' }}>
               <label>Job Type</label>
-              <select value={edit.job_type ?? 'setup'} onChange={(e) => setEdit({ ...edit, job_type: e.target.value as JobType })}>
+              <select
+                value={edit.job_type ?? 'setup'}
+                onChange={(e) => setEdit({ ...edit, job_type: e.target.value as JobType })}
+              >
                 <option value="setup">Setup</option>
-                <option value="Lights">Lights</option>
+                <option value="lights">Lights</option>
                 <option value="breakdown">Breakdown</option>
                 <option value="other">Other</option>
               </select>
