@@ -115,17 +115,24 @@ function LocationPicker({
         } else if ((window as any).google?.maps?.importLibrary) {
           try {
             const placesModule = await (window as any).google.maps.importLibrary('places');
-            const AutocompleteServiceCtor = placesModule?.AutocompleteService ?? (window as any).google?.maps?.places?.AutocompleteService;
-            const PlacesServiceCtor = placesModule?.PlacesService ?? (window as any).google?.maps?.places?.PlacesService;
+            const AutocompleteServiceCtor =
+              (placesModule as any)?.AutocompleteService ??
+              (window as any).google?.maps?.places?.AutocompleteService;
+            const PlacesServiceCtor =
+              (placesModule as any)?.PlacesService ??
+              (window as any).google?.maps?.places?.PlacesService;
             if (AutocompleteServiceCtor && PlacesServiceCtor) {
               svcRef.current = new AutocompleteServiceCtor();
               const dummy = document.createElement('div');
               detailsSvcRef.current = new PlacesServiceCtor(dummy);
               setReady(true);
             } else {
-              // importLibrary didn't provide constructors — fall back to manual entry mode with a helpful error
-              const msg = 'Google Maps Places API constructors unavailable via importLibrary; falling back to manual location entry. Check API key, enabled Places API, and that the loader exposes the places library.';
-              console.warn(msg, { google: !!(window as any).google, importLibrary: !!(window as any).google?.maps?.importLibrary });
+              const msg =
+                'Google Maps Places API constructors unavailable via importLibrary; falling back to manual location entry. Check API key, enabled Places API, and that the loader exposes the places library.';
+              console.warn(msg, {
+                google: !!(window as any).google,
+                importLibrary: !!(window as any).google?.maps?.importLibrary,
+              });
               setErrorText(msg);
               setReady(false);
             }
@@ -136,9 +143,12 @@ function LocationPicker({
             setReady(false);
           }
         } else {
-          // Places API not available on the page (neither global nor importLibrary)
-          const msg = 'Google Maps Places API not available; falling back to manual location entry. Ensure NEXT_PUBLIC_GOOGLE_MAPS_API_KEY is set, the Places API is enabled in Google Cloud, billing is active, and the script is loaded with &libraries=places.';
-          console.warn(msg, { google: !!(window as any).google, importLibrary: !!(window as any).google?.maps?.importLibrary });
+          const msg =
+            'Google Maps Places API not available; falling back to manual location entry. Ensure NEXT_PUBLIC_GOOGLE_MAPS_API_KEY is set, the Places API is enabled in Google Cloud, billing is active, and the script is loaded with &libraries=places.';
+          console.warn(msg, {
+            google: !!(window as any).google,
+            importLibrary: !!(window as any).google?.maps?.importLibrary,
+          });
           setErrorText(msg);
           setReady(false);
         }
@@ -149,17 +159,22 @@ function LocationPicker({
         );
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Throttled fetch for predictions
   useEffect(() => {
-    if (!ready || !q.trim()) { setPreds([]); return; }
+    if (!ready || !q.trim()) {
+      setPreds([]);
+      return;
+    }
     const handle = setTimeout(() => {
       svcRef.current.getPlacePredictions(
         {
           input: q.trim(),
-          componentRestrictions: { country: 'us' }, // adjust/remove as needed
+          componentRestrictions: { country: 'us' },
           types: ['establishment', 'geocode'],
         },
         (res: any, status: any) => {
@@ -167,10 +182,11 @@ function LocationPicker({
             setPreds([]);
             return;
           }
-          // Only allow predictions with ', IL' in the description (Illinois)
-          const ilPreds = res.filter((p: any) =>
-            typeof p.description === 'string' && p.description.includes(', IL')
-          ).map((p: any) => ({ description: p.description, place_id: p.place_id }));
+          const ilPreds = res
+            .filter(
+              (p: any) => typeof p.description === 'string' && p.description.includes(', IL')
+            )
+            .map((p: any) => ({ description: p.description, place_id: p.place_id }));
           setPreds(ilPreds);
         }
       );
@@ -206,9 +222,7 @@ function LocationPicker({
           value={q}
           onChange={(e) => setQ(e.target.value)}
         />
-        {!ready && !errorText && (
-          <div className="muted fs-12">Loading Places…</div>
-        )}
+        {!ready && !errorText && <div className="muted fs-12">Loading Places…</div>}
         {errorText && <div className="alert error fs-12">{errorText}</div>}
         {preds.length > 0 && (
           <div className="card p-6 maxh-220 ovf-y-auto location-picker-preds">
@@ -241,57 +255,11 @@ function LocationPicker({
 
 export default function AdminSchedule() {
   const router = useRouter();
-  // ---------- Admin access gate ----------
+
+  // ---------- Admin access + auth (declare hooks FIRST; do not early-return before all hooks are declared) ----------
   const [authLoading, setAuthLoading] = useState(true);
   const [allowed, setAllowed] = useState(false);
-
-  useEffect(() => {
-    (async () => {
-      const { data } = await supabase.auth.getSession();
-      const user = data.session?.user;
-
-      if (!user) {
-        router.replace('/login');
-        return;
-      }
-
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
-        .single();
-
-      if (error || !profile) {
-        router.replace('/login');
-        return;
-      }
-
-      if (profile.role === 'admin') {
-        setAllowed(true);
-      } else {
-        router.replace('/');
-        return;
-      }
-
-      setAuthLoading(false);
-    })();
-  }, [router]);
-
-  if (authLoading) {
-    return <div className="page"><p>Checking access…</p></div>;
-  }
-  if (!allowed) {
-    return null;
-  }
-
-  // ---------- Auth ----------
   const [adminId, setAdminId] = useState<string | null>(null);
-  useEffect(() => {
-    (async () => {
-      const { data } = await supabase.auth.getSession();
-      setAdminId(data.session?.user?.id ?? null);
-    })();
-  }, []);
 
   // ---------- Data ----------
   const [rows, setRows] = useState<SRow[]>([]);
@@ -341,25 +309,68 @@ export default function AdminSchedule() {
 
   // Heartbeat (auto-roll to past)
   const [, setTick] = useState(0);
+
+  // ---------- Effects ----------
+  // Auth gate
+  useEffect(() => {
+    (async () => {
+      const { data } = await supabase.auth.getSession();
+      const user = data.session?.user;
+
+      if (!user) {
+        setAllowed(false);
+        setAuthLoading(false);
+        router.replace('/login');
+        return;
+      }
+
+      const { data: profile, error } = await supabase
+        .from('profiles')
+        .select('role')
+        .eq('id', user.id)
+        .single();
+
+      if (error || !profile) {
+        setAllowed(false);
+        setAuthLoading(false);
+        router.replace('/login');
+        return;
+      }
+
+      if (profile.role === 'admin') {
+        setAllowed(true);
+        setAdminId(user.id);
+      } else {
+        setAllowed(false);
+        router.replace('/');
+      }
+
+      setAuthLoading(false);
+    })();
+  }, [router]);
+
+  // Heartbeat tick
   useEffect(() => {
     const id = setInterval(() => setTick((t) => t + 1), 60000);
     return () => clearInterval(id);
   }, []);
 
-  // ---------- Helpers ----------
   const fmt = (s?: string | null) => (s ? new Date(s).toLocaleString() : '');
 
   async function parseMaybeJson(r: Response) {
     const ct = r.headers.get('content-type') || '';
     if (ct.includes('application/json')) {
-      try { return await r.json(); } catch {}
+      try {
+        return await r.json();
+      } catch {}
     }
     const raw = await r.text();
     return { raw };
   }
 
-  // ---------- Load shifts ----------
+  // Load shifts (only when allowed)
   async function loadRows() {
+    if (!allowed) return;
     setLoading(true);
     setErr(null);
     try {
@@ -373,28 +384,24 @@ export default function AdminSchedule() {
       setLoading(false);
     }
   }
-  useEffect(() => { loadRows(); }, []);
+  useEffect(() => {
+    if (allowed) loadRows();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [allowed]);
 
-  // ---------- Employees list for assignments ----------
+  // Employees list for assignments
   useEffect(() => {
     (async () => {
+      if (!allowed) return;
       const { data, error } = await supabase
         .from('profiles')
         .select('id, full_name, email')
         .order('full_name', { ascending: true });
       if (!error) setEmployees((data as Emp[]) || []);
     })();
-  }, []);
+  }, [allowed]);
 
-  const filteredEmps = useMemo(() => {
-    const q = search.toLowerCase();
-    if (!q) return employees;
-    return employees.filter((e) =>
-      [e.full_name ?? '', e.email ?? '', e.id].some((v) => v?.toLowerCase().includes(q))
-    );
-  }, [employees, search]);
-
-  // ---------- Upcoming subset ----------
+  // Upcoming subset
   const upcoming = useMemo(() => {
     const now = Date.now();
     return rows
@@ -411,8 +418,12 @@ export default function AdminSchedule() {
   // Load assignments for visible upcoming shifts
   useEffect(() => {
     (async () => {
+      if (!allowed) return;
       const ids = upcoming.map((r) => r.id);
-      if (ids.length === 0) { setAssignedMap({}); return; }
+      if (ids.length === 0) {
+        setAssignedMap({});
+        return;
+      }
       const { data, error } = await supabase
         .from('schedule_assignments')
         .select('schedule_shift_id, profiles:employee_id ( id, full_name, email )')
@@ -427,7 +438,7 @@ export default function AdminSchedule() {
       });
       setAssignedMap(map);
     })();
-  }, [upcoming.length]);
+  }, [allowed, upcoming.length, supabase]);
 
   // ---------- Actions ----------
   function validateForm() {
@@ -442,7 +453,7 @@ export default function AdminSchedule() {
   }
 
   async function createShift() {
-    if (!adminId) return alert('Sign in as admin first.');
+    if (!allowed || !adminId) return alert('Sign in as admin first.');
     const v = validateForm();
     setFormError(v);
     if (v) return;
@@ -460,13 +471,15 @@ export default function AdminSchedule() {
         end_time: endLocal ? new Date(endLocal).toISOString() : null,
         location_name: form.location_name || undefined,
         address: form.address || undefined,
-        job_type: form.job_type ? (form.job_type as string).toLowerCase() as JobType : undefined,
+        job_type: form.job_type ? ((form.job_type as string).toLowerCase() as JobType) : undefined,
         notes: form.notes || undefined,
         created_by: adminId,
       };
 
       const r = await fetch('/api/schedule/shifts', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
       });
       const j: any = await parseMaybeJson(r);
       if (!r.ok) throw new Error(j?.error || j?.raw || `HTTP ${r.status}`);
@@ -508,7 +521,7 @@ export default function AdminSchedule() {
         end_time: edit.end_time ?? null,
         location_name: edit.location_name ?? undefined,
         address: edit.address ?? undefined,
-        job_type: edit.job_type ? (edit.job_type as string).toLowerCase() as JobType : undefined,
+        job_type: edit.job_type ? ((edit.job_type as string).toLowerCase() as JobType) : undefined,
         notes: edit.notes ?? undefined,
       };
       if (body.start_time && !body.start_time.endsWith?.('Z'))
@@ -517,7 +530,9 @@ export default function AdminSchedule() {
         body.end_time = new Date(body.end_time).toISOString();
 
       const r = await fetch(`/api/schedule/shifts/${edit.id}`, {
-        method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
       });
       const j: any = await parseMaybeJson(r);
       if (!r.ok) throw new Error(j?.error || j?.raw || `HTTP ${r.status}`);
@@ -566,13 +581,17 @@ export default function AdminSchedule() {
     const remove = currentAssignees.filter((x) => !assignees.includes(x));
     if (add.length) {
       const r = await fetch(`/api/schedule/shifts/${assignShift.id}/assign`, {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ employee_ids: add }),
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ employee_ids: add }),
       });
       if (!r.ok) return alert('Failed to add assignments');
     }
     if (remove.length) {
       const r = await fetch(`/api/schedule/shifts/${assignShift.id}/assign`, {
-        method: 'DELETE', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ employee_ids: remove }),
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ employee_ids: remove }),
       });
       if (!r.ok) return alert('Failed to remove assignments');
     }
@@ -585,6 +604,17 @@ export default function AdminSchedule() {
   }
 
   // ---------- UI ----------
+  if (authLoading) {
+    return (
+      <div className="page">
+        <p>Checking access…</p>
+      </div>
+    );
+  }
+  if (!allowed) {
+    return null;
+  }
+
   return (
     <div className="page">
       <h1 className="page__title">Admin – Scheduling (separate from payroll)</h1>
@@ -602,7 +632,7 @@ export default function AdminSchedule() {
       {/* Create form (centered) */}
       <div className="form-container">
         <div className="card form-card">
-          
+
           <div className="row between wrap align-items-center">
             <strong className="fs-16">Create Scheduled Shift</strong>
             <div className="row gap-sm">
@@ -656,7 +686,7 @@ export default function AdminSchedule() {
           <div className="mt-lg">
             <label>Job Type</label>
             <div className="row wrap gap-sm mt-6">
-              {JOB_TYPES.map(jt => (
+              {JOB_TYPES.map((jt) => (
                 <button
                   key={jt}
                   type="button"
@@ -867,12 +897,18 @@ export default function AdminSchedule() {
           <input className="mt-lg" placeholder="Search name or email…" value={search} onChange={(e) => setSearch(e.target.value)} />
 
           <div className="mt-lg" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}>
-            {filteredEmps.map((e) => (
-              <label key={e.id} className="inline-check card" style={{ padding: 10 }}>
-                <input type="checkbox" checked={assignees.includes(e.id)} onChange={() => toggleEmp(e.id)} />
-                <span>{e.full_name || e.email || e.id.slice(0, 8)}</span>
-              </label>
-            ))}
+            {employees
+              .filter((e) =>
+                [e.full_name ?? '', e.email ?? '', e.id].some((v) =>
+                  v?.toLowerCase().includes(search.toLowerCase())
+                )
+              )
+              .map((e) => (
+                <label key={e.id} className="inline-check card" style={{ padding: 10 }}>
+                  <input type="checkbox" checked={assignees.includes(e.id)} onChange={() => toggleEmp(e.id)} />
+                  <span>{e.full_name || e.email || e.id.slice(0, 8)}</span>
+                </label>
+              ))}
           </div>
 
           <div className="mt-lg">
