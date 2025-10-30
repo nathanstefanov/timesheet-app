@@ -605,9 +605,9 @@ export default function AdminSchedule() {
     );
   }
   if (!allowed) {
-    // Not signed in → hard redirect to login with return URL.
-    const back = encodeURIComponent('/admin-schedule');
-    return <RedirectToLogin to={`/login?redirect=${back}`} />;
+// replace wherever we call RedirectToLogin:
+const back = encodeURIComponent('/admin-schedule');
+return <RedirectToLogin to={`/auth/signin?redirect=${back}`} />;
   }
 
   return (
