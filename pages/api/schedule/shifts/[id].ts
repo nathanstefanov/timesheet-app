@@ -7,7 +7,7 @@ const PatchSchema = z.object({
   end_time: z.string().datetime().nullable().optional(),
   location_name: z.string().min(1).max(200).optional(),
   address: z.string().min(3).max(300).optional(),
-  job_type: z.enum(['setup','Lights','breakdown','other']).optional(),
+  job_type: z.enum(['setup','lights','breakdown','other']).optional(),
   notes: z.string().max(1000).optional(),
   status: z.enum(['draft','confirmed','changed']).optional(),
 });
