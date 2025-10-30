@@ -386,10 +386,12 @@ export default function AdminSchedule() {
   // ---------- Actions ----------
   function validateForm() {
     if (!form.start_date) return 'Start date is required.';
-    if (!form.end_date || !form.end_time) return 'End date and time are required.';
-    const startLocal = combineLocalDateTime(form.start_date, form.start_time);
-    const endLocal = combineLocalDateTime(form.end_date, form.end_time);
-    if (new Date(endLocal) <= new Date(startLocal)) return 'End time must be after start time.';
+    // End is optional. If BOTH end_date and end_time are provided, validate ordering.
+    if (form.end_date && form.end_time) {
+      const startLocal = combineLocalDateTime(form.start_date, form.start_time);
+      const endLocal = combineLocalDateTime(form.end_date, form.end_time);
+      if (new Date(endLocal) <= new Date(startLocal)) return 'End time must be after start time.';
+    }
     return null;
   }
 
@@ -402,7 +404,10 @@ export default function AdminSchedule() {
     setCreating(true);
     try {
       const startLocal = combineLocalDateTime(form.start_date, form.start_time);
-      const endLocal = combineLocalDateTime(form.end_date, form.end_time);
+      const endLocal =
+        form.end_date && form.end_time
+          ? combineLocalDateTime(form.end_date, form.end_time)
+          : null;
 
       const body = {
         start_time: new Date(startLocal).toISOString(),
