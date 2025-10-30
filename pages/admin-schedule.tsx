@@ -29,12 +29,6 @@ const combineLocalDateTime = (date: string, time: string | undefined) => {
   return `${date}T${t}`;
 };
 
-const addHoursToLocalInput = (localDateTime: string, hours: number) => {
-  const d = new Date(localDateTime);
-  d.setHours(d.getHours() + hours);
-  return toLocalInput(d).slice(0, 16);
-};
-
 // ---- Google Maps loader (uses @googlemaps/js-api-loader for deterministic loading) ----
 declare global { interface Window { google?: any } }
 
@@ -239,27 +233,62 @@ function LocationPicker({
   );
 }
 
-// Small fallback UI that actively redirects and shows a link (prevents 404/blank)
-function RedirectToLogin({ to }: { to: string }) {
-  const router = useRouter();
-  useEffect(() => {
-    router.replace(to);
-  }, [router, to]);
-  return (
-    <div className="page">
-      <p>Redirecting to sign in…</p>
-      <p><a href={to}>Click here if you’re not redirected.</a></p>
-    </div>
-  );
-}
-
 export default function AdminSchedule() {
   const router = useRouter();
 
-  // ---------- Admin access + auth ----------
-  const [authLoading, setAuthLoading] = useState(true);
-  const [allowed, setAllowed] = useState(false);
-  const [adminId, setAdminId] = useState<string | null>(null);
+  // --------- Auth (match /admin.tsx pattern) ----------
+  const [me, setMe] = useState<{ id: string; role: 'admin' | 'employee' } | null>(null);
+  const [checking, setChecking] = useState(true);
+
+  useEffect(() => {
+    let alive = true;
+
+    async function loadProfile() {
+      const { data: { session } } = await supabase.auth.getSession();
+      if (!alive) return;
+
+      if (!session?.user) {
+        setMe(null);
+        setChecking(false);
+        router.replace('/');            // not signed in → home (same as /admin.tsx)
+        return;
+      }
+
+      const { data, error } = await supabase
+        .from('profiles')
+        .select('id, role')
+        .eq('id', session.user.id)
+        .single();
+
+      if (!alive) return;
+      if (error || !data) {
+        setMe(null);
+        setChecking(false);
+        router.replace('/dashboard?msg=not_admin'); // signed in but no profile/role
+        return;
+      }
+
+      setMe(data as any);
+      setChecking(false);
+      if ((data as any).role !== 'admin') {
+        router.replace('/dashboard?msg=not_admin'); // signed in but not admin
+      }
+    }
+
+    loadProfile();
+
+    const { data: sub } = supabase.auth.onAuthStateChange((event) => {
+      if (event === 'SIGNED_IN' || event === 'SIGNED_OUT') {
+        setChecking(true);
+        loadProfile();
+      }
+    });
+
+    return () => { alive = false; sub.subscription.unsubscribe(); };
+  }, [router]);
+
+  const isAdmin = !!me && me.role === 'admin';
+  const adminId = me?.id ?? null;
 
   // ---------- Data ----------
   const [rows, setRows] = useState<SRow[]>([]);
@@ -267,7 +296,7 @@ export default function AdminSchedule() {
   const [err, setErr] = useState<string | null>(null);
   const [assignedMap, setAssignedMap] = useState<Record<string, Emp[]>>({});
 
-  // ---------- Create form (refined state) ----------
+  // ---------- Create form ----------
   const [form, setForm] = useState<{
     start_date: string;
     start_time: string;
@@ -309,46 +338,6 @@ export default function AdminSchedule() {
 
   // Heartbeat (auto-roll to past)
   const [, setTick] = useState(0);
-
-  // ---------- Effects ----------
-  // Auth gate
-  useEffect(() => {
-    (async () => {
-      const { data } = await supabase.auth.getSession();
-      const user = data.session?.user;
-
-      if (!user) {
-        setAllowed(false);
-        setAuthLoading(false);
-        return; // render RedirectToLogin below
-      }
-
-      const { data: profile, error } = await supabase
-        .from('profiles')
-        .select('role')
-        .eq('id', user.id)
-        .single();
-
-      if (error || !profile) {
-        setAllowed(false);
-        setAuthLoading(false);
-        return;
-      }
-
-      if (profile.role === 'admin') {
-        setAllowed(true);
-        setAdminId(user.id);
-      } else {
-        // Signed in but not admin -> push home immediately
-        router.replace('/');
-        setAllowed(false);
-      }
-
-      setAuthLoading(false);
-    })();
-  }, [router]);
-
-  // Heartbeat tick
   useEffect(() => {
     const id = setInterval(() => setTick((t) => t + 1), 60000);
     return () => clearInterval(id);
@@ -365,9 +354,9 @@ export default function AdminSchedule() {
     return { raw };
   }
 
-  // Load shifts (only when allowed)
+  // Load shifts (admin only)
   async function loadRows() {
-    if (!allowed) return;
+    if (!isAdmin) return;
     setLoading(true);
     setErr(null);
     try {
@@ -382,21 +371,21 @@ export default function AdminSchedule() {
     }
   }
   useEffect(() => {
-    if (allowed) loadRows();
+    if (isAdmin) loadRows();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [allowed]);
+  }, [isAdmin]);
 
   // Employees list for assignments
   useEffect(() => {
     (async () => {
-      if (!allowed) return;
+      if (!isAdmin) return;
       const { data, error } = await supabase
         .from('profiles')
         .select('id, full_name, email')
         .order('full_name', { ascending: true });
       if (!error) setEmployees((data as Emp[]) || []);
     })();
-  }, [allowed]);
+  }, [isAdmin]);
 
   // Upcoming subset
   const upcoming = useMemo(() => {
@@ -415,7 +404,7 @@ export default function AdminSchedule() {
   // Load assignments for visible upcoming shifts
   useEffect(() => {
     (async () => {
-      if (!allowed) return;
+      if (!isAdmin) return;
       const ids = upcoming.map((r) => r.id);
       if (ids.length === 0) { setAssignedMap({}); return; }
       const { data, error } = await supabase
@@ -432,7 +421,7 @@ export default function AdminSchedule() {
       });
       setAssignedMap(map);
     })();
-  }, [allowed, upcoming.length]);
+  }, [isAdmin, upcoming.length]);
 
   // ---------- Actions ----------
   function validateForm() {
@@ -446,7 +435,7 @@ export default function AdminSchedule() {
   }
 
   async function createShift() {
-    if (!allowed || !adminId) return alert('Sign in as admin first.');
+    if (!isAdmin || !adminId) return alert('Sign in as admin first.');
     const v = validateForm();
     setFormError(v);
     if (v) return;
@@ -597,17 +586,22 @@ export default function AdminSchedule() {
   }
 
   // ---------- UI ----------
-  if (authLoading) {
+  if (checking) {
     return (
       <div className="page">
         <p>Checking access…</p>
       </div>
     );
   }
-  if (!allowed) {
-// replace wherever we call RedirectToLogin:
-const back = encodeURIComponent('/admin-schedule');
-return <RedirectToLogin to={`/auth/signin?redirect=${back}`} />;
+  if (!isAdmin) {
+    // While router.replace runs (above), show a friendly fallback.
+    const back = encodeURIComponent('/admin-schedule');
+    return (
+      <div className="page">
+        <p>You need admin access to view this page.</p>
+        <p><a href={`/auth/signin?redirect=${back}`}>Sign in</a></p>
+      </div>
+    );
   }
 
   return (
@@ -913,4 +907,9 @@ return <RedirectToLogin to={`/auth/signin?redirect=${back}`} />;
       )}
     </div>
   );
+}
+
+// Force SSR so Vercel does not emit /admin-schedule static HTML
+export async function getServerSideProps() {
+  return { props: {} };
 }
