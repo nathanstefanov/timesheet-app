@@ -5,7 +5,7 @@ import { supabase } from '../lib/supabaseClient';
 
 type Emp = { id: string; full_name?: string | null; email?: string | null };
 
-// Strong job-type union (must match DB CHECK constraint: lowercase)
+// MUST match DB CHECK constraint (lowercase)
 type JobType = 'setup' | 'lights' | 'breakdown' | 'other';
 const JOB_TYPES: JobType[] = ['setup', 'lights', 'breakdown', 'other'];
 
@@ -28,13 +28,7 @@ const combineLocalDateTime = (date: string, time: string | undefined) => {
   return `${date}T${t}`;
 };
 
-const addHoursToLocalInput = (localDateTime: string, hours: number) => {
-  const d = new Date(localDateTime);
-  d.setHours(d.getHours() + hours);
-  return toLocalInput(d).slice(0, 16);
-};
-
-// ---- Google Maps loader (uses @googlemaps/js-api-loader for deterministic loading) ----
+// ---- Google Maps loader ----
 declare global { interface Window { google?: any } }
 
 const loadGoogleMaps = (() => {
@@ -50,16 +44,13 @@ const loadGoogleMaps = (() => {
 
       promise = (async () => {
         try {
-          // dynamic import so SSR doesn't load the package
           const mod = await import('@googlemaps/js-api-loader');
           const Loader = (mod as any).Loader ?? (mod as any).default?.Loader ?? (mod as any).default;
           if (!Loader) throw new Error('Could not load @googlemaps/js-api-loader');
-
           const loader = new Loader({ apiKey: key, libraries: ['places'], version: 'weekly' });
           await loader.load();
           return window.google?.maps;
-        } catch (err) {
-          // Fall back to script tag as a last resort
+        } catch {
           const id = 'gmaps-js';
           if (document.getElementById(id)) return window.google?.maps;
           const s = document.createElement('script');
@@ -79,7 +70,7 @@ const loadGoogleMaps = (() => {
   };
 })();
 
-// --- LocationPicker: uses AutocompleteService + PlacesService.getDetails ---
+// --- LocationPicker ---
 function LocationPicker({
   valueName,
   valueAddr,
@@ -102,10 +93,6 @@ function LocationPicker({
       try {
         await loadGoogleMaps();
         if (cancelled) return;
-
-        // Initialize classical Places services used by this picker (AutocompleteService + PlacesService).
-        // Prefer the already-attached `window.google.maps.places` namespace; if it's not present
-        // but the new loader's importLibrary is available, try to obtain constructors from it.
         if ((window as any).google?.maps?.places) {
           svcRef.current = new (window as any).google.maps.places.AutocompleteService();
           const dummy = document.createElement('div');
@@ -122,54 +109,46 @@ function LocationPicker({
               detailsSvcRef.current = new PlacesServiceCtor(dummy);
               setReady(true);
             } else {
-              // importLibrary didn't provide constructors — fall back to manual entry mode with a helpful error
-              const msg = 'Google Maps Places API constructors unavailable via importLibrary; falling back to manual location entry. Check API key, enabled Places API, and that the loader exposes the places library.';
-              console.warn(msg, { google: !!(window as any).google, importLibrary: !!(window as any).google?.maps?.importLibrary });
+              const msg = 'Google Maps Places constructors unavailable; falling back to manual entry.';
+              console.warn(msg);
               setErrorText(msg);
               setReady(false);
             }
           } catch (ex: any) {
-            const msg = `Failed to import Places via importLibrary: ${ex?.message || String(ex)}; falling back to manual location entry.`;
-            console.warn(msg, ex);
+            const msg = `Failed to import Places: ${ex?.message || String(ex)}`;
+            console.warn(msg);
             setErrorText(msg);
             setReady(false);
           }
         } else {
-          // Places API not available on the page (neither global nor importLibrary)
-          const msg = 'Google Maps Places API not available; falling back to manual location entry. Ensure NEXT_PUBLIC_GOOGLE_MAPS_API_KEY is set, the Places API is enabled in Google Cloud, billing is active, and the script is loaded with &libraries=places.';
-          console.warn(msg, { google: !!(window as any).google, importLibrary: !!(window as any).google?.maps?.importLibrary });
+          const msg = 'Google Maps Places API not available; ensure key + billing + libraries=places.';
+          console.warn(msg);
           setErrorText(msg);
           setReady(false);
         }
       } catch (err: any) {
-        setErrorText(
-          err?.message ||
-            'Could not initialize Google Places. Check API key, enabled APIs, billing, and referrers.'
-        );
+        setErrorText(err?.message || 'Could not initialize Google Places.');
       }
     })();
     return () => { cancelled = true; };
   }, []);
 
-  // Throttled fetch for predictions
   useEffect(() => {
     if (!ready || !q.trim()) { setPreds([]); return; }
     const handle = setTimeout(() => {
       svcRef.current.getPlacePredictions(
         {
           input: q.trim(),
-          componentRestrictions: { country: 'us' }, // adjust/remove as needed
+          componentRestrictions: { country: 'us' },
           types: ['establishment', 'geocode'],
         },
         (res: any, status: any) => {
           if (status !== window.google.maps.places.PlacesServiceStatus.OK || !res) {
-            setPreds([]);
-            return;
+            setPreds([]); return;
           }
-          // Only allow predictions with ', IL' in the description (Illinois)
-          const ilPreds = res.filter((p: any) =>
-            typeof p.description === 'string' && p.description.includes(', IL')
-          ).map((p: any) => ({ description: p.description, place_id: p.place_id }));
+          const ilPreds = res
+            .filter((p: any) => typeof p.description === 'string' && p.description.includes(', IL'))
+            .map((p: any) => ({ description: p.description, place_id: p.place_id }));
           setPreds(ilPreds);
         }
       );
@@ -179,15 +158,10 @@ function LocationPicker({
 
   function pickPlace(placeId: string) {
     detailsSvcRef.current.getDetails(
-      {
-        placeId,
-        fields: ['name', 'formatted_address'],
-      },
+      { placeId, fields: ['name', 'formatted_address'] },
       (place: any, status: any) => {
         if (status !== window.google.maps.places.PlacesServiceStatus.OK || !place) return;
-        const name = place.name || '';
-        const addr = place.formatted_address || '';
-        onSelect({ name, address: addr });
+        onSelect({ name: place.name || '', address: place.formatted_address || '' });
         setQ(place.name || place.formatted_address || '');
         setPreds([]);
       }
@@ -205,9 +179,7 @@ function LocationPicker({
           value={q}
           onChange={(e) => setQ(e.target.value)}
         />
-        {!ready && !errorText && (
-          <div className="muted fs-12">Loading Places…</div>
-        )}
+        {!ready && !errorText && <div className="muted fs-12">Loading Places…</div>}
         {errorText && <div className="alert error fs-12">{errorText}</div>}
         {preds.length > 0 && (
           <div className="card p-6 maxh-220 ovf-y-auto location-picker-preds">
@@ -237,6 +209,7 @@ function LocationPicker({
     </div>
   );
 }
+
 export default function AdminSchedule() {
   // ---------- Auth ----------
   const [adminId, setAdminId] = useState<string | null>(null);
@@ -253,7 +226,7 @@ export default function AdminSchedule() {
   const [err, setErr] = useState<string | null>(null);
   const [assignedMap, setAssignedMap] = useState<Record<string, Emp[]>>({});
 
-  // ---------- Create form (refined state) ----------
+  // ---------- Create form ----------
   const [form, setForm] = useState<{
     start_date: string;
     start_time: string;
@@ -293,7 +266,7 @@ export default function AdminSchedule() {
   const [currentAssignees, setCurrentAssignees] = useState<string[]>([]);
   const [search, setSearch] = useState('');
 
-  // Heartbeat (auto-roll to past)
+  // Heartbeat
   const [, setTick] = useState(0);
   useEffect(() => {
     const id = setInterval(() => setTick((t) => t + 1), 60000);
@@ -329,7 +302,7 @@ export default function AdminSchedule() {
   }
   useEffect(() => { loadRows(); }, []);
 
-  // ---------- Employees list for assignments ----------
+  // ---------- Employees list ----------
   useEffect(() => {
     (async () => {
       const { data, error } = await supabase
@@ -386,7 +359,7 @@ export default function AdminSchedule() {
   // ---------- Actions ----------
   function validateForm() {
     if (!form.start_date) return 'Start date is required.';
-    // End is optional. If BOTH end_date and end_time are provided, validate ordering.
+    // End is optional. Validate only if BOTH are present.
     if (form.end_date && form.end_time) {
       const startLocal = combineLocalDateTime(form.start_date, form.start_time);
       const endLocal = combineLocalDateTime(form.end_date, form.end_time);
@@ -414,13 +387,15 @@ export default function AdminSchedule() {
         end_time: endLocal ? new Date(endLocal).toISOString() : null,
         location_name: form.location_name || undefined,
         address: form.address || undefined,
-        job_type: form.job_type ? (form.job_type as string).toLowerCase() as JobType : undefined,
+        job_type: (form.job_type as string)?.toLowerCase() as JobType,
         notes: form.notes || undefined,
         created_by: adminId,
       };
 
       const r = await fetch('/api/schedule/shifts', {
-        method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(body),
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(body),
       });
       const j: any = await parseMaybeJson(r);
       if (!r.ok) throw new Error(j?.error || j?.raw || `HTTP ${r.status}`);
@@ -543,7 +518,6 @@ export default function AdminSchedule() {
     <div className="page">
       <h1 className="page__title">Admin – Scheduling (separate from payroll)</h1>
 
-      {/* Top actions */}
       <div className="center" style={{ marginBottom: 12 }}>
         <Link href="/admin-schedule-past" className="nav-link">View Past Shifts</Link>
         <button type="button" className="topbar-btn" style={{ marginLeft: 8 }} onClick={loadRows}>
@@ -553,10 +527,9 @@ export default function AdminSchedule() {
 
       {err && <div className="alert error">{err}</div>}
 
-      {/* Create form (centered) */}
+      {/* Create form */}
       <div className="form-container">
         <div className="card form-card">
-          
           <div className="row between wrap align-items-center">
             <strong className="fs-16">Create Scheduled Shift</strong>
             <div className="row gap-sm">
@@ -597,29 +570,24 @@ export default function AdminSchedule() {
             </div>
           </div>
 
-          {/* Location search with autofill */}
-          <div className="mt-lg">
-            <LocationPicker
-              valueName={form.location_name}
-              valueAddr={form.address}
-              onSelect={({ name, address }) => setForm((f) => ({ ...f, location_name: name, address }))}
-            />
-          </div>
-
-          {/* Job type pills */}
+          {/* Job type pills (highlight selected) */}
           <div className="mt-lg">
             <label>Job Type</label>
             <div className="row wrap gap-sm mt-6">
-              {JOB_TYPES.map(jt => (
-                <button
-                  key={jt}
-                  type="button"
-                  className={`pill ${form.job_type === jt ? 'pill-active' : ''}`}
-                  onClick={() => setForm({ ...form, job_type: jt })}
-                >
-                  <span className="pill__label">{jt[0].toUpperCase() + jt.slice(1)}</span>
-                </button>
-              ))}
+              {JOB_TYPES.map((jt) => {
+                const selected = form.job_type === jt;
+                return (
+                  <button
+                    key={jt}
+                    type="button"
+                    aria-pressed={selected}
+                    className={`pill ${selected ? 'pill-active' : ''}`}
+                    onClick={() => setForm({ ...form, job_type: jt })}
+                  >
+                    <span className="pill__label">{jt[0].toUpperCase() + jt.slice(1)}</span>
+                  </button>
+                );
+              })}
             </div>
           </div>
 
