@@ -17,6 +17,7 @@ export default function MySchedule() {
   const [rows, setRows] = useState<Shift[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
+  const [me, setMe] = useState<Mate | null>(null); // 👈 logged-in user
 
   // Filters
   const [q, setQ] = useState('');
@@ -84,7 +85,26 @@ export default function MySchedule() {
     setErr(null);
     try {
       const { data } = await supabase.auth.getSession();
-      const token = data.session?.access_token;
+      const session = data.session;
+      const token = session?.access_token;
+
+      // 👇 Fetch the logged-in user's profile so we can include them in teammates
+      if (session?.user) {
+        const { data: meProfile } = await supabase
+          .from('profiles')
+          .select('id, full_name')
+          .eq('id', session.user.id)
+          .maybeSingle();
+
+        if (meProfile) {
+          setMe({ id: meProfile.id, full_name: meProfile.full_name });
+        } else {
+          setMe(null);
+        }
+      } else {
+        setMe(null);
+      }
+
       const r = await fetch('/api/schedule/me', {
         headers: token ? { Authorization: `Bearer ${token}` } : {},
       });
@@ -154,16 +174,29 @@ export default function MySchedule() {
     );
   }, [upcoming]);
 
-  const Teammates = ({ mates }: { mates?: Mate[] }) => {
-    if (!mates || mates.length === 0)
+  const Teammates = ({ mates, me }: { mates?: Mate[]; me: Mate | null }) => {
+    // Build full list: logged-in user + assigned mates, avoid duplicates
+    const list: Mate[] = [];
+    if (me) list.push(me);
+    if (mates && mates.length > 0) {
+      mates.forEach(m => {
+        if (!list.some(x => x.id === m.id)) {
+          list.push(m);
+        }
+      });
+    }
+
+    if (list.length === 0) {
       return <span className="muted">Just you</span>;
+    }
+
     return (
       <div
         className="row wrap gap-sm"
         aria-label="Teammates"
         style={{ justifyContent: 'center' }}
       >
-        {mates.map(m => {
+        {list.map(m => {
           const name = m.full_name || 'Teammate';
           const initials = name
             .split(' ')
@@ -187,7 +220,7 @@ export default function MySchedule() {
     );
   };
 
-  const ShiftCard = ({ s }: { s: Shift }) => {
+  const ShiftCard = ({ s, me }: { s: Shift; me: Mate | null }) => {
     const day = fmtDate(s.start_time);
     const start = fmtTime(s.start_time);
     const end = fmtTime(s.end_time);
@@ -217,7 +250,7 @@ export default function MySchedule() {
 
         {/* Row 4: teammates */}
         <div className="mt-lg">
-          <Teammates mates={s.mates} />
+          <Teammates mates={s.mates} me={me} />
         </div>
       </div>
     );
@@ -293,7 +326,7 @@ export default function MySchedule() {
               </div>
               <div style={{ display: 'grid', gap: 12, marginTop: 10 }}>
                 {list.map(s => (
-                  <ShiftCard key={s.id} s={s} />
+                  <ShiftCard key={s.id} s={s} me={me} />
                 ))}
               </div>
             </div>
@@ -321,7 +354,7 @@ export default function MySchedule() {
 
         <div style={{ display: 'grid', gap: 12, marginTop: 8 }}>
           {past.map(s => (
-            <ShiftCard key={s.id} s={s} />
+            <ShiftCard key={s.id} s={s} me={me} />
           ))}
         </div>
       </section>
