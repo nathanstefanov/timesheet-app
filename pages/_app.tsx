@@ -14,7 +14,6 @@ export default function App({ Component, pageProps }: AppProps) {
   const [checking, setChecking] = useState(true);
   const [err, setErr] = useState<string | null>(null);
 
-  const mounted = useRef(false);
   const subRef = useRef<{ unsubscribe(): void } | null>(null);
 
   async function fetchProfile(userId: string) {
@@ -49,8 +48,6 @@ export default function App({ Component, pageProps }: AppProps) {
   }
 
   useEffect(() => {
-    if (mounted.current) return;
-    mounted.current = true;
     let alive = true;
 
     (async () => {
@@ -71,13 +68,14 @@ export default function App({ Component, pageProps }: AppProps) {
         handleSession(session ?? null);
       }
     });
-    subRef.current = sub.subscription;
+
+    subRef.current = sub?.subscription ?? null;
 
     return () => {
       alive = false;
       subRef.current?.unsubscribe();
     };
-  }, [router, checking]);
+  }, [router.pathname]);
 
   async function handleSignOut() {
     await supabase.auth.signOut();
@@ -101,19 +99,31 @@ export default function App({ Component, pageProps }: AppProps) {
           {!checking && profile && (
             <nav className="nav">
               {/* Everyone */}
-              <Link href="/dashboard" className="nav-link">Dashboard</Link>
-              <Link href="/new-shift" className="nav-link">Log Shift</Link>
-              <Link href="/me/schedule" className="nav-link">My Schedule</Link>
+              <Link href="/dashboard" className="nav-link">
+                Dashboard
+              </Link>
+              <Link href="/new-shift" className="nav-link">
+                Log Shift
+              </Link>
+              <Link href="/me/schedule" className="nav-link">
+                My Schedule
+              </Link>
 
               {/* Admin-only */}
               {profile.role === 'admin' && (
                 <>
-                  <Link href="/admin" className="nav-link">Admin Dashboard</Link>
-                  <Link href="/admin-schedule" className="nav-link">Schedule</Link>
+                  <Link href="/admin" className="nav-link">
+                    Admin Dashboard
+                  </Link>
+                  <Link href="/admin-schedule" className="nav-link">
+                    Schedule
+                  </Link>
                 </>
               )}
 
-              <button className="signout" onClick={handleSignOut}>Sign out</button>
+              <button className="signout" onClick={handleSignOut}>
+                Sign out
+              </button>
             </nav>
           )}
         </div>
