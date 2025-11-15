@@ -215,7 +215,6 @@ export default function MySchedule() {
               >
                 {initials}
               </span>
-              <span className="pill__label">{initials}</span>
             </div>
           );
         })}
