@@ -17,7 +17,7 @@ export default function MySchedule() {
   const [rows, setRows] = useState<Shift[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
-  const [me, setMe] = useState<Mate | null>(null); // 👈 logged-in user
+  const [me, setMe] = useState<Mate | null>(null); // logged-in user
 
   // Filters
   const [q, setQ] = useState('');
@@ -88,7 +88,7 @@ export default function MySchedule() {
       const session = data.session;
       const token = session?.access_token;
 
-      // 👇 Fetch the logged-in user's profile so we can include them in teammates
+      // Fetch the logged-in user's profile so we can include them in teammates
       if (session?.user) {
         const { data: meProfile } = await supabase
           .from('profiles')
@@ -117,6 +117,7 @@ export default function MySchedule() {
       setLoading(false);
     }
   }
+
   useEffect(() => {
     load();
   }, []);
@@ -198,12 +199,14 @@ export default function MySchedule() {
       >
         {list.map(m => {
           const name = m.full_name || 'Teammate';
+
+          // Initials like "N.S." or "A.S." or "E.A.C."
           const initials = name
             .split(' ')
-            .map(p => p[0])
-            .join('')
-            .slice(0, 2)
-            .toUpperCase();
+            .filter(Boolean)
+            .map(part => part[0].toUpperCase() + '.')
+            .join('');
+
           return (
             <div key={m.id} className="pill" title={name}>
               <span
@@ -212,7 +215,7 @@ export default function MySchedule() {
               >
                 {initials}
               </span>
-              <span className="pill__label">{name}</span>
+              <span className="pill__label">{initials}</span>
             </div>
           );
         })}
@@ -232,7 +235,10 @@ export default function MySchedule() {
         </div>
 
         {/* Row 2: centered date/time */}
-        <div className="row wrap gap-md" style={{ marginTop: 8, justifyContent: 'center' }}>
+        <div
+          className="row wrap gap-md"
+          style={{ marginTop: 8, justifyContent: 'center' }}
+        >
           <strong style={{ fontSize: 16 }}>{day}</strong>
           <span className="muted">
             {start}
@@ -241,7 +247,10 @@ export default function MySchedule() {
         </div>
 
         {/* Row 3: centered location */}
-        <div className="row wrap gap-md" style={{ marginTop: 8, justifyContent: 'center' }}>
+        <div
+          className="row wrap gap-md"
+          style={{ marginTop: 8, justifyContent: 'center' }}
+        >
           <div>
             <strong>{s.location_name || 'Location TBD'}</strong>
           </div>
@@ -299,7 +308,10 @@ export default function MySchedule() {
         </div>
 
         {!loading && upcoming.length === 0 && (
-          <div className="card" style={{ padding: 12, marginTop: 8, textAlign: 'center' }}>
+          <div
+            className="card"
+            style={{ padding: 12, marginTop: 8, textAlign: 'center' }}
+          >
             <span className="muted">No upcoming shifts.</span>
           </div>
         )}
@@ -347,7 +359,10 @@ export default function MySchedule() {
         </div>
 
         {!loading && past.length === 0 && (
-          <div className="card" style={{ padding: 12, marginTop: 8, textAlign: 'center' }}>
+          <div
+            className="card"
+            style={{ padding: 12, marginTop: 8, textAlign: 'center' }}
+          >
             <span className="muted">No past shifts yet.</span>
           </div>
         )}
