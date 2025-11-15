@@ -13,18 +13,31 @@ type Shift = {
   mates?: Mate[];
 };
 
+// Detects Apple devices and builds correct map link
+function getMapLink(address: string) {
+  const encoded = encodeURIComponent(address);
+
+  const isApple =
+    typeof navigator !== 'undefined' &&
+    /iPhone|iPad|iPod|Macintosh/.test(navigator.userAgent);
+
+  if (isApple) {
+    return `https://maps.apple.com/?q=${encoded}`;
+  }
+
+  return `https://www.google.com/maps/search/?api=1&query=${encoded}`;
+}
+
 export default function MySchedule() {
   const [rows, setRows] = useState<Shift[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
-  const [me, setMe] = useState<Mate | null>(null); // logged-in user
+  const [me, setMe] = useState<Mate | null>(null);
 
-  // Filters
   const [q, setQ] = useState('');
   const [typeFilter, setTypeFilter] =
     useState<'all' | 'setup' | 'Lights' | 'breakdown' | 'other'>('all');
 
-  // Heartbeat (auto-roll to Past)
   const [, setTick] = useState(0);
   useEffect(() => {
     const id = setInterval(() => setTick(t => t + 1), 60_000);
@@ -39,6 +52,7 @@ export default function MySchedule() {
           day: 'numeric',
         })
       : '';
+
   const fmtTime = (s?: string | null) =>
     s
       ? new Date(s).toLocaleTimeString(undefined, {
@@ -47,7 +61,6 @@ export default function MySchedule() {
         })
       : '';
 
-  // BIG, centered job-type badge
   const JobBadgeXL = ({ text }: { text?: string | null }) => {
     if (!text) return null;
     const label = text[0].toUpperCase() + text.slice(1);
@@ -86,9 +99,7 @@ export default function MySchedule() {
     try {
       const { data } = await supabase.auth.getSession();
       const session = data.session;
-      const token = session?.access_token;
 
-      // Fetch the logged-in user's profile so we can include them in teammates
       if (session?.user) {
         const { data: meProfile } = await supabase
           .from('profiles')
@@ -98,18 +109,18 @@ export default function MySchedule() {
 
         if (meProfile) {
           setMe({ id: meProfile.id, full_name: meProfile.full_name });
-        } else {
-          setMe(null);
         }
-      } else {
-        setMe(null);
       }
 
       const r = await fetch('/api/schedule/me', {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        headers: session?.access_token
+          ? { Authorization: `Bearer ${session.access_token}` }
+          : {},
       });
+
       const j: any = await parseMaybeJson(r);
-      if (!r.ok) throw new Error(j?.error || j?.raw || `HTTP ${r.status}`);
+      if (!r.ok) throw new Error(j?.error || j?.raw);
+
       setRows(Array.isArray(j) ? j : []);
     } catch (e: any) {
       setErr(e.message || 'Failed to load schedule');
@@ -133,7 +144,7 @@ export default function MySchedule() {
         r.job_type ?? '',
         ...(r.mates || []).map(m => m.full_name ?? ''),
       ]
-        .join('  ')
+        .join(' ')
         .toLowerCase();
       return hay.includes(text);
     });
@@ -143,12 +154,14 @@ export default function MySchedule() {
     const now = Date.now();
     const u: Shift[] = [];
     const p: Shift[] = [];
+
     filtered.forEach(s => {
-      const sMs = s.start_time ? Date.parse(s.start_time) : NaN;
-      const eMs = s.end_time ? Date.parse(s.end_time) : NaN;
-      const isPast = !isNaN(eMs) ? eMs < now : !isNaN(sMs) ? sMs < now : false;
+      const sMs = s.start_time ? Date.parse(s.start_time) : 0;
+      const eMs = s.end_time ? Date.parse(s.end_time) : 0;
+      const isPast = eMs ? eMs < now : sMs < now;
       (isPast ? p : u).push(s);
     });
+
     u.sort(
       (a, b) =>
         (Date.parse(a.start_time ?? '') || 0) -
@@ -156,13 +169,13 @@ export default function MySchedule() {
     );
     p.sort(
       (a, b) =>
-        (Date.parse(b.end_time ?? b.start_time ?? '') || 0) -
-        (Date.parse(a.end_time ?? a.start_time ?? '') || 0)
+        (Date.parse(b.end_time ?? '') || 0) -
+        (Date.parse(a.end_time ?? '') || 0)
     );
+
     return { upcoming: u, past: p };
   }, [filtered]);
 
-  // Group upcoming by calendar day
   const upcomingGroups = useMemo(() => {
     const map = new Map<string, Shift[]>();
     upcoming.forEach(s => {
@@ -170,20 +183,20 @@ export default function MySchedule() {
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(s);
     });
+
     return Array.from(map.entries()).sort(
       (a, b) => (Date.parse(a[0]) || 0) - (Date.parse(b[0]) || 0)
     );
   }, [upcoming]);
 
+  // ==== TEAMMATES PILL COMPONENT (initials only) ====
   const Teammates = ({ mates, me }: { mates?: Mate[]; me: Mate | null }) => {
-    // Build full list: logged-in user + assigned mates, avoid duplicates
     const list: Mate[] = [];
+
     if (me) list.push(me);
-    if (mates && mates.length > 0) {
+    if (mates) {
       mates.forEach(m => {
-        if (!list.some(x => x.id === m.id)) {
-          list.push(m);
-        }
+        if (!list.some(x => x.id === m.id)) list.push(m);
       });
     }
 
@@ -194,17 +207,14 @@ export default function MySchedule() {
     return (
       <div
         className="row wrap gap-sm"
-        aria-label="Teammates"
         style={{ justifyContent: 'center' }}
       >
         {list.map(m => {
           const name = m.full_name || 'Teammate';
-
-          // Initials like "N.S." or "A.S." or "E.A.C."
           const initials = name
             .split(' ')
             .filter(Boolean)
-            .map(part => part[0].toUpperCase() + '.')
+            .map(p => p[0].toUpperCase() + '.')
             .join('');
 
           return (
@@ -222,18 +232,20 @@ export default function MySchedule() {
     );
   };
 
+  // ==== SHIFT CARD COMPONENT ====
   const ShiftCard = ({ s, me }: { s: Shift; me: Mate | null }) => {
     const day = fmtDate(s.start_time);
     const start = fmtTime(s.start_time);
     const end = fmtTime(s.end_time);
+
     return (
       <div className="card" style={{ padding: 16, textAlign: 'center' }}>
-        {/* Row 1: big centered job type */}
+        {/* Row 1: job type */}
         <div>
           <JobBadgeXL text={s.job_type ?? undefined} />
         </div>
 
-        {/* Row 2: centered date/time */}
+        {/* Row 2: date/time */}
         <div
           className="row wrap gap-md"
           style={{ marginTop: 8, justifyContent: 'center' }}
@@ -245,15 +257,26 @@ export default function MySchedule() {
           </span>
         </div>
 
-        {/* Row 3: centered location */}
+        {/* Row 3: ⭐ CLICKABLE LOCATION */}
         <div
           className="row wrap gap-md"
-          style={{ marginTop: 8, justifyContent: 'center' }}
+          style={{ marginTop: 8, justifyContent: 'center', cursor: s.address ? 'pointer' : 'default' }}
         >
-          <div>
+          {s.address ? (
+            <a
+              href={getMapLink(s.address)}
+              target="_blank"
+              rel="noopener noreferrer"
+              style={{ textDecoration: 'none', textAlign: 'center' }}
+            >
+              <strong style={{ color: '#007aff' }}>
+                {s.location_name || 'Location'}
+              </strong>
+              <div className="muted">{s.address}</div>
+            </a>
+          ) : (
             <strong>{s.location_name || 'Location TBD'}</strong>
-          </div>
-          {s.address && <div className="muted">• {s.address}</div>}
+          )}
         </div>
 
         {/* Row 4: teammates */}
