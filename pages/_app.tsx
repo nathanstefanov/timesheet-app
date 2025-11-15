@@ -23,16 +23,17 @@ export default function App({ Component, pageProps }: AppProps) {
       .eq('id', userId)
       .maybeSingle();
 
-    if (error) {
-      setErr(error.message);
+    // 🔥 If anything goes wrong with profile/role, force logout + relogin
+    if (error || !data) {
+      console.error('Failed to load profile for user', userId, error);
+      setErr('Session error. Please sign in again.');
       setProfile(null);
+
+      await supabase.auth.signOut();
+      router.replace('/'); // send them back to login
       return;
     }
-    if (!data) {
-      setErr('Profile not found');
-      setProfile(null);
-      return;
-    }
+
     setErr(null);
     setProfile(data as Profile);
   }
