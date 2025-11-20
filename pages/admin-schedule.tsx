@@ -38,7 +38,11 @@ const addHoursToLocalInput = (localDateTime: string, hours: number) => {
 };
 
 // ---- Google Maps loader (uses @googlemaps/js-api-loader for deterministic loading) ----
-declare global { interface Window { google?: any } }
+declare global {
+  interface Window {
+    google?: any;
+  }
+}
 
 const loadGoogleMaps = (() => {
   let promise: Promise<any> | null = null;
@@ -68,7 +72,9 @@ const loadGoogleMaps = (() => {
           if (document.getElementById(id)) return window.google?.maps;
           const s = document.createElement('script');
           s.id = id;
-          s.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(key)}&libraries=places&v=weekly`;
+          s.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(
+            key
+          )}&libraries=places&v=weekly`;
           s.async = true;
           await new Promise<void>((resolve, reject) => {
             s.onerror = () => reject(new Error('Failed to load Google Maps JS API'));
@@ -116,9 +122,11 @@ function LocationPicker({
           try {
             const placesModule = await (window as any).google.maps.importLibrary('places');
             const AutocompleteServiceCtor =
-              (placesModule as any)?.AutocompleteService ?? (window as any).google?.maps?.places?.AutocompleteService;
+              (placesModule as any)?.AutocompleteService ??
+              (window as any).google?.maps?.places?.AutocompleteService;
             const PlacesServiceCtor =
-              (placesModule as any)?.PlacesService ?? (window as any).google?.maps?.places?.PlacesService;
+              (placesModule as any)?.PlacesService ??
+              (window as any).google?.maps?.places?.PlacesService;
             if (AutocompleteServiceCtor && PlacesServiceCtor) {
               svcRef.current = new AutocompleteServiceCtor();
               const dummy = document.createElement('div');
@@ -135,7 +143,9 @@ function LocationPicker({
               setReady(false);
             }
           } catch (ex: any) {
-            const msg = `Failed to import Places via importLibrary: ${ex?.message || String(ex)}; falling back to manual location entry.`;
+            const msg = `Failed to import Places via importLibrary: ${
+              ex?.message || String(ex)
+            }; falling back to manual location entry.`;
             console.warn(msg, ex);
             setErrorText(msg);
             setReady(false);
@@ -157,12 +167,17 @@ function LocationPicker({
         );
       }
     })();
-    return () => { cancelled = true; };
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   // Throttled fetch for predictions
   useEffect(() => {
-    if (!ready || !q.trim()) { setPreds([]); return; }
+    if (!ready || !q.trim()) {
+      setPreds([]);
+      return;
+    }
     const handle = setTimeout(() => {
       svcRef.current.getPlacePredictions(
         {
@@ -244,11 +259,15 @@ function LocationPicker({
 // Small fallback UI that actively redirects and shows a link (prevents 404/blank)
 function RedirectTo({ to }: { to: string }) {
   const router = useRouter();
-  useEffect(() => { router.replace(to); }, [router, to]);
+  useEffect(() => {
+    router.replace(to);
+  }, [router, to]);
   return (
     <div className="page">
       <p>Redirecting…</p>
-      <p><a href={to}>Click here if you’re not redirected.</a></p>
+      <p>
+        <a href={to}>Click here if you’re not redirected.</a>
+      </p>
     </div>
   );
 }
@@ -295,6 +314,9 @@ export default function AdminSchedule() {
   const [creating, setCreating] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
+  // NEW: track which shift we're duplicating from
+  const [duplicateFrom, setDuplicateFrom] = useState<SRow | null>(null);
+
   // ---------- Edit panel ----------
   const [edit, setEdit] = useState<SRow | null>(null);
   const [saving, setSaving] = useState(false);
@@ -314,7 +336,9 @@ export default function AdminSchedule() {
     let alive = true;
 
     async function loadProfile() {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!alive) return;
 
       if (!session?.user) {
@@ -354,7 +378,10 @@ export default function AdminSchedule() {
       }
     });
 
-    return () => { alive = false; sub.subscription.unsubscribe(); };
+    return () => {
+      alive = false;
+      sub.subscription.unsubscribe();
+    };
   }, [router]);
 
   // Heartbeat tick (purely cosmetic here)
@@ -368,7 +395,9 @@ export default function AdminSchedule() {
   async function parseMaybeJson(r: Response) {
     const ct = r.headers.get('content-type') || '';
     if (ct.includes('application/json')) {
-      try { return await r.json(); } catch {}
+      try {
+        return await r.json();
+      } catch {}
     }
     const raw = await r.text();
     return { raw };
@@ -418,7 +447,10 @@ export default function AdminSchedule() {
         if (!isNaN(s)) return s >= now;
         return false;
       })
-      .sort((a, b) => (Date.parse(a.start_time ?? '') || 0) - (Date.parse(b.start_time ?? '') || 0));
+      .sort(
+        (a, b) =>
+          (Date.parse(a.start_time ?? '') || 0) - (Date.parse(b.start_time ?? '') || 0)
+      );
   }, [rows]);
 
   // Load assignments for visible upcoming shifts
@@ -426,7 +458,10 @@ export default function AdminSchedule() {
     (async () => {
       if (!(me && me.role === 'admin')) return;
       const ids = upcoming.map((r) => r.id);
-      if (ids.length === 0) { setAssignedMap({}); return; }
+      if (ids.length === 0) {
+        setAssignedMap({});
+        return;
+      }
       const { data, error } = await supabase
         .from('schedule_assignments')
         .select('schedule_shift_id, profiles:employee_id ( id, full_name, email )')
@@ -449,7 +484,8 @@ export default function AdminSchedule() {
     if (form.end_date && form.end_time) {
       const startLocal = combineLocalDateTime(form.start_date, form.start_time);
       const endLocal = combineLocalDateTime(form.end_date, form.end_time);
-      if (new Date(endLocal) <= new Date(startLocal)) return 'End time must be after start time.';
+      if (new Date(endLocal) <= new Date(startLocal))
+        return 'End time must be after start time.';
     }
     return null;
   }
@@ -473,7 +509,9 @@ export default function AdminSchedule() {
         end_time: endLocal ? new Date(endLocal).toISOString() : null,
         location_name: form.location_name || undefined,
         address: form.address || undefined,
-        job_type: form.job_type ? ((form.job_type as string).toLowerCase() as JobType) : undefined,
+        job_type: form.job_type
+          ? ((form.job_type as string).toLowerCase() as JobType)
+          : undefined,
         notes: form.notes || undefined,
         created_by: (me as any)!.id,
       };
@@ -500,6 +538,7 @@ export default function AdminSchedule() {
         notes: '',
       });
       setFormError(null);
+      setDuplicateFrom(null);
       await loadRows();
       alert('Scheduled shift created.');
     } catch (e: any) {
@@ -511,7 +550,51 @@ export default function AdminSchedule() {
 
   function openEdit(row: SRow) {
     setEdit({ ...row });
-    setTimeout(() => document.getElementById('edit-panel')?.scrollIntoView({ behavior: 'smooth' }), 0);
+    setTimeout(
+      () =>
+        document
+          .getElementById('edit-panel')
+          ?.scrollIntoView({ behavior: 'smooth' }),
+      0
+    );
+  }
+
+  // NEW: prefill create form from an existing shift (for Duplicate)
+  function prefillFormFromShift(row: SRow) {
+    // Start
+    const start = row.start_time ? new Date(row.start_time) : new Date();
+    const startLocal = toLocalInput(start);
+    const start_date = startLocal.slice(0, 10);
+    const start_time = startLocal.slice(11, 16);
+
+    // End (if exists)
+    let end_date = start_date;
+    let end_time = '';
+    if (row.end_time) {
+      const end = new Date(row.end_time);
+      const endLocal = toLocalInput(end);
+      end_date = endLocal.slice(0, 10);
+      end_time = endLocal.slice(11, 16);
+    }
+
+    setForm({
+      start_date,
+      start_time,
+      end_date,
+      end_time,
+      location_name: row.location_name ?? '',
+      address: row.address ?? '',
+      job_type: (row.job_type as JobType) || 'setup',
+      notes: row.notes ?? '',
+    });
+    setFormError(null);
+    setDuplicateFrom(row);
+
+    if (typeof window !== 'undefined') {
+      document
+        .querySelector('.form-container')
+        ?.scrollIntoView({ behavior: 'smooth' });
+    }
   }
 
   async function saveEdit() {
@@ -523,7 +606,9 @@ export default function AdminSchedule() {
         end_time: edit.end_time ?? null,
         location_name: edit.location_name ?? undefined,
         address: edit.address ?? undefined,
-        job_type: edit.job_type ? ((edit.job_type as string).toLowerCase() as JobType) : undefined,
+        job_type: edit.job_type
+          ? ((edit.job_type as string).toLowerCase() as JobType)
+          : undefined,
         notes: edit.notes ?? undefined,
       };
       if (body.start_time && !body.start_time.endsWith?.('Z'))
@@ -572,10 +657,18 @@ export default function AdminSchedule() {
       setCurrentAssignees([]);
       setAssignees([]);
     }
-    setTimeout(() => document.getElementById('assign-panel')?.scrollIntoView({ behavior: 'smooth' }), 0);
+    setTimeout(
+      () =>
+        document
+          .getElementById('assign-panel')
+          ?.scrollIntoView({ behavior: 'smooth' }),
+      0
+    );
   }
   function toggleEmp(id: string) {
-    setAssignees((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
+    setAssignees((prev) =>
+      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
+    );
   }
   async function saveAssignments() {
     if (!assignShift?.id) return;
@@ -626,8 +719,15 @@ export default function AdminSchedule() {
 
       {/* Top actions */}
       <div className="center" style={{ marginBottom: 12 }}>
-        <Link href="/admin-schedule-past" className="nav-link">View Past Shifts</Link>
-        <button type="button" className="topbar-btn" style={{ marginLeft: 8 }} onClick={loadRows}>
+        <Link href="/admin-schedule-past" className="nav-link">
+          View Past Shifts
+        </Link>
+        <button
+          type="button"
+          className="topbar-btn"
+          style={{ marginLeft: 8 }}
+          onClick={loadRows}
+        >
           Refresh
         </button>
       </div>
@@ -637,9 +737,14 @@ export default function AdminSchedule() {
       {/* Create form (centered) */}
       <div className="form-container">
         <div className="card form-card">
-
           <div className="row between wrap align-items-center">
-            <strong className="fs-16">Create Scheduled Shift</strong>
+            <strong className="fs-16">
+              {duplicateFrom
+                ? `Create Scheduled Shift (duplicating ${
+                    duplicateFrom.location_name || 'shift'
+                  })`
+                : 'Create Scheduled Shift'}
+            </strong>
             <div className="row gap-sm">
               <button
                 type="button"
@@ -651,6 +756,7 @@ export default function AdminSchedule() {
                     start_date: toLocalInput(now).slice(0, 10),
                     start_time: toLocalInput(now).slice(11, 16),
                   }));
+                  setDuplicateFrom(null);
                 }}
               >
                 Start Now
@@ -662,19 +768,45 @@ export default function AdminSchedule() {
           <div className="mt-lg grid-auto-fit-160">
             <div>
               <label>Start Date</label>
-              <input type="date" value={form.start_date} onChange={(e) => setForm({ ...form, start_date: e.target.value })} />
+              <input
+                type="date"
+                value={form.start_date}
+                onChange={(e) =>
+                  setForm({ ...form, start_date: e.target.value })
+                }
+              />
             </div>
             <div>
               <label>Start Time</label>
-              <input type="time" value={form.start_time} onChange={(e) => setForm({ ...form, start_time: e.target.value })} />
+              <input
+                type="time"
+                value={form.start_time}
+                onChange={(e) =>
+                  setForm({ ...form, start_time: e.target.value })
+                }
+              />
             </div>
             <div>
               <label>End Date</label>
-              <input type="date" value={form.end_date} onChange={(e) => setForm({ ...form, end_date: e.target.value })} />
+              <input
+                type="date"
+                value={form.end_date}
+                onChange={(e) =>
+                  setForm({ ...form, end_date: e.target.value })
+                }
+              />
             </div>
             <div>
-              <label>End Time <span className="muted">(Optional)</span></label>
-              <input type="time" value={form.end_time} onChange={(e) => setForm({ ...form, end_time: e.target.value })} />
+              <label>
+                End Time <span className="muted">(Optional)</span>
+              </label>
+              <input
+                type="time"
+                value={form.end_time}
+                onChange={(e) =>
+                  setForm({ ...form, end_time: e.target.value })
+                }
+              />
             </div>
           </div>
 
@@ -683,7 +815,9 @@ export default function AdminSchedule() {
             <LocationPicker
               valueName={form.location_name}
               valueAddr={form.address}
-              onSelect={({ name, address }) => setForm((f) => ({ ...f, location_name: name, address }))}
+              onSelect={({ name, address }) =>
+                setForm((f) => ({ ...f, location_name: name, address }))
+              }
             />
           </div>
 
@@ -695,10 +829,14 @@ export default function AdminSchedule() {
                 <button
                   key={jt}
                   type="button"
-                  className={`pill ${form.job_type === jt ? 'pill-active' : ''}`}
+                  className={`pill ${
+                    form.job_type === jt ? 'pill-active' : ''
+                  }`}
                   onClick={() => setForm({ ...form, job_type: jt })}
                 >
-                  <span className="pill__label">{jt[0].toUpperCase() + jt.slice(1)}</span>
+                  <span className="pill__label">
+                    {jt[0].toUpperCase() + jt.slice(1)}
+                  </span>
                 </button>
               ))}
             </div>
@@ -717,7 +855,12 @@ export default function AdminSchedule() {
           {formError && <div className="alert error mt-lg">{formError}</div>}
 
           <div className="mt-lg form-actions">
-            <button type="button" className="btn-primary" onClick={createShift} disabled={creating || !(me && me.role === 'admin')}>
+            <button
+              type="button"
+              className="btn-primary"
+              onClick={createShift}
+              disabled={creating || !(me && me.role === 'admin')}
+            >
               {creating ? 'Creating…' : 'Create Scheduled Shift'}
             </button>
             <button
@@ -738,6 +881,7 @@ export default function AdminSchedule() {
                   notes: '',
                 });
                 setFormError(null);
+                setDuplicateFrom(null);
               }}
             >
               Clear
@@ -783,42 +927,110 @@ export default function AdminSchedule() {
                 {upcoming.map((r, i) => {
                   const emps = assignedMap[r.id] || [];
                   const assignedLabel = emps.length
-                    ? emps.map((e) => e.full_name || e.email || e.id.slice(0, 8)).join(', ')
+                    ? emps
+                        .map(
+                          (e) =>
+                            e.full_name ||
+                            e.email ||
+                            e.id.slice(0, 8)
+                        )
+                        .join(', ')
                     : '—';
                   return (
                     <tr key={r.id} className={i % 2 === 1 ? 'row-alt' : ''}>
-                      <td data-label="Start" className="upcoming-table-td upcoming-table-td-middle">
-                        <span className="upcoming-table-cell-main">{fmt(r.start_time)}</span>
+                      <td
+                        data-label="Start"
+                        className="upcoming-table-td upcoming-table-td-middle"
+                      >
+                        <span className="upcoming-table-cell-main">
+                          {fmt(r.start_time)}
+                        </span>
                       </td>
-                      <td data-label="End" className="upcoming-table-td upcoming-table-td-middle">
-                        <span className="upcoming-table-cell-main">{fmt(r.end_time)}</span>
+                      <td
+                        data-label="End"
+                        className="upcoming-table-td upcoming-table-td-middle"
+                      >
+                        <span className="upcoming-table-cell-main">
+                          {fmt(r.end_time)}
+                        </span>
                       </td>
-                      <td data-label="Job" className="upcoming-table-td upcoming-table-td-middle">
+                      <td
+                        data-label="Job"
+                        className="upcoming-table-td upcoming-table-td-middle"
+                      >
                         <div className="job-cell">
                           <span className="badge badge-job">{r.job_type}</span>
                         </div>
                       </td>
-                      <td data-label="Location" className="upcoming-table-td upcoming-table-td-middle">
-                        <span className="upcoming-table-cell-main">{r.location_name}</span>
+                      <td
+                        data-label="Location"
+                        className="upcoming-table-td upcoming-table-td-middle"
+                      >
+                        <span className="upcoming-table-cell-main">
+                          {r.location_name}
+                        </span>
                       </td>
-                      <td data-label="Address" className="upcoming-table-td upcoming-table-td-middle">
-                        <span className="upcoming-table-cell-main">{r.address}</span>
+                      <td
+                        data-label="Address"
+                        className="upcoming-table-td upcoming-table-td-middle"
+                      >
+                        <span className="upcoming-table-cell-main">
+                          {r.address}
+                        </span>
                       </td>
-                      <td data-label="Assigned" className="upcoming-table-td upcoming-table-td-middle">
+                      <td
+                        data-label="Assigned"
+                        className="upcoming-table-td upcoming-table-td-middle"
+                      >
                         {emps.length > 0 ? (
-                          <span className="badge badge-assigned upcoming-table-assigned-badge-wrap">{assignedLabel}</span>
+                          <span className="badge badge-assigned upcoming-table-assigned-badge-wrap">
+                            {assignedLabel}
+                          </span>
                         ) : (
                           <span className="badge badge-unassigned">—</span>
                         )}
                       </td>
-                      <td className="col-hide-md upcoming-table-td upcoming-table-td-top" data-label="Notes">
-                        <span className="cell-notes upcoming-table-notes">{r.notes}</span>
+                      <td
+                        className="col-hide-md upcoming-table-td upcoming-table-td-top"
+                        data-label="Notes"
+                      >
+                        <span className="cell-notes upcoming-table-notes">
+                          {r.notes}
+                        </span>
                       </td>
-                      <td data-label="Actions" className="upcoming-table-td upcoming-table-td-actions">
+                      <td
+                        data-label="Actions"
+                        className="upcoming-table-td upcoming-table-td-actions"
+                      >
                         <div className="upcoming-table-actions-vert">
-                          <button type="button" className="btn-edit" onClick={() => openEdit(r)}>Edit</button>
-                          <button type="button" className="btn-edit" onClick={() => openAssign(r)}>Assign</button>
-                          <button type="button" className="btn-delete" onClick={() => deleteRow(r.id)}>Delete</button>
+                          <button
+                            type="button"
+                            className="btn-edit"
+                            onClick={() => openEdit(r)}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-edit"
+                            onClick={() => openAssign(r)}
+                          >
+                            Assign
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-edit"
+                            onClick={() => prefillFormFromShift(r)}
+                          >
+                            Duplicate
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-delete"
+                            onClick={() => deleteRow(r.id)}
+                          >
+                            Delete
+                          </button>
                         </div>
                       </td>
                     </tr>
@@ -832,42 +1044,79 @@ export default function AdminSchedule() {
 
       {/* Edit panel */}
       {edit && (
-        <div id="edit-panel" className="card mt-lg" style={{ padding: 16 }}>
+        <div
+          id="edit-panel"
+          className="card mt-lg"
+          style={{ padding: 16 }}
+        >
           <div className="row between">
             <strong>Edit Scheduled Shift</strong>
-            <button type="button" className="topbar-btn" onClick={() => setEdit(null)}>Close</button>
+            <button
+              type="button"
+              className="topbar-btn"
+              onClick={() => setEdit(null)}
+            >
+              Close
+            </button>
           </div>
 
-          <div className="mt-lg" style={{ display: 'grid', gap: 12, gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)' }}>
+          <div
+            className="mt-lg"
+            style={{
+              display: 'grid',
+              gap: 12,
+              gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)',
+            }}
+          >
             <div>
               <label>Start</label>
               <input
                 type="datetime-local"
-                value={edit.start_time ? toLocalInput(new Date(edit.start_time)) : ''}
-                onChange={(e) => setEdit({ ...edit, start_time: e.target.value })}
+                value={
+                  edit.start_time ? toLocalInput(new Date(edit.start_time)) : ''
+                }
+                onChange={(e) =>
+                  setEdit({ ...edit, start_time: e.target.value })
+                }
               />
             </div>
             <div>
               <label>End (optional)</label>
               <input
                 type="datetime-local"
-                value={edit.end_time ? toLocalInput(new Date(edit.end_time)) : ''}
-                onChange={(e) => setEdit({ ...edit, end_time: e.target.value })}
+                value={
+                  edit.end_time ? toLocalInput(new Date(edit.end_time)) : ''
+                }
+                onChange={(e) =>
+                  setEdit({ ...edit, end_time: e.target.value })
+                }
               />
             </div>
             <div>
               <label>Location Name</label>
-              <input value={edit.location_name ?? ''} onChange={(e) => setEdit({ ...edit, location_name: e.target.value })} />
+              <input
+                value={edit.location_name ?? ''}
+                onChange={(e) =>
+                  setEdit({ ...edit, location_name: e.target.value })
+                }
+              />
             </div>
             <div>
               <label>Address</label>
-              <input value={edit.address ?? ''} onChange={(e) => setEdit({ ...edit, address: e.target.value })} />
+              <input
+                value={edit.address ?? ''}
+                onChange={(e) =>
+                  setEdit({ ...edit, address: e.target.value })
+                }
+              />
             </div>
             <div style={{ gridColumn: '1 / -1' }}>
               <label>Job Type</label>
               <select
                 value={edit.job_type ?? 'setup'}
-                onChange={(e) => setEdit({ ...edit, job_type: e.target.value as JobType })}
+                onChange={(e) =>
+                  setEdit({ ...edit, job_type: e.target.value as JobType })
+                }
               >
                 <option value="setup">Setup</option>
                 <option value="lights">Lights</option>
@@ -877,12 +1126,22 @@ export default function AdminSchedule() {
             </div>
             <div style={{ gridColumn: '1 / -1' }}>
               <label>Notes</label>
-              <textarea value={edit.notes ?? ''} onChange={(e) => setEdit({ ...edit, notes: e.target.value })} />
+              <textarea
+                value={edit.notes ?? ''}
+                onChange={(e) =>
+                  setEdit({ ...edit, notes: e.target.value })
+                }
+              />
             </div>
           </div>
 
           <div className="mt-lg">
-            <button type="button" className="btn-primary" onClick={saveEdit} disabled={saving}>
+            <button
+              type="button"
+              className="btn-primary"
+              onClick={saveEdit}
+              disabled={saving}
+            >
               {saving ? 'Saving…' : 'Save Changes'}
             </button>
           </div>
@@ -891,17 +1150,41 @@ export default function AdminSchedule() {
 
       {/* Assign panel */}
       {assignShift && (
-        <div id="assign-panel" className="card mt-lg" style={{ padding: 16 }}>
+        <div
+          id="assign-panel"
+          className="card mt-lg"
+          style={{ padding: 16 }}
+        >
           <div className="row between">
             <strong>
-              Assign Employees — {assignShift.location_name || 'Shift'} ({fmt(assignShift.start_time)})
+              Assign Employees — {assignShift.location_name || 'Shift'} (
+              {fmt(assignShift.start_time)})
             </strong>
-            <button type="button" className="topbar-btn" onClick={() => setAssignShift(null)}>Close</button>
+            <button
+              type="button"
+              className="topbar-btn"
+              onClick={() => setAssignShift(null)}
+            >
+              Close
+            </button>
           </div>
 
-          <input className="mt-lg" placeholder="Search name or email…" value={search} onChange={(e) => setSearch(e.target.value)} />
+          <input
+            className="mt-lg"
+            placeholder="Search name or email…"
+            value={search}
+            onChange={(e) => setSearch(e.target.value)}
+          />
 
-          <div className="mt-lg" style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(220px, 1fr))', gap: 12 }}>
+          <div
+            className="mt-lg"
+            style={{
+              display: 'grid',
+              gridTemplateColumns:
+                'repeat(auto-fill, minmax(220px, 1fr))',
+              gap: 12,
+            }}
+          >
             {employees
               .filter((e) =>
                 [e.full_name ?? '', e.email ?? '', e.id].some((v) =>
@@ -909,15 +1192,31 @@ export default function AdminSchedule() {
                 )
               )
               .map((e) => (
-                <label key={e.id} className="inline-check card" style={{ padding: 10 }}>
-                  <input type="checkbox" checked={assignees.includes(e.id)} onChange={() => toggleEmp(e.id)} />
-                  <span>{e.full_name || e.email || e.id.slice(0, 8)}</span>
+                <label
+                  key={e.id}
+                  className="inline-check card"
+                  style={{ padding: 10 }}
+                >
+                  <input
+                    type="checkbox"
+                    checked={assignees.includes(e.id)}
+                    onChange={() => toggleEmp(e.id)}
+                  />
+                  <span>
+                    {e.full_name || e.email || e.id.slice(0, 8)}
+                  </span>
                 </label>
               ))}
           </div>
 
           <div className="mt-lg">
-            <button type="button" className="btn-primary" onClick={saveAssignments}>Save Assignments</button>
+            <button
+              type="button"
+              className="btn-primary"
+              onClick={saveAssignments}
+            >
+              Save Assignments
+            </button>
           </div>
         </div>
       )}
