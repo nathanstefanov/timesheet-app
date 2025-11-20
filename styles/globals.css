@@ -1,385 +1,1767 @@
-/* ==================================================================
-   GLOBALS.CSS – CLEANED, ORGANIZED, FULLY RESPONSIVE VERSION
-   This replaces your entire current upcoming-table / table-related CSS
-   Copy-paste this over your existing globals.css (or the table section)
-   ================================================================== */
-
-:root {
-  /* You probably already have these – just making sure */
-  --ink: #0f172a;
-  --ink-subtle: #475569;
-  --muted: #64748b;
-  --border: #e2e8f0;
-  --border-soft: #e2e8f0;
-  --brand-weak: #f8fafc;
-  --brand-border: #c7d2fe;
-  --radius-lg: 12px;
-  --shadow-md: 0 10px 15px -3px rgba(0,0,0,0.07), 0 4px 6px -2px rgba(0,0,0,0.04);
-}
-
-/* ==================================================================
-   BASE TABLE STYLES (used by all tables – dashboard, admin, schedule)
-   ================================================================== */
-.table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-  background: #fff;
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
-  overflow: hidden;
-  font-size: 15px;
-  line-height: 1.45;
-}
-
-.table th,
-.table td {
-  padding: 12px 10px;
-  text-align: center;
-  vertical-align: middle;
-  border-bottom: 1px solid var(--border-soft);
-}
-
-.table th {
-  background: #f4f6fb;
-  color: var(--ink-subtle);
-  font-weight: 700;
-  font-size: 15px;
-  letter-spacing: 0.1px;
-  text-transform: none;
-}
-
-.table tbody tr:hover {
-  background: #f8fafc;
-  transition: background 0.15s ease;
-}
-
-.table tbody tr:last-child td {
-  border-bottom: none;
-}
-
-/* Zebra striping (optional – looks cleaner) */
-.table--striped tbody tr:nth-child(even) {
-  background: #fbfcfd;
-}
-
-/* ==================================================================
-   UPCOMING-TABLE SPECIFIC (admin-schedule page)
-   ================================================================== */
-.upcoming-table {
-  /* already has the base .table styles */
-}
-
 .upcoming-table th {
-  background: #f4f6fb;
-  border-bottom: 2px solid var(--border);
-  padding-top: 16px;
-  padding-bottom: 16px;
-  font-size: 15.5px;
-  font-weight: 800;
+  text-align: center !important;
+  vertical-align: middle !important;
 }
-
-/* Cell defaults */
-.upcoming-table td {
-  padding: 14px 10px;
-  background: #fff;
+.upcoming-table-td-middle {
+  vertical-align: middle !important;
+  text-align: left !important;
+  height: 56px;
 }
-
-/* Main text in cells */
+.upcoming-table-td-top {
+  vertical-align: top !important;
+  text-align: left !important;
+  height: 56px;
+}
+.upcoming-table-td-actions {
+  vertical-align: middle !important;
+  text-align: right !important;
+  min-width: 120px;
+  height: 56px;
+}
+.upcoming-table-actions-vert {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 8px;
+  height: 100%;
+}
+.upcoming-table-notes {
+  color: var(--muted);
+  font-size: 13px;
+  font-style: italic;
+  line-height: 1.4;
+  margin: 0;
+  padding: 0;
+  white-space: pre-line;
+  word-break: break-word;
+}
+.upcoming-table-td {
+  vertical-align: middle !important;
+  text-align: left !important;
+  padding-top: 8px;
+  padding-bottom: 8px;
+  padding-left: 10px;
+  padding-right: 10px;
+  line-height: 1.4;
+  height: 48px;
+}
 .upcoming-table-cell-main {
   font-weight: 600;
   font-size: 15px;
   color: var(--ink);
-}
-
-/* Notes (smaller, italic) */
-.upcoming-table-notes {
-  font-size: 13.5px;
-  color: var(--muted);
-  font-style: italic;
   line-height: 1.4;
-  margin-top: 4px;
+  display: inline-block;
+}
+.upcoming-table-assigned-badge {
+  display: inline-block;
+  background: #dcfce7;
+  color: #065f46;
+  border: 1px solid #bbf7d0;
+  font-weight: 700;
+  font-size: 14px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  margin: 0;
   white-space: pre-line;
   word-break: break-word;
-}
-
-/* Badges */
-.badge-job {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
   min-width: 96px;
-  padding: 6px 14px;
-  border-radius: 10px;
-  background: linear-gradient(90deg, #eef2ff 60%, #e0e7ff 100%);
-  color: #3730a3;
-  font-weight: 700;
-  font-size: 14px;
-  white-space: nowrap;
-  box-shadow: 0 1px 2px rgba(79,70,229,0.1);
 }
-
-.badge-assigned {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 6px 12px;
-  border-radius: 10px;
-  background: linear-gradient(90deg, #dcfce7 60%, #bbf7d0 100%);
-  color: #065f46;
-  font-weight: 700;
-  font-size: 13.5px;
-  min-height: 36px;
-  line-height: 1.3;
-  white-space: normal;
-  word-break: break-word;
-  max-width: 100%;
-  box-shadow: 0 1px 2px rgba(16,185,129,0.1);
-}
-
-.badge-unassigned {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  min-width: 64px;
-  min-height: 36px;
-  padding: 6px 12px;
-  border-radius: 10px;
-  background: #f3f4f6;
-  color: #94a3b8;
-  font-weight: 600;
-  font-size: 13.5px;
-}
-
-/* Actions column – vertical stack on all sizes for consistency & breathing room */
-.upcoming-table-td-actions {
-  padding: 12px 16px;
-  text-align: right;
-  min-width: 140px;
-}
-
-.upcoming-table-actions-vert {
+.upcoming-table-actions {
   display: flex;
-  flex-direction: column;
-  align-items: stretch;
-  gap: 8px;
-  height: 100%;
+  align-items: center;
+  gap: 12px;
+  justify-content: flex-start;
 }
-
+.upcoming-table-td .cell-notes {
+  color: var(--muted);
+  font-size: 13px;
+  font-style: italic;
+  line-height: 1.4;
+  margin: 0;
+  padding: 0;
+  white-space: pre-line;
+}
+.upcoming-table-cell-flex {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  width: 100%;
+}
+.upcoming-table-cell-main {
+  font-weight: 600;
+  font-size: 15px;
+  color: var(--ink);
+  line-height: 1.4;
+}
+.upcoming-table th, .upcoming-table td {
+  vertical-align: middle;
+  text-align: center;
+  padding: 6px 8px;
+  line-height: 1.35;
+  font-size: 13px;
+}
+.upcoming-table th {
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+  background: #f4f6fb;
+  border-bottom: 2px solid var(--border);
+  text-align: center;
+}
+.upcoming-table td {
+  font-size: 15px;
+  background: #fff;
+  text-align: center;
+}
+.upcoming-table .cell-flex {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 36px;
+  width: 100%;
+}
+.upcoming-table .cell-flex-left {
+  justify-content: flex-start;
+}
+.upcoming-table .cell-flex-right {
+  justify-content: flex-end;
+}
+.upcoming-table .badge-job,
+.upcoming-table .badge-assigned,
+.upcoming-table .badge-unassigned {
+  margin: 0 auto;
+}
+.upcoming-table .actions {
+  gap: 14px;
+  margin: 0 auto;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
 .upcoming-table .btn-edit,
 .upcoming-table .btn-delete {
-  height: 36px;
-  min-width: 78px;
-  padding: 0 12px;
-  font-size: 14px;
-  font-weight: 700;
+  min-width: 80px;
+  height: 38px;
+  font-size: 15px;
   border-radius: 8px;
-  border: 1.5px solid var(--border);
+  font-weight: 700;
+  margin: 0 2px;
+}
+.upcoming-table .cell-notes {
+  color: var(--muted);
+  font-size: 13px;
+  font-style: italic;
+  line-height: 1.4;
+  margin-top: 2px;
+}
+@media (max-width: 900px) {
+  .upcoming-table th, .upcoming-table td {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+}
+@media (max-width: 700px) {
+  .upcoming-table th, .upcoming-table td {
+    padding-top: 12px;
+    padding-bottom: 12px;
+    font-size: 15px;
+  }
+  .upcoming-table .actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    margin: 0;
+  }
+  .upcoming-table .btn-edit,
+  .upcoming-table .btn-delete {
+    width: 100%;
+    min-width: 0;
+    margin: 0 0 6px 0;
+  }
+}
+.upcoming-table th, .upcoming-table td {
+  vertical-align: middle;
+  text-align: center;
+  padding: 14px;
+  line-height: 1.5;
+  border-bottom: 1px solid var(--border-soft);
+}
+.upcoming-table th {
+  font-size: 16px;
+  font-weight: 800;
+  letter-spacing: 0.2px;
+  background: #f4f6fb;
+  border-bottom: 2px solid var(--border);
+}
+.upcoming-table td {
+  font-size: 15px;
   background: #fff;
-  transition: all 0.15s ease;
 }
-
-.upcoming-table .btn-edit {
-  background: #f1f5f9;
-  color: #1e293b;
+.upcoming-table tbody tr {
+  transition: background-color 0.15s ease;
 }
-
-.upcoming-table .btn-edit:hover {
-  background: #e0e7ff;
-  border-color: #a5b4fc;
+.upcoming-table tbody tr:hover {
+  background-color: var(--brand-weak);
 }
-
+.upcoming-table tbody tr:last-child td {
+  border-bottom: none;
+}
+.upcoming-table .badge-job,
+.upcoming-table .badge-assigned,
+.upcoming-table .badge-unassigned {
+  margin-top: 2px;
+  margin-bottom: 2px;
+  margin-right: 0;
+  margin-left: 0;
+}
+.upcoming-table .actions {
+  gap: 14px;
+  margin-top: 2px;
+  margin-bottom: 2px;
+}
+.upcoming-table .btn-edit,
 .upcoming-table .btn-delete {
-  background: #fef2f2;
+  min-width: 80px;
+  height: 38px;
+  font-size: 15px;
+  border-radius: 8px;
+  font-weight: 700;
+  margin: 0 2px;
+}
+.upcoming-table .cell-main {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.4;
+  margin-bottom: 2px;
+}
+.upcoming-table .cell-sub {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 2px;
+  line-height: 1.2;
+}
+.upcoming-table .cell-notes {
+  color: var(--muted);
+  font-size: 13px;
+  font-style: italic;
+  line-height: 1.4;
+  margin-top: 2px;
+}
+@media (max-width: 900px) {
+  .upcoming-table th, .upcoming-table td {
+    padding-left: 10px;
+    padding-right: 10px;
+  }
+}
+@media (max-width: 700px) {
+  .upcoming-table th, .upcoming-table td {
+    padding-top: 12px;
+    padding-bottom: 12px;
+    font-size: 15px;
+  }
+  .upcoming-table .actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+    margin: 0;
+  }
+  .upcoming-table .btn-edit,
+  .upcoming-table .btn-delete {
+    width: 100%;
+    min-width: 0;
+    margin: 0 0 6px 0;
+  }
+}
+.upcoming-table {
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  background: #fff;
+  overflow: hidden;
+  margin: 1rem 0;
+  border-spacing: 0;
+  width: 100%;
+}
+.upcoming-table th {
+  background: #f4f6fb;
+  color: var(--ink-subtle);
+  font-size: 15px;
+  font-weight: 700;
+  letter-spacing: 0.1px;
+  border-bottom: 2px solid var(--border);
+  padding-top: 14px;
+  padding-bottom: 14px;
+}
+.upcoming-table tbody tr {
+  transition: background 0.13s; padding:0; margin:0;
+}
+.upcoming-table tbody tr:hover {
+  background: #f8fafc;
+}
+.upcoming-table .badge-job {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(90deg, #eef2ff 60%, #e0e7ff 100%);
+  color: #3730a3;
+  border: 1px solid var(--brand-border);
+  font-weight: 700;
+  font-size: 14px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  text-transform: capitalize;
+  box-shadow: 0 1px 2px rgba(79,70,229,0.07);
+  min-width: 96px;
+  max-width: 220px;
+  text-align: center;
+}
+
+/* job cell wrapper for consistent spacing and alignment */
+.job-cell{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  width:100%;
+  min-height:36px;
+}
+
+@media (min-width: 700px){
+  /* allow job cell to left-align badge on larger screens if desired by toggling this rule */
+  .upcoming-table td.job-cell-left .job-cell{ justify-content:flex-start; }
+}
+.upcoming-table .badge-assigned {
+  background: linear-gradient(90deg, #dcfce7 60%, #bbf7d0 100%);
+  color: #065f46;
+  border: 1px solid #bbf7d0;
+  font-weight: 700;
+  font-size: 13px;
+  padding: 4px 12px;
+  border-radius: 8px;
+  box-shadow: 0 1px 2px rgba(16,185,129,0.07);
+}
+.upcoming-table .badge-unassigned {
+  background: #f3f4f6;
+  color: #b0b0b0;
+  border: 1px solid #e5e7eb;
+  font-weight: 600;
+  font-size: 13px;
+  padding: 4px 12px;
+  border-radius: 8px;
+}
+.upcoming-table .actions {
+  gap: 10px;
+}
+.upcoming-table .btn-edit,
+.upcoming-table .btn-delete {
+  border-radius: 8px;
+  font-weight: 700;
+  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
+  border: 1.5px solid var(--border);
+  background: #f8fafc;
+  color: #1e293b;
+  transition: background 0.13s, border-color 0.13s, color 0.13s;
+}
+.upcoming-table .btn-edit:hover,
+.upcoming-table .btn-delete:hover {
+  background: #eef2ff;
+  border-color: var(--brand-border);
+  color: #3730a3;
+}
+.upcoming-table .btn-delete {
+  background: #fff4f4;
+  color: #7a1f1f;
+  border-color: #ffd7d7;
+}
+.upcoming-table .btn-delete:hover {
+  background: #ffeaea;
   color: #b91c1c;
   border-color: #fecaca;
 }
+.upcoming-table .cell-main {
+  font-size: 15px;
+  font-weight: 600;
+  color: var(--ink);
+  line-height: 1.3;
+}
+.upcoming-table .cell-sub {
+  font-size: 12px;
+  color: var(--muted);
+  margin-top: 2px;
+  line-height: 1.1;
+}
+.upcoming-table .cell-notes {
+  color: var(--muted);
+  font-size: 13px;
+  font-style: italic;
+  line-height: 1.3;
+}
+.upcoming-table th, .upcoming-table td {
+  vertical-align: middle;
+  text-align: left;
+}
+.upcoming-table td {
+  padding-top: 12px;
+  padding-bottom: 12px;
+}
+.upcoming-table .badge,
+.upcoming-table .badge-assigned,
+.upcoming-table .badge-unassigned {
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  vertical-align: middle;
+  min-height: 28px;
+}
+/* job badge should be centered inside its cell (override the group above) */
+.upcoming-table .badge-job {
+  justify-content: center;
+}
+.upcoming-table .actions {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  justify-content: flex-start;
+}
+.upcoming-table .btn-edit,
+.upcoming-table .btn-delete {
+  min-width: 72px;
+  height: 36px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 14px;
+}
+.upcoming-table .cell-main {
+  display: block;
+  font-weight: 600;
+  color: var(--ink);
+  font-size: 15px;
+  line-height: 1.4;
+  margin-bottom: 4px;
+}
+.upcoming-table .cell-sub {
+  display: block;
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 2px;
+  line-height: 1.1;
+}
+.upcoming-table .cell-notes {
+  color: var(--muted);
+  font-size: 13px;
+  font-style: italic;
+  line-height: 1.3;
+}
+@media (max-width: 700px) {
+  .upcoming-table th, .upcoming-table td {
+    text-align: left;
+    vertical-align: top;
+    padding-top: 10px;
+    padding-bottom: 10px;
+  }
+  .upcoming-table .actions {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 8px;
+  }
+  .upcoming-table .btn-edit,
+  .upcoming-table .btn-delete {
+    width: 100%;
+    min-width: 0;
+    margin-bottom: 0;
+  }
+}
+/* ========== Upcoming Table Enhanced ========== */
+.cell-main {
+  font-weight: 600;
+  color: var(--ink);
+  font-size: 15px;
+}
+.cell-sub {
+  color: var(--muted);
+  font-size: 12px;
+  margin-top: 2px;
+}
+.cell-notes {
+  color: var(--muted);
+  font-size: 13px;
+  font-style: italic;
+}
+.badge-job {
+  background: var(--brand-weak);
+  color: var(--brand);
+  border: 1px solid var(--brand-border);
+  font-weight: 700;
+  font-size: 13px;
+  padding: 4px 10px;
+  border-radius: 8px;
+  text-transform: capitalize;
+}
+.badge-assigned {
+  background: var(--success-bg);
+  color: var(--success-ink);
+  border: 1px solid var(--success-brd);
+  font-weight: 700;
+  font-size: 13px;
+  padding: 4px 10px;
+  border-radius: 8px;
+}
+.badge-unassigned {
+  background: #f3f4f6;
+  color: #b0b0b0;
+  border: 1px solid #e5e7eb;
+  font-weight: 600;
+  font-size: 13px;
+  padding: 4px 10px;
+  border-radius: 8px;
+}
+.upcoming-table-card {
+  padding: 20px 18px 18px 18px;
+  margin-top: 18px;
+  box-shadow: var(--shadow-md);
+  border-radius: var(--radius-lg);
+}
+.upcoming-table-header {
+  margin-bottom: 10px;
+}
+.upcoming-table-empty {
+  margin-top: 10px;
+  padding: 16px 12px;
+  background: #f8fafc;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+.upcoming-table {
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.mt-10 { margin-top: 10px; }
+.table--striped tbody tr.row-alt {
+  background: #f6f8fa;
+}
+.table--compact th, .table--compact td {
+  padding: 8px 10px;
+}
+/* ========== Upcoming Table Card ========== */
+.upcoming-table-card {
+  padding: 20px 18px 18px 18px;
+  margin-top: 18px;
+  box-shadow: var(--shadow-md);
+  border-radius: var(--radius-lg);
+}
+.upcoming-table-header {
+  margin-bottom: 10px;
+}
+.upcoming-table-empty {
+  margin-top: 10px;
+  padding: 16px 12px;
+  background: #f8fafc;
+  border-radius: var(--radius);
+  border: 1px solid var(--border);
+}
+.upcoming-table {
+  border-radius: var(--radius);
+  overflow: hidden;
+}
+.mt-10 { margin-top: 10px; }
+.table--striped tbody tr.row-alt {
+  background: #f6f8fa;
+}
+.table--compact th, .table--compact td {
+  padding: 8px 10px;
+}
+/* ========== Location Picker Card ========== */
+.location-picker-card {
+  background: var(--card);
+  border: 1.5px solid var(--brand-border);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+  padding: 24px 22px 18px 22px;
+  margin-bottom: 18px;
+  max-width: 540px;
+  margin-left: auto;
+  margin-right: auto;
+}
+.location-picker-section {
+  margin-bottom: 18px;
+}
+.location-picker-label {
+  font-weight: 600;
+  color: var(--ink-subtle);
+  margin-bottom: 6px;
+  display: block;
+}
+.location-picker-input {
+  width: 100%;
+  padding: 10px 12px;
+  border-radius: 10px;
+  border: 1px solid #d1d5db;
+  background: #f8fafc;
+  color: var(--ink);
+  margin-bottom: 8px;
+  font-size: 15px;
+  transition: border-color .15s, box-shadow .15s, background .15s;
+}
+.location-picker-input:focus {
+  border-color: var(--brand);
+  background: #fff;
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 12%, transparent);
+}
+.location-picker-fields {
+  display: flex;
+  gap: 16px;
+  flex-wrap: wrap;
+}
+.location-picker-field {
+  flex: 1 1 220px;
+  min-width: 180px;
+}
+.location-picker-preds {
+  margin-top: 4px;
+}
+/* ======================================================
+   Timesheet – Global Styles (mobile-first)
+   Paste this entire file as globals.css
+====================================================== */
 
-.upcoming-table .btn-delete:hover {
-  background: #fee2e2;
+/* ---------- Theme ---------- */
+:root{
+  --bg: #f7f8fc;
+  --card: #ffffff;
+
+  --ink: #0f172a;
+  --ink-subtle: #334155;
+  --muted: #6b7280;
+
+  --brand: #4f46e5;
+  --brand-weak: #eef2ff;
+  --brand-border: #c7d2fe;
+
+  --border: #e5e7eb;
+  --border-soft: #f1f5f9;
+
+  --success-bg: #dcfce7; --success-ink:#065f46; --success-brd:#bbf7d0;
+  --danger-bg:  #fee2e2; --danger-ink:#7a1111;  --danger-brd:#fecaca;
+  --warn-bg:    #fff7e6; --warn-ink:#b26b00;   --warn-brd:#ffe1b3;
+
+  --shadow-sm: 0 1px 2px rgba(0,0,0,.06);
+  --shadow-md: 0 6px 24px rgba(15, 23, 42, .07);
+
+  --radius-sm: 8px;
+  --radius:    12px;
+  --radius-lg: 16px;
+
+  --gap: 12px;
+
+  /* Pro polish type scales */
+  --h1: clamp(22px, 4.6vw, 28px);
+  --label: 600;
 }
 
-/* Duplicate & Assign use same style as Edit */
-.upcoming-table .btn-edit:nth-child(3), /* Duplicate */
-.upcoming-table .btn-edit:nth-child(2) { /* Assign */
-  background: #f0fdf4;
-  color: #166534;
+/* ---------- Reset / Base ---------- */
+*{ box-sizing:border-box; }
+html, body{ margin:0; padding:0; }
+html{ -webkit-text-size-adjust: 100%; }
+body{
+  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
+  color: var(--ink);
+  background: var(--bg);
+  line-height: 1.55;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+img{ max-width:100%; height:auto; display:block; }
+a{ color:inherit; text-decoration:none; }
+button{ font: inherit; }
+
+:focus-visible{
+  outline:3px solid color-mix(in oklab, var(--brand) 40%, transparent);
+  outline-offset:2px; border-radius:10px;
 }
 
-/* ==================================================================
-   RESPONSIVE – MOBILE FIRST (clean & touch-friendly)
-   ================================================================== */
-
-/* Tablet & up – nicer horizontal layout */
-@media (min-width: 768px) {
-  .upcoming-table td,
-  .upcoming-table th {
-    padding: 16px 12px;
-  }
-
-  /* Start & End columns – allow wrap (date on first line, time on second) */
-  .upcoming-table th:nth-child(1),
-  .upcoming-table th:nth-child(2),
-  .upcoming-table td:nth-child(1),
-  .upcoming-table td:nth-child(2) {
-    white-space: normal;
-    line-height: 1.4;
-  }
-
-  /* Give Actions column more room on large screens */
-  .upcoming-table th:nth-child(8),
-  .upcoming-table td:nth-child(8) {
-    width: 160px;
-  }
+.sr-only{
+  position:absolute!important; width:1px; height:1px; padding:0; margin:-1px;
+  overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0;
 }
 
-/* Mobile – stacked cards (very clean look) */
-@media (max-width: 767px) {
-  .table-wrap {
-    overflow-x: hidden; /* prevent horizontal scroll */
-    margin: 0 -16px; /* full bleed on mobile */
-    padding: 0 16px;
+/* ---------- Page Layout ---------- */
+.page{
+  max-width: 1100px;
+  margin: 20px auto;
+  padding: 0 14px;
+}
+.page__title{
+  text-align:center;
+  margin: 8px 0 14px;
+  font-size: var(--h1);
+  font-weight: 800;
+  letter-spacing:.2px;
+}
+.page--center{ display:flex; flex-direction:column; align-items:center; }
+.center{ text-align:center; }
+.full{ width:100%; }
+
+.row{ display:flex; align-items:center; gap: var(--gap); }
+.wrap{ flex-wrap:wrap; }
+.between{ justify-content:space-between; }
+.gap-sm{ gap:8px; } .gap-md{ gap:16px; }
+.mb-sm{ margin-bottom:10px; } .mb-md{ margin-bottom:16px; } .mt-lg{ margin-top:24px; }
+
+/* ======================================================
+   Topbar (centered on mobile, inline on desktop)
+====================================================== */
+.topbar{
+  position:sticky; top:0; z-index:20; background:var(--card);
+  border-bottom:1px solid #eaecef; padding-top: env(safe-area-inset-top);
+}
+.shell{
+  max-width:1100px; margin:0 auto; padding:10px 14px;
+  display:flex; align-items:center; gap:12px; justify-content:space-between;
+}
+.brand-wrap{ display:inline-flex; align-items:center; gap:10px; }
+.logo{ height:44px; width:auto; object-fit:contain; }
+.brand{ font-weight:800; color:#111827; letter-spacing:.2px; }
+
+.nav{ display:sticky; gap:8px; flex-wrap:wrap; align-items:center; }
+.nav-link{
+  padding:8px 12px; border-radius:10px; color:#1f2937;
+  border:1px solid transparent; transition: background .15s, border-color .15s, color .15s;
+  font-weight: 600;
+}
+.nav-link:hover{ background:#f3f4f6; border-color:var(--border); }
+.nav-link.active{ background:var(--brand-weak); color:#3730a3; border-color:var(--brand-border); }
+
+.topbar-btn, .signout{
+  padding:8px 12px; border-radius:10px; font-weight:700;
+  border:1px solid var(--border); background:#fff; color:#111827; cursor:pointer;
+  transition: background .15s, border-color .15s, transform .02s;
+}
+.topbar-btn:hover, .signout:hover{ background:#f9fafb; }
+.topbar-btn:active, .signout:active{ transform: translateY(1px); }
+.topbar-btn[disabled]{ opacity:.55; cursor:not-allowed; }
+
+/* Mobile: stack + center */
+@media (max-width: 700px){
+  .shell{ flex-direction:column; align-items:center; gap:6px; }
+  .logo{ height:36px; }
+  .brand{ font-size:16px; }
+  .nav{ width:100%; justify-content:center; gap:8px; }
+  .brand-wrap{ order:1; }
+  .nav{ order:2; }
+  .signout{ order:3; }
+}
+
+/* ======================================================
+   Cards / Toasts / Alerts
+====================================================== */
+.card{
+  background:var(--card); border:1px solid var(--border); border-radius:var(--radius);
+  box-shadow:var(--shadow-sm);
+}
+.card--tight .table th, .card--tight .table td{ padding:10px; }
+.card__header{
+  padding: 10px 12px; display:flex; align-items:center; justify-content:space-between;
+  border-bottom:1px solid var(--border-soft);
+}
+
+.toast, .alert{
+  margin:12px auto; max-width:840px; padding:10px 12px; border-radius:10px;
+  border:1px solid var(--border); background:#fff; color:#111827; box-shadow:var(--shadow-sm);
+}
+.alert.error, .toast--error{ background:#fff4f4; border-color:#ffd7d7; color:#7a1f1f; }
+.alert.ok{ background:var(--success-bg); color:var(--success-ink); border-color:var(--success-brd); }
+
+/* ======================================================
+   Toolbar / Totals (centered)
+====================================================== */
+.toolbar{
+  display:flex; align-items:center; justify-content:center;
+  gap:12px; margin:12px 0 10px; flex-wrap:wrap;
+}
+.totals{
+  display:flex; gap:12px; margin:6px 0 14px; flex-wrap:wrap; justify-content:center;
+}
+.chip{
+  padding:8px 12px; background:#fff; border:1px solid var(--border);
+  border-radius:999px; font-weight:700; color:#1f2937;
+  box-shadow: var(--shadow-sm);
+}
+.chip--xl{ font-size:15px; padding:10px 14px; }
+
+/* ======================================================
+   Buttons
+====================================================== */
+.btn-primary{
+  display:inline-flex; align-items:center; justify-content:center;
+  height:44px; padding:0 18px; border-radius:14px;
+  background:#3b5bfd; color:#fff; font-weight:800; text-decoration:none;
+  border:0; box-shadow: var(--shadow-md); transition: filter .15s, transform .02s;
+  letter-spacing:.2px;
+}
+.btn-primary:hover{ filter: brightness(0.98); }
+.btn-primary:active{ transform: translateY(1px); }
+
+.actions{ display:flex; gap:12px; flex-wrap:wrap; }
+.btn-edit, .btn-delete{
+  display:inline-flex; align-items:center; justify-content:center;
+  min-width:92px; height:38px; padding:0 14px; border-radius:var(--radius);
+  font-weight:800; text-decoration:none; border:0; cursor:pointer;
+  transition: transform .02s ease, filter .15s ease, background .15s ease, border-color .15s ease;
+  box-shadow: var(--shadow-sm);
+}
+.btn-edit{ background:#2563eb; color:#fff; }
+.btn-edit:hover{ filter: brightness(0.98); }
+.btn-edit:active{ transform: translateY(1px); }
+
+.btn-delete{ background:var(--danger-bg); color:var(--danger-ink); border:1px solid var(--danger-brd); }
+.btn-delete:hover{ background:#fecaca; }
+.btn-delete:active{ transform: translateY(1px); }
+
+/* ======================================================
+   Forms
+====================================================== */
+label{ display:block; margin:8px 0 6px; color: var(--ink-subtle); font-size:14px; }
+input[type="text"], input[type="email"], input[type="time"], input[type="date"], select, textarea{
+  width:100%; padding:10px 12px; border-radius:10px;
+  border:1px solid #d1d5db; background:#fff; color:var(--ink); outline:none;
+  transition: border-color .15s, box-shadow .15s, background .15s;
+}
+input:focus, select:focus, textarea:focus{
+  border-color: var(--brand);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 20%, transparent);
+}
+textarea{ min-height:80px; resize:vertical; }
+.inline-check{ display:inline-flex; align-items:center; gap:10px; }
+.inline-check input{ width:18px; height:18px; }
+
+/* ======================================================
+   Tables (desktop) + Section Bars
+====================================================== */
+.table{
+  width:100%; border-collapse: collapse; background:var(--card);
+  border:1px solid var(--border); border-radius: var(--radius); overflow: hidden;
+  box-shadow: var(--shadow-sm);
+  table-layout: auto;
+}
+.table th, .table td{ padding:12px; border-top:1px solid var(--border-soft); }
+.table thead th{
+  background:#f8fafc; border-top:0; text-align:left; font-weight:700; color: var(--ink-subtle);
+}
+.table tbody tr:hover{ background: #fdfdfd; }
+.table--compact th, .table--compact td{ padding:9px; }
+.table--admin{ font-size:14px; }
+
+.table--center th, .table--center td{ text-align:center; vertical-align: middle; }
+.table--center th:first-child, .table--center td:first-child{ text-align:left; }
+.table--center td .actions{ display:inline-flex; gap:10px; justify-content:center; align-items:center; }
+
+.table-wrap{ width:100%; }
+
+/* section header row for grouped tables (Admin) */
+.section-head td{
+  font-weight:800; background:#f8fafc; color:#111827; border-top:2px solid var(--border);
+  padding: 0;
+}
+.section-bar{
+  display:flex; align-items:center; justify-content:space-between;
+  gap:16px; padding:10px 12px;
+  border-radius: 12px;
+}
+.section-bar__left{ display:flex; align-items:center; gap:12px; }
+.section-bar__right{ display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
+.employee-name{ font-size:16px; font-weight:800; }
+
+.pill{
+  display:inline-flex; align-items:center; gap:6px; padding:6px 10px; background:#fff;
+  border:1px solid var(--border); border-radius:999px; font-weight:700; box-shadow: var(--shadow-sm);
+}
+.pill__num{ background:#111827; color:#fff; border-radius:999px; padding:2px 6px; font-size:12px; line-height:1; }
+.pill__label{ font-size:12px; color:var(--muted); font-weight:600; }
+
+.subtotal td{ background:#fbfbff; color:#1f2937; font-weight:700; border-top:2px solid var(--brand-border); }
+
+/* ======================================================
+   Badges
+====================================================== */
+.badge{
+  display:inline-flex; align-items:center; justify-content:center; padding:2px 8px; border-radius:999px;
+  font-size:12px; font-weight:700; border:1px solid transparent; line-height: 1.6;
+  min-width: 84px; box-shadow: var(--shadow-sm);
+}
+.badge-paid{    background:var(--success-bg); color:var(--success-ink); border-color:var(--success-brd); }
+.badge-unpaid{  background:var(--danger-bg);  color:var(--danger-ink);  border-color:var(--danger-brd); }
+.badge-min{     background:var(--warn-bg);    color:var(--warn-ink);    border-color:var(--warn-brd); }
+
+/* ======================================================
+   Admin Summary / Tabs
+====================================================== */
+.tabs{ display:flex; gap:8px; flex-wrap: wrap; margin: 10px 0 16px; justify-content:center; }
+.tabs button{
+  background:#fff; color:#111827; border:1px solid var(--border);
+  padding:8px 12px; border-radius:10px; font-weight:700; cursor:pointer;
+  transition: background .15s, border-color .15s, color .15s, transform .02s;
+}
+.tabs button.active{ background: var(--brand-weak); color:#3730a3; border-color: var(--brand-border); }
+.tabs button:hover{ background:#f9fafb; }
+.tabs button:active{ transform: translateY(1px); }
+
+.admin-summary{
+  margin:16px 0; padding:12px 14px; background:#f6f7ff;
+  border:1px solid var(--brand-border); border-radius: var(--radius);
+  display:flex; gap:16px; align-items:center; font-weight:700; box-shadow: var(--shadow-sm);
+  justify-content:center; flex-wrap:wrap;
+}
+.admin-summary .meta{ font-weight:500; font-size:12px; color: var(--muted); }
+.admin-summary .inline{ display:inline-flex; align-items:center; gap:8px; }
+
+/* ======================================================
+   MOBILE: Card-style rows for stacked tables
+   (Clean, centered, professional)
+====================================================== */
+@media (max-width: 700px){
+  .page{ max-width:100%; padding: 10px 12px; margin: 16px auto; }
+  .card{ border-radius: 14px; }
+  .card__header{ padding: 8px 10px; }
+
+  .btn-edit, .btn-delete{ min-width:72px; height:36px; padding:0 12px; border-radius:10px; box-shadow:none; }
+  .chip{ padding:6px 10px; font-size:12px; }
+  .badge{ font-size:11px; padding:1px 7px; }
+
+  /* --- Stacked table turns into cards --- */
+  .table--stack{ border:0; width:100%; }
+  .table--stack thead{ display:none; }
+  .table--stack tbody, .table--stack tr, .table--stack td{ display:block; width:100%; }
+
+  /* turn each row into a neat card */
+  .table--stack tr{
+    background:#fff; border:1px solid var(--border); border-radius:14px;
+    box-shadow: var(--shadow-md); margin: 14px 0; padding: 12px 14px;
   }
 
-  .upcoming-table {
-    border-radius: 0;
-    box-shadow: none;
+  /* each cell is a labeled row */
+  .table--stack td{
+    border:0!important; padding: 10px 0;
+    display:flex; align-items:center; justify-content:space-between;
+    gap: 12px; font-size:15px;
+  }
+  .table--stack td::before{
+    content: attr(data-label);
+    font-weight: var(--label); color: var(--ink-subtle);
+    flex: 1; text-align:left;
+  }
+  .table--stack td{ text-align:right; }
+
+  /* center badges */
+  .table--stack td .badge{ margin-left:auto; }
+  /* job and assigned badges should be centered in stacked (mobile) layout */
+  .table--stack td .badge-job,
+  .table--stack td .badge-assigned,
+  .table--stack td .badge-unassigned {
+    margin-left: auto;
+    margin-right: auto;
   }
 
-  .upcoming-table thead {
-    display: none; /* hide header on mobile */
+  /* actions: big tap targets */
+  .table--stack td .actions{
+    width:100%; display:flex; justify-content:center; gap:10px; margin-top:8px;
   }
+  .table--stack td .btn-edit,
+  .table--stack td .btn-delete{ flex:1; height:40px; }
 
-  .upcoming-table tbody tr {
-    display: block;
-    background: #fff;
+  /* Section header bar stacks nicely */
+  .section-bar{ flex-direction:column; align-items:center; gap:10px; }
+  .section-bar__right{ width:100%; justify-content:center; gap:10px; }
+  .section-bar__right .topbar-btn{ flex:1 1 160px; height:40px; border-radius:12px; }
+
+  /* Hide medium-only columns cleanly */
+  .col-hide-md{ display: none !important; }
+
+  /* Subtotal row as mini card */
+  .table--stack tr.subtotal{
+    padding: 12px 14px;
     border: 1px solid var(--border);
-    border-radius: 12px;
-    margin-bottom: 16px;
-    padding: 16px 16px 20px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
+    border-radius: 14px;
+    box-shadow: var(--shadow-sm);
+    background: #fff;
+    display: grid;
+    grid-template-columns: 1fr;
+    row-gap: 4px;
   }
+  .table--stack tr.subtotal td{ display: none; }
+  .table--stack tr.subtotal td:nth-child(1),
+  .table--stack tr.subtotal td:nth-child(2),
+  .table--stack tr.subtotal td:nth-child(3){
+    display: block;
+    padding: 6px 0;
+  }
+  .table--stack tr.subtotal td:nth-child(1){
+    text-align: center; font-weight: 800; color: var(--ink); padding-bottom: 8px;
+  }
+  .table--stack tr.subtotal td:nth-child(1)::before{ content: ''; }
+  .table--stack tr.subtotal td:nth-child(2),
+  .table--stack tr.subtotal td:nth-child(3){
+    display: grid; grid-template-columns: 56% 44%; align-items:center; gap: 8px;
+  }
+  .table--stack tr.subtotal td:nth-child(2)::before{ content: 'Hours'; font-weight: var(--label); color: var(--muted); text-align:left; }
+  .table--stack tr.subtotal td:nth-child(3)::before{ content: 'Pay';   font-weight: var(--label); color: var(--muted); text-align:left; }
+}
 
+/* ======================================================
+   Medium screens: enable gentle horizontal scroll for wide tables
+====================================================== */
+@media (max-width: 900px){
+  .table-wrap{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
+}
+
+/* ======================================================
+   Small helpers
+====================================================== */
+.muted{ color: var(--muted); }
+.link-right{ margin-left:auto; color:#2563eb; font-weight:600; }
+/* flag badge (same visual weight as MIN badge, not loud) */
+.badge-flag{
+  display:inline-flex; align-items:center; justify-content:center;
+  padding:2px 8px; border-radius:999px;
+  border:1px solid #f59e0b;           /* amber-500-ish border */
+  background:#fffbeb;                  /* amber-50-ish background */
+  color:#92400e;                       /* amber-800-ish text */
+  font-weight:700;
+}
+
+/* Utilities used by admin-schedule.tsx (small helpers to replace inline styles) */
+.gap-10{ gap:10px; }
+.fs-12{ font-size:12px; }
+.p-14{ padding:14px; }
+.p-16{ padding:16px; }
+.p-10{ padding:10px; }
+.p-6{ padding:6px; }
+.maxh-220{ max-height:220px; }
+.ovf-y-auto{ overflow-y:auto; }
+.btn-list{ width:100%; text-align:left; padding:6px 8px; }
+.mb-12{ margin-bottom:12px; }
+.ml-8{ margin-left:8px; }
+.gap-16{ gap:16px; }
+.flex-1-380{ flex: 1 1 380px; }
+.flex-2-520{ flex: 2 1 520px; }
+.grid{ display:grid; }
+.flex-1-min220{ flex:1; min-width:220px; }
+.fs-16{ font-size:16px; }
+.grid-auto-fit-160{ display:grid; gap:12px; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
+.maxw-620{ max-width:620px; }
+.pill-active{ border:2px solid var(--brand-border); font-weight:700; }
+.p-12{ padding:12px; }
+.mt-10{ margin-top:10px; }
+.align-items-center{ align-items:center; }
+.align-self-end{ align-self:end; }
+.mt-6{ margin-top:6px; }
+.gap-8{ gap:8px; }
+.table-wrap-mt10{ margin-top:10px; }
+.grid-two-cols{ display:grid; gap:12px; grid-template-columns: minmax(0,1fr) minmax(0,1fr); }
+.grid-col-span{ grid-column: 1 / -1; }
+.grid-auto-fill-220{ display:grid; gap:12px; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
+.p-10{ padding:10px; }
+
+/* Scheduling form helpers */
+.form-container{ display:flex; justify-content:center; width:100%; margin: 8px 0 18px; }
+.form-card{ max-width:780px; width:100%; padding:20px; border-radius:16px; box-shadow: var(--shadow-md); border:1px solid var(--border); }
+.form-card .grid-auto-fit-160{ gap:14px; }
+.form-card label{ color:var(--ink-subtle); font-weight:600; }
+.form-actions{ display:flex; gap:12px; justify-content:flex-start; align-items:center; flex-wrap:wrap; }
+.form-intro{ color:var(--muted); margin-bottom:8px; }
+.pill{ transition: transform .08s ease, border-color .12s ease; }
+.pill:hover{ transform: translateY(-2px); }
+.pill-active{ background: linear-gradient(180deg, var(--brand-weak), #f3f4ff); border:2px solid var(--brand-border); }
+
+/* mobile-only row for badges under the name */
+.mobile-badges{ display:none; }
+
+/* stack name + counts on mobile neatly centered */
+@media (max-width: 640px){
+  .section-bar__left{
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+  }
+  .mobile-badges{
+    display: inline-flex;
+    gap: 6px;
+    margin-top: 4px;
+    flex-wrap: wrap;
+    justify-content: center;
+  }
+}
+/* globals.css (or wherever your nav styles live) */
+.nav { display:flex; gap:1rem; flex-wrap:wrap; overflow:visible; }
+.nav-link { display:inline-block; }
+/* ===== Overrides: Upcoming Scheduled Shifts ===== */
+
+/* 1) Make rows more compact */
+.upcoming-table th,
+.upcoming-table td {
+  padding: 6px 8px !important;   /* tighter */
+  line-height: 1.25 !important;
+}
+
+/* Optional: reduce min-heights from helper wrappers */
+.upcoming-table .cell-flex,
+.upcoming-table .upcoming-table-cell-flex,
+.upcoming-table-td,
+.upcoming-table-td-middle,
+.upcoming-table-td-top,
+.upcoming-table-td-actions {
+  height: auto !important;
+  min-height: 0 !important;
+}
+
+/* Buttons and gaps a bit smaller so rows stay tight */
+.upcoming-table .actions { gap: 8px !important; }
+.upcoming-table .btn-edit,
+.upcoming-table .btn-delete {
+  height: 30px !important;
+  min-width: 68px !important;
+  padding: 0 8px !important;
+  font-size: 13px !important;
+  border-radius: 8px;
+}
+
+/* 2) Kill the green background for Assigned badges */
+.upcoming-table .badge-assigned,
+.upcoming-table-assigned-badge,
+.upcoming-table-assigned-badge-wrap {
+  background: #ffffff !important;     /* neutral gray chip */
+  border: 1px solid #e5e7eb !important;
+  color: var(--ink) !important;
+  background-image: none !important;  /* remove any gradients */
+  box-shadow: none !important;
+}
+
+/* Keep badges centered in their cells */
+.upcoming-table .badge-job,
+.upcoming-table .badge-unassigned,
+.upcoming-table .badge-assigned {
+  margin: 0 auto;
+}
+
+/* Slightly softer hover so compact rows don’t feel crowded */
+.upcoming-table tbody tr:hover {
+  background: #f9fafb !important;
+}
+/* ---------- Table shell ---------- */
+.table-wrap {
+  width: 100%;
+  overflow-x: auto;
+}
+
+.table.table--admin.upcoming-table {
+  width: 100%;
+  border-collapse: separate;
+  border-spacing: 0;
+  table-layout: fixed; /* consistent column widths */
+  background: #fff;
+}
+
+/* Row striping (already applied via row-alt, but normalize anyway) */
+.table--striped tbody tr:nth-child(2n) {
+  background: #fafafa;
+}
+
+/* ---------- Cells & headers ---------- */
+.upcoming-table th,
+.upcoming-table td {
+  padding: 12px 14px;
+  vertical-align: middle;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  line-height: 1.35;
+  border-bottom: 1px solid #eee;
+}
+
+.upcoming-table th {
+  font-weight: 600;
+  font-size: 14px;
+  color: #222;
+  background: #f7f7f7;
+  position: sticky;
+  top: 0;
+  z-index: 1;
+}
+
+/* Tighten “Notes” wrapping but keep clean lines */
+.upcoming-table .upcoming-table-notes,
+.upcoming-table .cell-notes {
+  white-space: normal;
+  line-height: 1.4;
+}
+
+/* ---------- Column alignment (desktop) ---------- */
+.upcoming-table th:nth-child(1),
+.upcoming-table td:nth-child(1) { /* Start */
+  width: 170px;
+}
+.upcoming-table th:nth-child(2),
+.upcoming-table td:nth-child(2) { /* End */
+  width: 170px;
+}
+.upcoming-table th:nth-child(3),
+.upcoming-table td:nth-child(3) { /* Job */
+  width: 120px;
+}
+.upcoming-table th:nth-child(4),
+.upcoming-table td:nth-child(4) { /* Location */
+  width: 180px;
+}
+.upcoming-table th:nth-child(5),
+.upcoming-table td:nth-child(5) { /* Address */
+  width: 260px;
+}
+.upcoming-table th:nth-child(6),
+.upcoming-table td:nth-child(6) { /* Assigned */
+  width: 240px;
+}
+.upcoming-table th:nth-child(7),
+.upcoming-table td:nth-child(7) { /* Notes */
+  width: 280px;
+}
+.upcoming-table th:nth-child(8),
+.upcoming-table td:nth-child(8) { /* Actions */
+  width: 120px;
+  text-align: right;
+}
+
+/* Ensure the actions column is always right-aligned */
+.upcoming-table-td-actions {
+  text-align: right !important;
+}
+
+/* Middle/top helpers (normalize) */
+.upcoming-table-td-middle { vertical-align: middle !important; }
+.upcoming-table-td-top { vertical-align: top !important; }
+
+/* ---------- Badges & pills ---------- */
+.badge {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 12px;
+  line-height: 1.2;
+  border: 1px solid transparent;
+  max-width: 100%;
+}
+
+.badge-job {
+  background: #eef2ff;
+  border-color: #e0e7ff;
+  text-transform: capitalize;
+}
+
+.badge-assigned {
+  background: #dcfce7;
+  border-color: #bbf7d0;
+}
+
+.badge-unassigned {
+  background: #fee2e2;
+  border-color: #fecaca;
+}
+
+/* Keep the assigned list readable */
+.upcoming-table-assigned-badge-wrap {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  text-align: center;
+  min-height: 28px;
+  min-width: 96px;
+  max-width: 100%;
+  padding: 6px 10px;
+  white-space: normal;       /* allow wrap */
+  word-break: break-word;
+}
+
+/* Action buttons vertical stack stays tight but consistent */
+.upcoming-table-actions-vert {
+  display: inline-flex;
+  flex-direction: column;
+  gap: 6px;
+  align-items: flex-end;
+  padding-right: 10px;
+}
+
+/* ---------- Responsive (mobile ≤ 768px) ---------- */
+@media (max-width: 768px) {
+  /* Stack rows as cards while preserving alignment via data-labels */
+  .upcoming-table thead {
+    display: none;
+  }
+  .upcoming-table,
+  .upcoming-table tbody,
+  .upcoming-table tr,
   .upcoming-table td {
     display: block;
     width: 100%;
-    padding: 6px 0;
-    text-align: right;
-    border: none;
-    position: relative;
   }
-
+  .upcoming-table tr {
+    background: #fff;
+    border: 1px solid #eee;
+    border-radius: 12px;
+    margin: 10px 0;
+    padding: 8px 10px;
+  }
+  .upcoming-table td {
+    border: 0;
+    padding: 8px 0;
+    white-space: normal;
+  }
   .upcoming-table td::before {
     content: attr(data-label);
-    position: absolute;
-    left: 0;
-    width: 110px;
-    text-align: left;
-    font-weight: 700;
-    color: var(--ink-subtle);
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: #6b7280; /* muted */
+    margin-bottom: 4px;
     text-transform: none;
-    font-size: 14px;
+    letter-spacing: 0;
   }
-
-  /* Special handling for Job & Assigned – left align content */
-  .upcoming-table td[data-label="Job"],
-  .upcoming-table td[data-label="Assigned"] {
-    text-align: left;
+  /* Make badges full-width when needed */
+  .upcoming-table-assigned-badge-wrap,
+  .badge-unassigned {
+    width: 100%;
+    justify-content: center;
   }
-
-  .upcoming-table td[data-label="Job"] > div,
-  .upcoming-table td[data-label="Assigned"] > span {
-    margin-left: 110px;
-    display: block;
-  }
-
-  /* Actions – full width buttons, bigger touch targets */
+  /* Actions row pinned to bottom of card */
   .upcoming-table-td-actions {
-    padding-top: 16px;
+    margin-top: 6px;
+    text-align: right !important;
   }
-
   .upcoming-table-actions-vert {
-    display: grid;
-    grid-template-columns: 1fr 1fr;
-    gap: 10px;
+    flex-direction: row;
+    justify-content: flex-end;
+    gap: 8px;
   }
 
-  .upcoming-table .btn-edit,
-  .upcoming-table .btn-delete {
-    height: 44px; /* bigger touch target */
-    font-size: 15px;
-  }
+  /* Looser widths (let content breathe on small screens) */
+  .upcoming-table td { width: 100% !important; }
 }
 
-/* Extra small phones – make actions single column */
-@media (max-width: 480px) {
-  .upcoming-table-actions-vert {
-    grid-template-columns: 1fr;
-  }
-}
-
-/* ==================================================================
-   OTHER TABLES (dashboard & admin payroll) – same mobile card style
-   ================================================================== */
-.table--stack {
-  /* same mobile card treatment as above */
-}
-
-@media (max-width: 767px) {
-  .table--stack thead { display: none; }
-  .table--stack tbody tr {
-    display: block;
-    background: #fff;
-    border: 1px solid var(--border);
-    border-radius: 12px;
-    margin-bottom: 16px;
-    padding: 16px;
-    box-shadow: 0 4px 12px rgba(0,0,0,0.06);
-  }
-  .table--stack td {
-    display: block;
-    text-align: right;
-    padding: 6px 0;
-    position: relative;
-  }
-  .table--stack td::before {
-    content: attr(data-label);
-    position: absolute;
-    left: 0;
-    width: 110px;
-    font-weight: 700;
-    color: var(--ink-subtle);
-  }
-  .table--stack .actions {
-    margin-top: 12px;
-    justify-content: stretch;
-  }
-  .table--stack .btn-edit,
-  .table--stack .btn-delete {
-    height: 44px;
-  }
-}
-
-/* ==================================================================
-   PILLS (job type selector) – responsive wrap
-   ================================================================== */
-.pill-container {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 12px;
-  justify-content: center;
-  margin: 16px 0;
+/* ---------- Misc polish ---------- */
+.upcoming-table-header {
+  padding: 10px 0 0;
 }
 
 .pill {
-  min-width: 100px;
-  padding: 12px 20px;
-  font-size: 15px;
+  display: inline-flex;
+  gap: 6px;
+  align-items: center;
+  padding: 4px 8px;
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  border-radius: 999px;
+  font-size: 12px;
+  line-height: 1;
 }
 
-/* Mobile – full width pills */
-@media (max-width: 640px) {
-  .pill {
-    flex: 1 1 120px;
+.pill__num {
+  font-weight: 700;
+}
+/* ===== Compact desktop: no horizontal scroll ===== */
+@media (min-width: 1440px) {
+  /* Let content wrap instead of forcing a scroll */
+  .table-wrap {
+    overflow-x: visible; /* disable the horizontal scroller on desktop */
   }
+
+  .table.table--admin.upcoming-table {
+    table-layout: fixed;     /* keep columns aligned across rows */
+    width: auto;
+  }
+
+  /* Allow wrapping in text-heavy columns */
+  .upcoming-table th,
+  .upcoming-table td {
+    white-space: normal;      /* wrap lines when needed */
+    word-break: break-word;   /* break long chunks like addresses/emails */
+  }
+
+  /* Tighter vertical rhythm so wrapped rows still feel compact */
+  .upcoming-table th,
+  .upcoming-table td {
+    padding: 10px 12px;
+    line-height: 1.3;
+  }
+
+  /* Percentage widths that fit inside 100% total */
+  .upcoming-table th:nth-child(1),
+  .upcoming-table td:nth-child(1) { /* Start */
+    width: 13%;
+  }
+  .upcoming-table th:nth-child(2),
+  .upcoming-table td:nth-child(2) { /* End */
+    width: 12%;
+  }
+  .upcoming-table th:nth-child(3),
+  .upcoming-table td:nth-child(3) { /* Job */
+    width: 10%;
+  }
+  .upcoming-table th:nth-child(4),
+  .upcoming-table td:nth-child(4) { /* Location */
+    width: 13%;
+  }
+  .upcoming-table th:nth-child(5),
+  .upcoming-table td:nth-child(5) { /* Address (wraps) */
+    width: 20%;
+  }
+  .upcoming-table th:nth-child(6),
+  .upcoming-table td:nth-child(6) { /* Assigned (wraps) */
+    width: 16%;
+  }
+  .upcoming-table th:nth-child(7),
+  .upcoming-table td:nth-child(7) { /* Notes (wraps) */
+    width: 11%;
+  }
+  .upcoming-table th:nth-child(8),
+  .upcoming-table td:nth-child(8) { /* Actions */
+    width: 5%;
+    text-align: right;
+  }
+
+  /* Make the “Assigned” badge & Notes behave nicely when wrapping */
+  .upcoming-table-assigned-badge-wrap {
+    display: inline-flex;
+    padding: 4px 8px;
+    min-width: 0;
+  }
+  .upcoming-table .upcoming-table-notes,
+  .upcoming-table .cell-notes {
+    display: -webkit-box;
+    -webkit-line-clamp: 4; /* clamp to ~4 lines to keep rows tidy */
+    -webkit-box-orient: vertical;
+    overflow: hidden;
+  }
+
+  /* Fit the action buttons inside 5% without cramping */
+  .upcoming-table-actions-vert {
+    gap: 4px;
+  }
+  .upcoming-table-td-actions .btn-edit,
+  .upcoming-table-td-actions .btn-delete {
+    font-size: 12px;
+    padding: 4px 8px;
+  }
+}
+/* ==== FIX DESKTOP WRAPS (append-only) ==== */
+
+/* Keep table visible and fixed layout */
+.upcoming-table-card { overflow: visible !important; }
+.table-wrap { overflow-x: visible !important; }
+.table.table--admin.upcoming-table { table-layout: fixed !important; width: 100% !important; }
+
+/* Let the text-heavy columns wrap; keep structural columns on one line */
+@media (min-width: 1024px) {
+  /* 1) Never wrap these columns */
+  .upcoming-table th:nth-child(1),
+  .upcoming-table td:nth-child(1), /* Start */
+  .upcoming-table th:nth-child(2),
+  .upcoming-table td:nth-child(2), /* End */
+  .upcoming-table th:nth-child(3),
+  .upcoming-table td:nth-child(3), /* Job */
+  .upcoming-table th:nth-child(4),
+  .upcoming-table td:nth-child(4), /* Location */
+  .upcoming-table th:nth-child(8),
+  .upcoming-table td:nth-child(8)  /* Actions */
+  { white-space: nowrap !important; word-break: normal !important; overflow: hidden !important; text-overflow: ellipsis !important; }
+
+  /* 2) Allow wrapping for Address / Assigned / Notes */
+  .upcoming-table th:nth-child(5),
+  .upcoming-table td:nth-child(5),
+  .upcoming-table th:nth-child(6),
+  .upcoming-table td:nth-child(6),
+  .upcoming-table th:nth-child(7),
+  .upcoming-table td:nth-child(7)
+  { white-space: normal !important; word-break: break-word !important; }
+
+  /* 3) Give Job/Actions a bit more elbow room so badges/buttons don't hard-wrap */
+  .upcoming-table th:nth-child(3),
+  .upcoming-table td:nth-child(3) { width: 11% !important; } /* was 10 */
+  .upcoming-table th:nth-child(8),
+  .upcoming-table td:nth-child(8) { width: 7%  !important; } /* was 5 */
+
+  /* Rebalance to keep total at ~100% */
+  .upcoming-table th:nth-child(5),
+  .upcoming-table td:nth-child(5) { width: 19% !important; } /* Address -1% */
+  .upcoming-table th:nth-child(7),
+  .upcoming-table td:nth-child(7) { width: 8%  !important; } /* Notes -1% */
+
+  /* 4) Stop “Breakdown” splitting inside the badge */
+  .upcoming-table .badge-job { white-space: nowrap !important; word-break: normal !important; min-width: 92px; }
+
+  /* 5) Make Actions fit inside its column without pushing layout */
+  .upcoming-table-td-actions { text-align: right !important; }
+  .upcoming-table-actions-vert { gap: 6px !important; }
+  .upcoming-table-td-actions .btn-edit,
+  .upcoming-table-td-actions .btn-delete {
+    height: 32px !important;
+    min-width: 72px !important;
+    padding: 0 10px !important;
+    font-size: 13px !important;
+  }
+}
+
+/* Assigned chip can wrap lines but stay compact & centered */
+.upcoming-table-assigned-badge-wrap {
+  white-space: normal !important;
+  word-break: break-word !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  margin: 0 auto !important;
+}
+
+/* Slightly tighter rows so multi-line cells don't look bulky */
+.upcoming-table th,
+.upcoming-table td { line-height: 1.3 !important; padding: 10px 12px !important; }
+/* === FIX: start/end clipping + actions truncation (append-only) === */
+
+/* 1) Let Start / End wrap to 2 lines on desktop (date, then time) */
+@media (min-width: 1024px) {
+  .table.table--admin.upcoming-table td:nth-child(1),
+  .table.table--admin.upcoming-table th:nth-child(1), /* Start */
+  .table.table--admin.upcoming-table td:nth-child(2),
+  .table.table--admin.upcoming-table th:nth-child(2)  /* End */
+  {
+    white-space: normal !important;      /* allow wrapping at comma/space */
+    word-break: normal !important;
+    overflow: visible !important;
+    text-overflow: unset !important;
+  }
+}
+
+/* 2) Give Actions a touch more room so header doesn't show "Actio..." */
+@media (min-width: 1024px) {
+  .upcoming-table th:nth-child(8),
+  .upcoming-table td:nth-child(8) { width: 8% !important; }   /* was 5–7% somewhere */
+  /* Rebalance by shaving 1% each from these: */
+  .upcoming-table th:nth-child(5),
+  .upcoming-table td:nth-child(5) { width: 18% !important; }  /* Address -1% */
+  .upcoming-table th:nth-child(7),
+  .upcoming-table td:nth-child(7) { width: 7%  !important; }  /* Notes -1% */
+}
+
+/* 3) Keep Job badge from splitting (“Breakdown”) */
+@media (min-width: 1024px) {
+  .upcoming-table .badge-job {
+    white-space: nowrap !important;
+    word-break: normal !important;
+    min-width: 92px;
+  }
+}
+
+/* 4) Make sure Assigned chip wraps nicely without stretching rows */
+.upcoming-table-assigned-badge-wrap {
+  white-space: normal !important;
+  word-break: break-word !important;
+  min-width: 0 !important;
+  max-width: 100% !important;
+  margin: 0 auto !important;
+}
+
+/* 5) Slightly tighter rhythm so multi-line Start/End look clean */
+.upcoming-table th,
+.upcoming-table td {
+  line-height: 1.3 !important;
+  padding-top: 10px !important;
+  padding-bottom: 10px !important;
+}
+/* === Add right-side breathing room for Actions column === */
+.upcoming-table-td-actions {
+  padding-right: 16px !important; /* adds visual gap between buttons and table edge */
+}
+
+.upcoming-table th:nth-child(8) {
+  padding-right: 16px !important; /* keep header aligned with the body */
+}
+.upcoming-table-td-actions .upcoming-table-actions-vert {
+  align-items: flex-end !important;
+  margin-right: 6px; /* tiny offset for perfect optical balance */
+}
+/* === Center the "Assigned" column content perfectly (dash + names) === */
+
+/* Make the 6th column (Assigned) align middle + center */
+.upcoming-table td:nth-child(6) {
+  text-align: center !important;
+  vertical-align: middle !important;
+}
+
+/* Unassigned dash chip — keep it centered and same height as other badges */
+.upcoming-table td:nth-child(6) .badge-unassigned {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  height: 36px !important;
+  min-width: 64px !important;
+  padding: 6px 10px !important;
+  line-height: 1.2 !important;
+  margin: 0 auto !important;
+}
+
+/* Assigned multi-name chip — same centering/tidy wrapping */
+.upcoming-table td:nth-child(6) .upcoming-table-assigned-badge-wrap,
+.upcoming-table td:nth-child(6) .badge-assigned {
+  display: inline-flex !important;
+  align-items: center !important;
+  justify-content: center !important;
+  min-height: 36px !important;
+  height: auto !important;
+  line-height: 1.2 !important;
+  margin: 0 auto !important;
+  white-space: normal !important;
+  word-break: break-word !important;
+  max-width: 100% !important;
+}
+/* === MOBILE: header should scroll with the page (not fixed/sticky) === */
+@media (max-width: 700px) {
+  /* kill any fixed/sticky set earlier with !important */
+  html body .topbar,
+  html body header.topbar,
+  html body [class*="topbar"] {
+    position: static !important;   /* not fixed, not sticky */
+    top: auto !important;
+    left: auto !important;
+    right: auto !important;
+    width: auto !important;
+    box-shadow: none !important;
+    border-bottom: 1px solid var(--border, #e5e7eb) !important; /* keep the divider */
+    padding-top: 0 !important;     /* no safe-area padding inside the bar */
+  }
+
+  /* remove the offset we added for fixed headers */
+  body {
+    padding-top: 0 !important;
+  }
+}
+/* === Fix mobile overflow of form inputs inside the card === */
+
+/* 1) Let grid items shrink so they don't spill past the card edges */
+.form-card .grid-auto-fit-160 > * {
+  min-width: 0 !important;
+}
+
+/* If you have other grid wrappers in the form, include them too */
+.form-card .grid-two-cols > *,
+.form-card .grid-auto-fill-220 > * {
+  min-width: 0 !important;
+}
+
+/* 2) Ensure controls never exceed the container width (iOS-safe) */
+.form-card input[type="text"],
+.form-card input[type="email"],
+.form-card input[type="time"],
+.form-card input[type="date"],
+.form-card select,
+.form-card textarea {
+  display: block;
+  box-sizing: border-box;
+  width: 100%;
+  max-width: 100%;
+  /* Safari/iOS occasionally needs this to resolve rounding issues */
+  width: -webkit-fill-available;
+}
+
+/* 3) (Optional) prevent any tiny sub-pixel bleed on rounded cards */
+.form-card {
+  overflow: hidden;
+}
+/* Pills container can wrap already; no change needed */
+
+/* Base pill */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  padding: 8px 14px;
+  border: 2px solid #e5e7eb;         /* gray-200 */
+  border-radius: 9999px;              /* full */
+  background: #ffffff;
+  color: #111827;                     /* gray-900 */
+  font-weight: 600;
+  line-height: 1;
+  cursor: pointer;
+  transition: background .15s ease, border-color .15s ease, box-shadow .15s ease, color .15s ease;
+  user-select: none;
+}
+
+.pill:hover {
+  border-color: #cbd5e1;              /* gray-300 */
+  box-shadow: 0 1px 2px rgba(0,0,0,.04);
+}
+
+/* Selected/active pill */
+.pill-active {
+  background: #7596dd;                /* gray-900 */
+  color: #ffffff;
+  border-color: #111827;
+  box-shadow: 0 2px 8px rgba(17,24,39,.15);
+}
+
+/* Focus-visible for keyboard users */
+.pill:focus-visible {
+  outline: 3px solid #93c5fd;         /* blue-300 */
+  outline-offset: 2px;
+}
+
+/* Label + checkmark */
+.pill__label {
+  font-size: 14px;
+  text-transform: capitalize;
+}
+
+/* Small check glyph that appears only when selected */
+.pill__check {
+  width: 16px;
+  height: 16px;
+  display: inline-grid;
+  place-items: center;
+  border-radius: 9999px;
+  border: 2px solid currentColor;
+  font-size: 12px;
+  line-height: 1;
+  transform: translateY(-1px);
+  opacity: 0;
+  transition: opacity .15s ease, background .15s ease, color .15s ease, border-color .15s ease;
+}
+
+/* Visible + inverted when active */
+.pill-active .pill__check {
+  opacity: 1;
+  background: #ffffff;
+  color: #111827;
+  border-color: #ffffff;
+}
+
+/* Optional: color accents per job type using data-attrs or class if you want later
+   e.g., .pill[data-jt="lights"].pill-active { background:#f59e0b; border-color:#f59e0b; } */
+/* base pill */
+.pill {
+  color: #000 !important;          /* text color */
+}
+
+/* the span inside */
+.pill .pill__label {
+  color: inherit !important;       /* use the button's color */
+}
+
+/* active/selected pill */
+.pill.pill-active {
+  color: #000 !important;          /* keep text black when selected */
+  /* optional: your existing bg/border can stay */
+}
+
+/* if your gray look is from reduced opacity somewhere */
+.pill, .pill .pill__label {
+  opacity: 1 !important;
 }
