@@ -24,7 +24,9 @@ type Profile = { id: string; role: 'admin' | 'employee' } | null;
 
 // ---------- Small date/time helpers ----------
 const toLocalInput = (d: Date) =>
-  new Date(d.getTime() - d.getTimezoneOffset() * 60000).toISOString().slice(0, 16);
+  new Date(d.getTime() - d.getTimezoneOffset() * 60000)
+    .toISOString()
+    .slice(0, 16);
 
 const combineLocalDateTime = (date: string, time: string | undefined) => {
   const t = time && time.length >= 5 ? time : '09:00';
@@ -314,7 +316,7 @@ export default function AdminSchedule() {
   const [creating, setCreating] = useState(false);
   const [formError, setFormError] = useState<string | null>(null);
 
-  // NEW: track which shift we're duplicating from
+  // Track which shift we're duplicating from (optional label)
   const [duplicateFrom, setDuplicateFrom] = useState<SRow | null>(null);
 
   // ---------- Edit panel ----------
@@ -559,32 +561,30 @@ export default function AdminSchedule() {
     );
   }
 
-  // NEW: prefill create form from an existing shift (for Duplicate)
+  // Prefill create form from an existing shift (for Duplicate)
+  // Now: duplicates location + dates, but clears times and resets job type.
   function prefillFormFromShift(row: SRow) {
-    // Start
+    // Source start date
     const start = row.start_time ? new Date(row.start_time) : new Date();
     const startLocal = toLocalInput(start);
     const start_date = startLocal.slice(0, 10);
-    const start_time = startLocal.slice(11, 16);
 
-    // End (if exists)
+    // End date (if we had an end time), else same as start
     let end_date = start_date;
-    let end_time = '';
     if (row.end_time) {
       const end = new Date(row.end_time);
       const endLocal = toLocalInput(end);
       end_date = endLocal.slice(0, 10);
-      end_time = endLocal.slice(11, 16);
     }
 
     setForm({
       start_date,
-      start_time,
+      start_time: '', // admin sets start time manually
       end_date,
-      end_time,
+      end_time: '', // admin sets end time manually
       location_name: row.location_name ?? '',
       address: row.address ?? '',
-      job_type: (row.job_type as JobType) || 'setup',
+      job_type: 'setup', // admin sets job type manually if needed
       notes: row.notes ?? '',
     });
     setFormError(null);
@@ -665,11 +665,13 @@ export default function AdminSchedule() {
       0
     );
   }
+
   function toggleEmp(id: string) {
     setAssignees((prev) =>
       prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]
     );
   }
+
   async function saveAssignments() {
     if (!assignShift?.id) return;
     const add = assignees.filter((x) => !currentAssignees.includes(x));
@@ -771,9 +773,7 @@ export default function AdminSchedule() {
               <input
                 type="date"
                 value={form.start_date}
-                onChange={(e) =>
-                  setForm({ ...form, start_date: e.target.value })
-                }
+                onChange={(e) => setForm({ ...form, start_date: e.target.value })}
               />
             </div>
             <div>
@@ -781,9 +781,7 @@ export default function AdminSchedule() {
               <input
                 type="time"
                 value={form.start_time}
-                onChange={(e) =>
-                  setForm({ ...form, start_time: e.target.value })
-                }
+                onChange={(e) => setForm({ ...form, start_time: e.target.value })}
               />
             </div>
             <div>
@@ -791,9 +789,7 @@ export default function AdminSchedule() {
               <input
                 type="date"
                 value={form.end_date}
-                onChange={(e) =>
-                  setForm({ ...form, end_date: e.target.value })
-                }
+                onChange={(e) => setForm({ ...form, end_date: e.target.value })}
               />
             </div>
             <div>
@@ -803,9 +799,7 @@ export default function AdminSchedule() {
               <input
                 type="time"
                 value={form.end_time}
-                onChange={(e) =>
-                  setForm({ ...form, end_time: e.target.value })
-                }
+                onChange={(e) => setForm({ ...form, end_time: e.target.value })}
               />
             </div>
           </div>
@@ -821,7 +815,7 @@ export default function AdminSchedule() {
             />
           </div>
 
-          {/* Job type pills (active styling shows selection) */}
+          {/* Job type pills */}
           <div className="mt-lg">
             <label>Job Type</label>
             <div className="row wrap gap-sm mt-6">
@@ -829,9 +823,7 @@ export default function AdminSchedule() {
                 <button
                   key={jt}
                   type="button"
-                  className={`pill ${
-                    form.job_type === jt ? 'pill-active' : ''
-                  }`}
+                  className={`pill ${form.job_type === jt ? 'pill-active' : ''}`}
                   onClick={() => setForm({ ...form, job_type: jt })}
                 >
                   <span className="pill__label">
