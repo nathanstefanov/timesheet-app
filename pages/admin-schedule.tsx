@@ -883,7 +883,7 @@ export default function AdminSchedule() {
       </div>
 
       {/* Upcoming table */}
-      <div className="card upcoming-table-card">
+      <div className="card upcoming-table-card admin-upcoming-table-card">
         <div className="upcoming-table-header row between">
           <strong className="fs-16">Upcoming Scheduled Shifts</strong>
           <span className="pill">
@@ -901,7 +901,7 @@ export default function AdminSchedule() {
         )}
 
         {upcoming.length > 0 && (
-          <div className="table-wrap mt-10">
+          <div className="table-wrap mt-10 admin-upcoming-table-wrap">
             <table className="table table--admin table--striped table--compact table--stack upcoming-table">
               <thead>
                 <tr>

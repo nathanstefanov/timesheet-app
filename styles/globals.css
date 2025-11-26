@@ -1826,3 +1826,112 @@ textarea{ min-height:80px; resize:vertical; }
   border-radius: 8px;
   font-weight: 600;
 }
+
+/* ===== Admin upcoming schedule layout tweaks ===== */
+.admin-upcoming-table-card {
+  width: 100%;
+  max-width: 1100px;
+  margin: 22px auto 0;
+  padding: 22px 20px 20px;
+}
+
+.admin-upcoming-table-wrap {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto !important;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 10px;
+}
+
+.admin-upcoming-table-card .upcoming-table-header {
+  align-items: center;
+  gap: 12px;
+}
+
+.admin-upcoming-table-card .table.table--admin.upcoming-table {
+  width: 100%;
+  margin: 0 auto;
+  table-layout: auto;
+  min-width: 760px;
+}
+
+/* Let text breathe instead of clipping/ellipses */
+.admin-upcoming-table-card .upcoming-table th,
+.admin-upcoming-table-card .upcoming-table td {
+  white-space: normal;
+  word-break: break-word;
+  overflow: visible;
+  text-overflow: unset;
+  text-align: left;
+}
+
+/* Actions column: roomy, centered buttons that wrap when needed */
+.admin-upcoming-table-card .upcoming-table-td-actions {
+  min-width: 220px;
+  text-align: center !important;
+  padding-right: 8px;
+}
+
+.admin-upcoming-table-card .upcoming-table-actions-vert {
+  flex-direction: row;
+  flex-wrap: wrap;
+  gap: 10px;
+  justify-content: center;
+  width: 100%;
+}
+
+.admin-upcoming-table-card .upcoming-table-td-actions .btn-edit,
+.admin-upcoming-table-card .upcoming-table-td-actions .btn-delete {
+  flex: 1 1 120px;
+  min-width: 120px;
+  width: auto;
+  justify-content: center;
+}
+
+/* Keep badges tidy and centered in their cells */
+.admin-upcoming-table-card .badge,
+.admin-upcoming-table-card .badge-unassigned,
+.admin-upcoming-table-card .upcoming-table-assigned-badge-wrap {
+  margin: 0 auto;
+}
+
+/* Tablet/desktop refinements */
+@media (min-width: 768px) {
+  .admin-upcoming-table-card .upcoming-table-td-actions {
+    text-align: right !important;
+    padding-right: 16px;
+  }
+
+  .admin-upcoming-table-card .upcoming-table-actions-vert {
+    justify-content: flex-end;
+  }
+}
+
+/* Mobile: keep cards full-width, no sideways scroll */
+@media (max-width: 700px) {
+  .admin-upcoming-table-card {
+    padding: 18px 14px;
+    margin-top: 16px;
+  }
+
+  .admin-upcoming-table-card .table.table--admin.upcoming-table {
+    min-width: 0;
+  }
+
+  .admin-upcoming-table-card .upcoming-table-td-actions {
+    min-width: 0;
+    width: 100%;
+    padding-right: 0;
+  }
+
+  .admin-upcoming-table-card .upcoming-table-actions-vert {
+    justify-content: flex-start;
+    align-items: stretch;
+  }
+
+  .admin-upcoming-table-card .upcoming-table-td-actions .btn-edit,
+  .admin-upcoming-table-card .upcoming-table-td-actions .btn-delete {
+    flex: 1 1 100%;
+    min-width: 0;
+  }
+}
