@@ -403,7 +403,7 @@ export default function Admin() {
   const disableNextWeek = nextWeekEnd > currentWeekEnd;
 
   return (
-    <main className="page page--center">
+    <main className="page page--center admin-page">
       <h1 className="page__title">Admin Dashboard</h1>
       {err && <div className="alert error" role="alert">Error: {err}</div>}
 
@@ -547,7 +547,7 @@ export default function Admin() {
         </div>
 
         <div className="table-wrap">
-          <table className="table table--center table--compact table--admin center">
+          <table className="table table--center table--compact table--admin table--stack center">
             <thead>
               <tr>
                 <th>Employee</th>
@@ -764,10 +764,12 @@ export default function Admin() {
                     })}
 
                     <tr className="subtotal">
-                      <td colSpan={5} style={{ textAlign: 'center' }}>Total — {name}</td>
-                      <td>{subtotal.hours.toFixed(2)}</td>
-                      <td>${subtotal.pay.toFixed(2)}</td>
-                      <td colSpan={3}></td>
+                      <td colSpan={5} data-label="Employee total" style={{ textAlign: 'center' }}>
+                        Total — {name}
+                      </td>
+                      <td data-label="Hours">{subtotal.hours.toFixed(2)}</td>
+                      <td data-label="Pay">${subtotal.pay.toFixed(2)}</td>
+                      <td colSpan={3} className="subtotal__spacer" aria-hidden="true"></td>
                     </tr>
                   </React.Fragment>
                 );
@@ -809,6 +811,14 @@ export default function Admin() {
           display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap;
         }
 
+        /* Layout shell */
+        .admin-page{ width:100%; display:flex; flex-direction:column; gap:12px; }
+        .admin-page :global(.card){ width:100%; }
+        .admin-page :global(.card__header){ gap:10px; justify-content:space-between; flex-wrap:wrap; }
+        .admin-page :global(.card__header h3){ margin:0; }
+        .admin-page .table-wrap{ width:100%; max-width:100%; overflow-x:hidden; }
+        .admin-page .table{ width:100%; table-layout: fixed; word-break: break-word; }
+
         .summary-grid{
           display:grid;
           grid-template-columns: 1fr;
@@ -837,6 +847,16 @@ export default function Admin() {
         .week-controls, .range-controls{
           display:flex; align-items:center; justify-content:center; gap:8px; flex-wrap:wrap;
         }
+        .filters-row select,
+        .filters-row input[type="date"]{
+          min-height:38px;
+          padding:6px 10px;
+          border-radius:10px;
+          border:1px solid var(--border);
+          font:inherit;
+          background:#fff;
+        }
+        .filters-row input[type="date"]{ width: clamp(150px, 42vw, 200px); }
         .range-text{ white-space:nowrap; }
 
         /* Buttons (unified) */
@@ -893,6 +913,108 @@ export default function Admin() {
           }
         }
 
+        /* Responsive admin layout: stack tables into cards and prevent horizontal scroll */
+        @media (max-width: 960px){
+          .page{ padding: 12px; }
+          .table-wrap{ width:100%; }
+
+          .table--admin.table--stack{ border:0; width:100%; }
+          .table--admin.table--stack thead{ display:none; }
+          .table--admin.table--stack tbody,
+          .table--admin.table--stack tr,
+          .table--admin.table--stack td{ display:block; width:100%; }
+
+          .table--admin.table--stack tr{
+            margin: 12px 0;
+            padding: 12px 14px;
+            border:1px solid var(--border);
+            border-radius:14px;
+            box-shadow: var(--shadow-md);
+            background:#fff;
+          }
+
+          .table--admin.table--stack tr.section-head{
+            margin: 18px 0 6px;
+            padding: 0;
+            border:0;
+            box-shadow:none;
+            background:transparent;
+          }
+          .table--admin.table--stack tr.section-head td{ padding:0; }
+
+          .table--admin.table--stack td{
+            border:0 !important;
+            padding: 8px 0;
+            display:flex;
+            align-items:flex-start;
+            justify-content:space-between;
+            flex-wrap:wrap;
+            gap: 12px;
+            text-align:right;
+            word-break: break-word;
+          }
+          .table--admin.table--stack td::before{
+            content: attr(data-label);
+            font-weight:700;
+            color: var(--ink-subtle);
+            flex: 1;
+            text-align:left;
+            min-width:120px;
+          }
+
+          .table--admin.table--stack td .actions{
+            width:100%;
+            justify-content:flex-start;
+            flex-wrap:wrap;
+            gap:8px;
+          }
+          .table--admin.table--stack td .actions .btn{
+            flex: 1 1 140px;
+            min-width: 140px;
+            justify-content:center;
+          }
+
+          .table--admin.table--stack .section-bar{
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 10px;
+            padding: 10px 0;
+          }
+          .table--admin.table--stack .section-bar__right{
+            width:100%;
+            justify-content:flex-start;
+            gap: 8px;
+          }
+          .table--admin.table--stack .section-bar__right .topbar-btn{
+            flex: 1 1 140px;
+          }
+
+          .table--admin.table--stack tr.subtotal{
+            padding: 12px 14px;
+            margin-top: 6px;
+            background:#f8fafc;
+            border:1px solid var(--border);
+            border-radius:12px;
+            box-shadow: var(--shadow-sm);
+          }
+          .table--admin.table--stack tr.subtotal td{
+            display:flex;
+            align-items:center;
+            justify-content:space-between;
+            padding:6px 0;
+            text-align:right;
+          }
+          .table--admin.table--stack tr.subtotal td:first-child{
+            text-align:left;
+            justify-content:flex-start;
+            font-weight:800;
+            color: var(--ink);
+          }
+          .table--admin.table--stack tr.subtotal td::before{ content: attr(data-label); font-weight:700; color: var(--ink-subtle); }
+          .table--admin.table--stack tr.subtotal td:first-child::before{ content: ''; }
+          .table--admin.table--stack .subtotal__spacer{ display:none; }
+        }
+
         /* Modal */
         .modal-backdrop{
           position:fixed; inset:0; background:rgba(0,0,0,0.4);
@@ -906,7 +1028,7 @@ export default function Admin() {
         .modal-title{ font-weight:800; }
         .modal-body{ display:flex; flex-direction:column; align-items:center; }
         .modal-body textarea{
-          width:100%F; min-height:140px; border-radius:12px; padding:10px;
+          width:100%; min-height:140px; border-radius:12px; padding:10px;
           border:1px solid var(--border); resize:vertical; font:inherit;
         }
         .modal-actions{
