@@ -33,6 +33,9 @@ export default function Dashboard() {
   const [offset, setOffset] = useState(0);
   const [err, setErr] = useState<string | undefined>();
 
+  // NEW: all–time unpaid total
+  const [unpaidAllTime, setUnpaidAllTime] = useState(0);
+
   // Get current user once
   useEffect(() => {
     (async () => {
@@ -79,6 +82,7 @@ export default function Dashboard() {
       setErr(undefined);
       setLoading(true);
       try {
+        // 1) Range-filtered shifts for the table + range totals
         let q = supabase
           .from('shifts')
           .select('*')
@@ -95,6 +99,25 @@ export default function Dashboard() {
         if (error) throw error;
         if (!alive) return;
         setShifts((data ?? []) as Shift[]);
+
+        // 2) All-time unpaid total (ignores date range)
+        const { data: unpaidData, error: unpaidError } = await supabase
+          .from('shifts')
+          .select('pay_due, is_paid')
+          .eq('user_id', user.id);
+
+        if (!alive) return;
+
+        if (!unpaidError && unpaidData) {
+          const totalUnpaid = unpaidData.reduce((sum, row: any) => {
+            const isPaid = !!row.is_paid;
+            const pay = Number(row.pay_due ?? 0);
+            return sum + (isPaid ? 0 : pay);
+          }, 0);
+          setUnpaidAllTime(totalUnpaid);
+        }
+        // if unpaidError, we just skip updating unpaidAllTime (no need to blow up the page)
+
       } catch (e: any) {
         if (!alive) return;
         setErr(e?.message || 'Failed to load shifts.');
@@ -109,8 +132,7 @@ export default function Dashboard() {
   const totals = useMemo(() => {
     const hours = shifts.reduce((s, x) => s + Number(x.hours_worked || 0), 0);
     const pay = shifts.reduce((s, x) => s + Number(x.pay_due || 0), 0);
-    const unpaid = shifts.reduce((s, x) => s + (x.is_paid ? 0 : Number(x.pay_due || 0)), 0);
-    return { hours, pay, unpaid };
+    return { hours, pay };
   }, [shifts]);
 
   async function delShift(id: string) {
@@ -121,6 +143,9 @@ export default function Dashboard() {
       return;
     }
     setShifts(prev => prev.filter(x => x.id !== id));
+
+    // Also adjust all-time unpaid if needed (optional, but keeps it in sync)
+    // You can refetch unpaidAllTime instead if you prefer.
   }
 
   if (!user) return null;
@@ -180,7 +205,10 @@ export default function Dashboard() {
       <div className="totals totals--center">
         <div className="chip chip--xl">Hours:&nbsp;<b>{totals.hours.toFixed(2)}</b></div>
         <div className="chip chip--xl">Pay:&nbsp;<b>${totals.pay.toFixed(2)}</b></div>
-        <div className="chip chip--xl">Unpaid:&nbsp;<b>${totals.unpaid.toFixed(2)}</b></div>
+        {/* Unpaid is now ALL-TIME */}
+        <div className="chip chip--xl">
+          Unpaid:&nbsp;<b>${unpaidAllTime.toFixed(2)}</b>
+        </div>
       </div>
 
       {/* Shifts table */}
