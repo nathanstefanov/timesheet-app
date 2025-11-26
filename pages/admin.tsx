@@ -112,9 +112,10 @@ export default function Admin() {
   const [rangeTo, setRangeTo] = useState<string | null>(null);
 
   // NOTE MODAL (admin only)
-  const [noteModal, setNoteModal] = useState<{ open: boolean; row: Shift | null }>(
-    { open: false, row: null }
-  );
+  const [noteModal, setNoteModal] = useState<{ open: boolean; row: Shift | null }>({
+    open: false,
+    row: null,
+  });
   const [noteDraft, setNoteDraft] = useState<string>('');
 
   function openNoteModal(row: Shift) {
@@ -129,11 +130,11 @@ export default function Admin() {
     const row = noteModal.row;
     const prev = row.admin_note ?? '';
     const next = noteDraft;
-    setShifts(p => p.map(s => (s.id === row.id ? { ...s, admin_note: next } : s)));
+    setShifts((p) => p.map((s) => (s.id === row.id ? { ...s, admin_note: next } : s)));
     const { error } = await supabase.from('shifts').update({ admin_note: next }).eq('id', row.id);
     if (error) {
       alert(error.message);
-      setShifts(p => p.map(s => (s.id === row.id ? { ...s, admin_note: prev } : s)));
+      setShifts((p) => p.map((s) => (s.id === row.id ? { ...s, admin_note: prev } : s)));
       return;
     }
     closeNoteModal();
@@ -144,7 +145,9 @@ export default function Admin() {
     let alive = true;
 
     async function loadProfile() {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!alive) return;
 
       if (!session?.user) {
@@ -184,7 +187,10 @@ export default function Admin() {
       }
     });
 
-    return () => { alive = false; sub.subscription.unsubscribe(); };
+    return () => {
+      alive = false;
+      sub.subscription.unsubscribe();
+    };
   }, [router]);
 
   // ---- Auto sort per tab (unpaid/paid) unless user overrides ----
@@ -194,10 +200,10 @@ export default function Admin() {
       setSortBy('unpaid'); // show most unpaid first
       setSortDir('desc');
     } else if (tab === 'paid') {
-      setSortBy('pay');    // show highest paid totals first
+      setSortBy('pay'); // show highest paid totals first
       setSortDir('desc');
     } else {
-      setSortBy('name');   // alphabetical for "all"
+      setSortBy('name'); // alphabetical for "all"
       setSortDir('asc');
     }
   }, [tab, userSorted]);
@@ -215,8 +221,8 @@ export default function Admin() {
       if (tab === 'paid') q = q.eq('is_paid', true);
 
       // Date filtering:
-      const from = useWeek ? weekFrom : (rangeFrom || null);
-      const to = useWeek ? weekTo : (rangeTo || null);
+      const from = useWeek ? weekFrom : rangeFrom || null;
+      const to = useWeek ? weekTo : rangeTo || null;
       if (from) q = q.gte('shift_date', from);
       if (to) q = q.lte('shift_date', to);
 
@@ -226,7 +232,7 @@ export default function Admin() {
       const rows = (data ?? []) as Shift[];
       setShifts(rows);
 
-      const ids = Array.from(new Set(rows.map(s => s.user_id)));
+      const ids = Array.from(new Set(rows.map((s) => s.user_id)));
       if (ids.length) {
         const { data: profs } = await supabase
           .from('profiles')
@@ -252,7 +258,9 @@ export default function Admin() {
     }
   }, [checking, me, tab, useWeek, weekFrom, weekTo, rangeFrom, rangeTo]);
 
-  useEffect(() => { loadShifts(); }, [loadShifts]);
+  useEffect(() => {
+    loadShifts();
+  }, [loadShifts]);
 
   // refresh on focus/visibility
   useEffect(() => {
@@ -268,11 +276,18 @@ export default function Admin() {
 
   // ---- Totals by employee ----
   const totals = useMemo(() => {
-    const m: Record<string, {
-      id: string; name: string;
-      hours: number; pay: number; unpaid: number;
-      minCount: number; flaggedCount: number;
-    }> = {};
+    const m: Record<
+      string,
+      {
+        id: string;
+        name: string;
+        hours: number;
+        pay: number;
+        unpaid: number;
+        minCount: number;
+        flaggedCount: number;
+      }
+    > = {};
 
     for (const s of shifts) {
       const id = s.user_id;
@@ -294,13 +309,13 @@ export default function Admin() {
   }, [shifts, names]);
 
   const totalsById = useMemo(
-    () => Object.fromEntries(totals.map(t => [t.id, t] as const)),
-    [totals]
+    () => Object.fromEntries(totals.map((t) => [t.id, t] as const)),
+    [totals],
   );
 
   const unpaidTotal = useMemo(
     () => totals.reduce((sum, t) => sum + t.unpaid, 0),
-    [totals]
+    [totals],
   );
 
   const sortedTotals = useMemo(() => {
@@ -331,7 +346,7 @@ export default function Admin() {
     return m;
   }, [shifts]);
 
-  const sectionOrder = useMemo(() => sortedTotals.map(t => t.id), [sortedTotals]);
+  const sectionOrder = useMemo(() => sortedTotals.map((t) => t.id), [sortedTotals]);
 
   // ---- Actions ----
   async function togglePaid(row: Shift, next: boolean) {
@@ -340,22 +355,29 @@ export default function Admin() {
       paid_at: next ? new Date().toISOString() : null,
       paid_by: next ? (me as any)!.id : null,
     };
-    setShifts(prev => prev.map(s => (s.id === row.id ? { ...s, ...patch } : s)));
+    setShifts((prev) => prev.map((s) => (s.id === row.id ? { ...s, ...patch } : s)));
     const { error } = await supabase.from('shifts').update(patch).eq('id', row.id);
     if (error) {
       alert(error.message);
-      setShifts(prev => prev.map(s => (s.id === row.id ? { ...s, is_paid: !next } : s)));
+      setShifts((prev) => prev.map((s) => (s.id === row.id ? { ...s, is_paid: !next } : s)));
     }
   }
 
   async function bulkTogglePaidForEmployee(userId: string, next: boolean) {
     const rows = groups[userId] || [];
-    const toChange = rows.filter(s => Boolean(s.is_paid) !== next).map(s => s.id);
+    const toChange = rows.filter((s) => Boolean(s.is_paid) !== next).map((s) => s.id);
     if (!toChange.length) return;
 
     const name = names[userId] || 'employee';
     const verb = next ? 'mark ALL shifts PAID' : 'mark ALL shifts UNPAID';
-    if (!confirm(`Are you sure you want to ${verb} for ${name}? (${toChange.length} shift${toChange.length > 1 ? 's' : ''})`)) return;
+    if (
+      !confirm(
+        `Are you sure you want to ${verb} for ${name}? (${toChange.length} shift${
+          toChange.length > 1 ? 's' : ''
+        })`,
+      )
+    )
+      return;
 
     const patch = {
       is_paid: next,
@@ -363,35 +385,43 @@ export default function Admin() {
       paid_by: next ? (me as any)!.id : null,
     };
 
-    setBulkBusy(b => ({ ...b, [userId]: true }));
+    setBulkBusy((b) => ({ ...b, [userId]: true }));
     const prev = shifts;
-    setShifts(prev => prev.map(s => (s.user_id === userId && toChange.includes(s.id) ? { ...s, ...patch } : s)));
+    setShifts((prev) =>
+      prev.map((s) =>
+        s.user_id === userId && toChange.includes(s.id) ? { ...s, ...patch } : s,
+      ),
+    );
 
     const { error } = await supabase.from('shifts').update(patch).in('id', toChange);
     if (error) {
       alert(error.message);
       setShifts(prev);
     }
-    setBulkBusy(b => ({ ...b, [userId]: false }));
+    setBulkBusy((b) => ({ ...b, [userId]: false }));
   }
 
-  function editRow(row: Shift) { router.push(`/shift/${row.id}`); }
+  function editRow(row: Shift) {
+    router.push(`/shift/${row.id}`);
+  }
 
   async function deleteRow(row: Shift) {
     const name = names[row.user_id] || 'employee';
     if (!confirm(`Delete shift for ${name} on ${row.shift_date}?`)) return;
     const { error } = await supabase.from('shifts').delete().eq('id', row.id);
     if (error) return alert(error.message);
-    setShifts(prev => prev.filter(s => s.id !== row.id));
+    setShifts((prev) => prev.filter((s) => s.id !== row.id));
   }
 
   // admin-only helpers
   async function toggleAdminFlag(row: Shift, next: boolean) {
-    setShifts(prev => prev.map(s => (s.id === row.id ? { ...s, admin_flag: next } : s)));
+    setShifts((prev) => prev.map((s) => (s.id === row.id ? { ...s, admin_flag: next } : s)));
     const { error } = await supabase.from('shifts').update({ admin_flag: next }).eq('id', row.id);
     if (error) {
       alert(error.message);
-      setShifts(prev => prev.map(s => (s.id === row.id ? { ...s, admin_flag: row.admin_flag ?? null } : s)));
+      setShifts((prev) =>
+        prev.map((s) => (s.id === row.id ? { ...s, admin_flag: row.admin_flag ?? null } : s)),
+      );
     }
   }
 
@@ -405,13 +435,19 @@ export default function Admin() {
   return (
     <main className="page page--center">
       <h1 className="page__title">Admin Dashboard</h1>
-      {err && <div className="alert error" role="alert">Error: {err}</div>}
+      {err && (
+        <div className="alert error" role="alert">
+          Error: {err}
+        </div>
+      )}
 
       {/* Summary */}
       <div className="card card--tight full center">
         <div className="summary-grid">
           <span className="chip chip--xl">Total Unpaid: ${unpaidTotal.toFixed(2)}</span>
-          <span className="meta">Employees with Unpaid: {totals.filter(t => t.unpaid > 0).length}</span>
+          <span className="meta">
+            Employees with Unpaid: {totals.filter((t) => t.unpaid > 0).length}
+          </span>
 
           <div className="summary-badges">
             <span className="badge badge-min">MIN $50</span>
@@ -430,19 +466,28 @@ export default function Admin() {
         <div className="tabs tabs--center" style={{ margin: 0 }}>
           <button
             className={tab === 'unpaid' ? 'active' : ''}
-            onClick={() => { setTab('unpaid'); setUserSorted(false); }}
+            onClick={() => {
+              setTab('unpaid');
+              setUserSorted(false);
+            }}
           >
             Unpaid
           </button>
           <button
             className={tab === 'paid' ? 'active' : ''}
-            onClick={() => { setTab('paid'); setUserSorted(false); }}
+            onClick={() => {
+              setTab('paid');
+              setUserSorted(false);
+            }}
           >
             Paid
           </button>
           <button
             className={tab === 'all' ? 'active' : ''}
-            onClick={() => { setTab('all'); setUserSorted(false); }}
+            onClick={() => {
+              setTab('all');
+              setUserSorted(false);
+            }}
           >
             All
           </button>
@@ -464,8 +509,18 @@ export default function Admin() {
             </label>
 
             <div className="inline week-controls" aria-label="Week controls">
-              <button className="topbar-btn" onClick={() => setWeekAnchor(addDays(weekAnchor, -7))}>◀ Prev</button>
-              <button className="topbar-btn" onClick={() => setWeekAnchor(startOfWeek(today))}>This Week</button>
+              <button
+                className="topbar-btn"
+                onClick={() => setWeekAnchor(addDays(weekAnchor, -7))}
+              >
+                ◀ Prev
+              </button>
+              <button
+                className="topbar-btn"
+                onClick={() => setWeekAnchor(startOfWeek(today))}
+              >
+                This Week
+              </button>
               <button
                 className="topbar-btn"
                 onClick={() => setWeekAnchor(nextWeekAnchor)}
@@ -508,7 +563,10 @@ export default function Admin() {
               />
               <button
                 className="topbar-btn clear-btn"
-                onClick={() => { setRangeFrom(null); setRangeTo(null); }}
+                onClick={() => {
+                  setRangeFrom(null);
+                  setRangeTo(null);
+                }}
                 title="Clear range (shows all time)"
                 disabled={useWeek}
               >
@@ -524,11 +582,16 @@ export default function Admin() {
         <div className="card__header center">
           <h3>Totals by Employee</h3>
           <div className="row row-center">
-            <label className="sr-only" htmlFor="sort-by">Sort by</label>
+            <label className="sr-only" htmlFor="sort-by">
+              Sort by
+            </label>
             <select
               id="sort-by"
               value={sortBy}
-              onChange={(e) => { setSortBy(e.target.value as SortBy); setUserSorted(true); }}
+              onChange={(e) => {
+                setSortBy(e.target.value as SortBy);
+                setUserSorted(true);
+              }}
             >
               <option value="name">Name</option>
               <option value="hours">Hours</option>
@@ -537,7 +600,10 @@ export default function Admin() {
             </select>
             <button
               className="topbar-btn"
-              onClick={() => { setSortDir(d => (d === 'asc' ? 'desc' : 'asc')); setUserSorted(true); }}
+              onClick={() => {
+                setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'));
+                setUserSorted(true);
+              }}
               aria-label="Toggle sort direction"
               title="Toggle sort direction"
             >
@@ -547,7 +613,7 @@ export default function Admin() {
         </div>
 
         <div className="table-wrap totals-table-wrap">
-          <table className="table table--center table--compact table--admin center totals-table">
+          <table className="table table--center table--compact table--admin totals-table">
             <thead>
               <tr>
                 <th>Employee</th>
@@ -562,17 +628,32 @@ export default function Admin() {
                 const hasUnpaid = t.unpaid > 0.0001;
                 return (
                   <tr key={t.id}>
-                    <td>
+                    <td data-label="Employee">
                       {t.name}
-                      {t.minCount > 0 && <span className="muted" style={{ marginLeft: 8 }}>({t.minCount}× MIN)</span>}
-                      {t.flaggedCount > 0 && <span className="muted" style={{ marginLeft: 8 }}>({t.flaggedCount}× Flagged)</span>}
+                      {t.minCount > 0 && (
+                        <span className="muted" style={{ marginLeft: 8 }}>
+                          ({t.minCount}× MIN)
+                        </span>
+                      )}
+                      {t.flaggedCount > 0 && (
+                        <span className="muted" style={{ marginLeft: 8 }}>
+                          ({t.flaggedCount}× Flagged)
+                        </span>
+                      )}
                     </td>
-                    <td>{t.hours.toFixed(2)}</td>
-                    <td>${t.pay.toFixed(2)}</td>
-                    <td>
-                      ${t.unpaid.toFixed(2)}
+                    <td data-label="Hours">{t.hours.toFixed(2)}</td>
+                    <td data-label="Pay">${t.pay.toFixed(2)}</td>
+                    <td data-label="Unpaid">
+                      <span className="totals-unpaid-amount">
+                        ${t.unpaid.toFixed(2)}
+                      </span>
                       {hasUnpaid && vHref && (
-                        <a className="btn-venmo" href={vHref} target="_blank" rel="noopener noreferrer" style={{ marginLeft: 8 }}>
+                        <a
+                          className="btn-venmo"
+                          href={vHref}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
                           Venmo
                         </a>
                       )}
@@ -622,10 +703,10 @@ export default function Admin() {
                     acc.pay += info.pay;
                     return acc;
                   },
-                  { hours: 0, pay: 0 }
+                  { hours: 0, pay: 0 },
                 );
 
-                const unpaidCount = rows.filter(s => !s.is_paid).length;
+                const unpaidCount = rows.filter((s) => !s.is_paid).length;
                 const allPaid = unpaidCount === 0;
 
                 return (
@@ -644,10 +725,16 @@ export default function Admin() {
                             {totalsById[uid] && (
                               <div className="mobile-badges">
                                 {totalsById[uid].minCount > 0 && (
-                                  <span className="badge badge-min"> {totalsById[uid].minCount}× MIN </span>
+                                  <span className="badge badge-min">
+                                    {' '}
+                                    {totalsById[uid].minCount}× MIN{' '}
+                                  </span>
                                 )}
                                 {totalsById[uid].flaggedCount > 0 && (
-                                  <span className="badge badge-flag"> {totalsById[uid].flaggedCount}× FLAGGED </span>
+                                  <span className="badge badge-flag">
+                                    {' '}
+                                    {totalsById[uid].flaggedCount}× FLAGGED{' '}
+                                  </span>
                                 )}
                               </div>
                             )}
@@ -699,18 +786,32 @@ export default function Admin() {
                           <td data-label="Date">{s.shift_date}</td>
                           <td data-label="Type">{s.shift_type}</td>
                           <td data-label="In">
-                            {s.time_in ? new Date(s.time_in).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
+                            {s.time_in
+                              ? new Date(s.time_in).toLocaleTimeString([], {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })
+                              : '—'}
                           </td>
                           <td data-label="Out">
-                            {s.time_out ? new Date(s.time_out).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
+                            {s.time_out
+                              ? new Date(s.time_out).toLocaleTimeString([], {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })
+                              : '—'}
                           </td>
-                          <td data-label="Hours">{Number(s.hours_worked ?? 0).toFixed(2)}</td>
+                          <td data-label="Hours">
+                            {Number(s.hours_worked ?? 0).toFixed(2)}
+                          </td>
                           <td data-label="Pay">
                             ${pay.toFixed(2)}{' '}
                             {minApplied && (
                               <span
                                 className="badge badge-min"
-                                title={`Breakdown minimum applied (base ${base.toFixed(2)} < $50)`}
+                                title={`Breakdown minimum applied (base ${base.toFixed(
+                                  2,
+                                )} < $50)`}
                                 style={{ marginLeft: 6 }}
                               >
                                 MIN $50
@@ -726,7 +827,11 @@ export default function Admin() {
                                 disabled={bulkBusy[uid]}
                                 aria-label={paid ? 'Mark unpaid' : 'Mark paid'}
                               />
-                              <span className={paid ? 'badge badge-paid' : 'badge badge-unpaid'}>
+                              <span
+                                className={
+                                  paid ? 'badge badge-paid' : 'badge badge-unpaid'
+                                }
+                              >
                                 {paid ? 'PAID' : 'NOT PAID'}
                               </span>
                             </label>
@@ -736,14 +841,29 @@ export default function Admin() {
                           </td>
                           <td data-label="Actions">
                             <div className="actions center">
-                              <button className="btn" onClick={() => editRow(s)}>Edit</button>
-                              <button className="btn btn-danger" onClick={() => deleteRow(s)}>Delete</button>
+                              <button className="btn" onClick={() => editRow(s)}>
+                                Edit
+                              </button>
+                              <button
+                                className="btn btn-danger"
+                                onClick={() => deleteRow(s)}
+                              >
+                                Delete
+                              </button>
 
                               {/* admin-only controls */}
                               <button
-                                className={`btn ${isFlagged ? 'btn-flag-on' : 'btn-flag'}`}
-                                title={isFlagged ? 'Unflag (manual flag only)' : 'Flag for attention'}
-                                onClick={() => toggleAdminFlag(s, !Boolean(s.admin_flag))}
+                                className={`btn ${
+                                  isFlagged ? 'btn-flag-on' : 'btn-flag'
+                                }`}
+                                title={
+                                  isFlagged
+                                    ? 'Unflag (manual flag only)'
+                                    : 'Flag for attention'
+                                }
+                                onClick={() =>
+                                  toggleAdminFlag(s, !Boolean(s.admin_flag))
+                                }
                                 aria-pressed={isFlagged}
                               >
                                 {isFlagged ? '★ Flagged' : '☆ Flag'}
@@ -764,7 +884,9 @@ export default function Admin() {
                     })}
 
                     <tr className="subtotal">
-                      <td colSpan={5} style={{ textAlign: 'center' }}>Total — {name}</td>
+                      <td colSpan={5} style={{ textAlign: 'center' }}>
+                        Total — {name}
+                      </td>
                       <td>{subtotal.hours.toFixed(2)}</td>
                       <td>${subtotal.pay.toFixed(2)}</td>
                       <td colSpan={3}></td>
@@ -782,7 +904,10 @@ export default function Admin() {
         <div className="modal-backdrop" role="dialog" aria-modal="true">
           <div className="modal">
             <div className="modal-header">
-              <span className="modal-title">📝 Note — {names[noteModal.row.user_id] || '—'} · {noteModal.row.shift_date}</span>
+              <span className="modal-title">
+                📝 Note — {names[noteModal.row.user_id] || '—'} ·{' '}
+                {noteModal.row.shift_date}
+              </span>
             </div>
             <div className="modal-body">
               <textarea
@@ -795,8 +920,12 @@ export default function Admin() {
               </p>
             </div>
             <div className="modal-actions">
-              <button className="btn" onClick={closeNoteModal}>Close</button>
-              <button className="btn btn-primary" onClick={saveNoteModal}>Save</button>
+              <button className="btn" onClick={closeNoteModal}>
+                Close
+              </button>
+              <button className="btn btn-primary" onClick={saveNoteModal}>
+                Save
+              </button>
             </div>
           </div>
         </div>
@@ -804,258 +933,437 @@ export default function Admin() {
 
       <style jsx>{`
         /* Centering helpers */
-        .center { text-align: center; }
+        .center {
+          text-align: center;
+        }
         .row-center {
-          display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 12px;
+          flex-wrap: wrap;
         }
 
-        .summary-grid{
-          display:grid;
+        .summary-grid {
+          display: grid;
           grid-template-columns: 1fr;
-          padding:10px;
-          gap:10px;
-          align-items:center;
-          justify-items:center;
+          padding: 10px;
+          gap: 10px;
+          align-items: center;
+          justify-items: center;
         }
-        @media(min-width: 720px){
-          .summary-grid{
+        @media (min-width: 720px) {
+          .summary-grid {
             grid-template-columns: repeat(2, auto);
             grid-auto-rows: auto;
           }
         }
-        .summary-badges{
-          display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:center;
+        .summary-badges {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-wrap: wrap;
+          justify-content: center;
         }
 
-        /* Filters layout: no weird scrolling */
-        .filters{
-          display:flex; flex-direction:column; gap:10px; align-items:center; justify-content:center;
+        /* Filters layout */
+        .filters {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          align-items: center;
+          justify-content: center;
         }
-        .filters-row{
-          display:flex; align-items:center; justify-content:center; gap:12px; flex-wrap:wrap; width:100%;
+        .filters-row {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 12px;
+          flex-wrap: wrap;
+          width: 100%;
         }
-        .week-controls, .range-controls{
-          display:flex; align-items:center; justify-content:center; gap:8px; flex-wrap:wrap;
+        .week-controls,
+        .range-controls {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          flex-wrap: wrap;
         }
-        .range-text{ white-space:nowrap; }
+        .range-text {
+          white-space: nowrap;
+        }
 
         /* Buttons (unified) */
-        .btn, .topbar-btn, .btn-venmo {
-          display:inline-flex; align-items:center; justify-content:center;
-          height:36px; padding:0 14px; border-radius:10px;
-          border:1px solid var(--border); background:#f8fafc; color:#1f2937;
-          font-weight:600; cursor:pointer; text-decoration:none;
+        .btn,
+        .topbar-btn,
+        .btn-venmo {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          height: 36px;
+          padding: 0 14px;
+          border-radius: 10px;
+          border: 1px solid var(--border);
+          background: #f8fafc;
+          color: #1f2937;
+          font-weight: 600;
+          cursor: pointer;
+          text-decoration: none;
           box-shadow: var(--shadow-sm);
         }
-        .btn:hover, .topbar-btn:hover, .btn-venmo:hover { filter:brightness(0.98); }
-        .btn:active, .topbar-btn:active { transform: translateY(1px); }
-
-        .btn-primary { background:#e8f0ff; }
-        .btn-danger { background:#ffe8e8; }
-
-        .btn-flag { background:#fff; }
-        .btn-flag-on { background:#fffbeb; border-color:#f59e0b; font-weight:800; }
-
-        .clear-btn{ margin-left: 8px; }
-
-        .icon-btn{
-          display:inline-flex; align-items:center; justify-content:center;
-          width:28px; height:28px; margin-left:6px; border-radius:999px;
-          border:1px solid var(--border); background:#fff; cursor:pointer;
-          line-height:1;
+        .btn:hover,
+        .topbar-btn:hover,
+        .btn-venmo:hover {
+          filter: brightness(0.98);
+        }
+        .btn:active,
+        .topbar-btn:active {
+          transform: translateY(1px);
         }
 
-        .emp-cell { display:flex; align-items:center; justify-content:center; gap:6px; }
-
-        /* Table: center everything by default */
-        .table th, .table td { text-align:center; vertical-align:middle; }
-
-        /* Section bar */
-        .section-bar {
-          display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+        .btn-primary {
+          background: #e8f0ff;
         }
-        .section-bar__left, .section-bar__right { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
-
-        /* Mobile-only badges under the name */
-        .mobile-badges{ display:none; }
-        @media (max-width: 640px){
-          .section-bar__left{
-            flex-direction: column;
-            align-items: center;
-            gap: 6px;
-          }
-          .mobile-badges{
-            display: inline-flex;
-            gap: 6px;
-            margin-top: 4px;
-            flex-wrap: wrap;
-            justify-content: center;
-          }
+        .btn-danger {
+          background: #ffe8e8;
         }
 
-        /* Modal */
-        .modal-backdrop{
-          position:fixed; inset:0; background:rgba(0,0,0,0.4);
-          display:flex; align-items:center; justify-content:center; z-index:1000;
+        .btn-flag {
+          background: #fff;
         }
-        .modal{
-          width:min(640px, 92vw); background:white; border-radius:16px; padding:16px;
-          box-shadow:0 10px 25px rgba(0,0,0,0.2); display:flex; flex-direction:column; gap:12px;
-        }
-        .modal-header{ display:flex; align-items:center; justify-content:center; }
-        .modal-title{ font-weight:800; }
-        .modal-body{ display:flex; flex-direction:column; align-items:center; }
-        .modal-body textarea{
-          width:100%; min-height:140px; border-radius:12px; padding:10px;
-          border:1px solid var(--border); resize:vertical; font:inherit;
-        }
-        .modal-actions{
-          display:flex; align-items:center; justify-content:center; gap:10px;
-        }
-
-        /* Badges & pills */
-        .pill{
-          display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:999px;
-          background:#f3f4f6; border:1px solid var(--border);
-        }
-        .pill__num{ font-weight:800; }
-
-        .badge-min{
-          display:inline-flex; align-items:center; justify-content:center;
-          padding:2px 8px; border-radius:999px; border:1px solid #f6ca00; background:#fffbe6; color:#6b5800; font-weight:700;
-        }
-        .badge-flag{
-          display:inline-flex; align-items:center; justify-content:center;
-          padding:2px 8px; border-radius:999px; border:1px solid #f59e0b; background:#fffbeb; color:#92400e; font-weight:700;
-        }
-        .badge-paid{
-          display:inline-flex; align-items:center; justify-content:center;
-          padding:2px 8px; border-radius:999px; border:1px solid #16a34a; background:#ecfdf5; color:#065f46; font-weight:700;
-        }
-        .badge-unpaid{
-          display:inline-flex; align-items:center; justify-content:center;
-          padding:2px 8px; border-radius:999px; border:1px solid #ef4444; background:#fef2f2; color:#7f1d1d; font-weight:700;
-        }
-
-        /* Softer flagged row */
-        .row-flagged { background:#fff7ed; }
-
-        /* Misc */
-        .divider { width:1px; height:24px; background:var(--border); opacity:0.5; }
-        .muted { color:#6b7280; }
-        .inline { display:inline-flex; align-items:center; gap:6px; }
-        .actions { display:flex; align-items:center; justify-content:center; gap:6px; flex-wrap:wrap; }
-
-        .page {
-          max-width: 1100px;
-          margin: 20px auto;
-          padding: 0 14px;
-        }
-        .page__title{
-          text-align:center;
-          margin: 8px 0 14px;
+        .btn-flag-on {
+          background: #fffbeb;
+          border-color: #f59e0b;
           font-weight: 800;
-          letter-spacing:.2px;
-        }
-        .page--center{ display:flex; flex-direction:column; align-items:center; }
-        .full{ width:100%; }
-
-        .card{
-          background:var(--card); border:1px solid var(--border); border-radius:var(--radius);
-          box-shadow:var(--shadow-sm);
-          margin-top: 10px;
-        }
-        .card--tight .table th, .card--tight .table td{ padding:10px; }
-        .card__header{
-          padding: 10px 12px; display:flex; align-items:center; justify-content:space-between;
-          border-bottom:1px solid var(--border-soft);
         }
 
-        .tabs{ display:flex; gap:8px; flex-wrap: wrap; margin: 10px 0 0; justify-content:center; }
-        .tabs button{
-          background:#fff; color:#111827; border:1px solid var(--border);
-          padding:8px 12px; border-radius:10px; font-weight:700; cursor:pointer;
-          transition: background .15s, border-color .15s, color .15s, transform .02s;
+        .clear-btn {
+          margin-left: 8px;
         }
-        .tabs button.active{ background: var(--brand-weak); color:#3730a3; border-color: var(--brand-border); }
-        .tabs button:hover{ background:#f9fafb; }
-        .tabs button:active{ transform: translateY(1px); }
 
-        .table{
-          width:100%;
+        .icon-btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 28px;
+          height: 28px;
+          margin-left: 6px;
+          border-radius: 999px;
+          border: 1px solid var(--border);
+          background: #fff;
+          cursor: pointer;
+          line-height: 1;
+        }
+
+        .emp-cell {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+        }
+
+        /* Table: base */
+        .table {
+          width: 100%;
           border-collapse: collapse;
-          background:var(--card);
-          border:1px solid var(--border);
+          background: var(--card);
+          border: 1px solid var(--border);
           border-radius: var(--radius);
           overflow: hidden;
           box-shadow: var(--shadow-sm);
           table-layout: auto;
         }
-        .table th, .table td{ padding:12px; border-top:1px solid var(--border-soft); }
-        .table thead th{
-          background:#f8fafc; border-top:0; text-align:left; font-weight:700; color: var(--ink-subtle);
+        .table th,
+        .table td {
+          padding: 12px;
+          border-top: 1px solid var(--border-soft);
         }
-        .table--compact th, .table--compact td{ padding:9px; }
-        .table--admin{ font-size:14px; }
+        .table thead th {
+          background: #f8fafc;
+          border-top: 0;
+          text-align: left;
+          font-weight: 700;
+          color: var(--ink-subtle);
+        }
+        .table tbody tr:hover {
+          background: #fdfdfd;
+        }
+        .table--compact th,
+        .table--compact td {
+          padding: 9px;
+        }
+        .table--admin {
+          font-size: 14px;
+        }
+        .table--center th,
+        .table--center td {
+          text-align: center;
+          vertical-align: middle;
+        }
+        .table--center th:first-child,
+        .table--center td:first-child {
+          text-align: left;
+        }
+        .table--center td .actions {
+          display: inline-flex;
+          gap: 10px;
+          justify-content: center;
+          align-items: center;
+        }
 
-        .table--center th, .table--center td{ text-align:center; vertical-align: middle; }
-        .table--center th:first-child, .table--center td:first-child{ text-align:left; }
-        .table--center td .actions{ display:inline-flex; gap:10px; justify-content:center; align-items:center; }
+        .table-wrap {
+          width: 100%;
+        }
 
-        .table-wrap{ width:100%; }
-
-        .section-head td{
-          font-weight:800; background:#f8fafc; color:#111827; border-top:2px solid var(--border);
+        /* Section bar */
+        .section-head td {
+          font-weight: 800;
+          background: #f8fafc;
+          color: #111827;
+          border-top: 2px solid var(--border);
           padding: 0;
         }
-        .employee-name{ font-size:16px; font-weight:800; }
+        .section-bar {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 16px;
+          padding: 10px 12px;
+          border-radius: 12px;
+        }
+        .section-bar__left,
+        .section-bar__right {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          flex-wrap: wrap;
+        }
+        .employee-name {
+          font-size: 16px;
+          font-weight: 800;
+        }
 
-        .subtotal td{ background:#fbfbff; color:#1f2937; font-weight:700; border-top:2px solid var(--brand-border); }
+        /* Modal */
+        .modal-backdrop {
+          position: fixed;
+          inset: 0;
+          background: rgba(0, 0, 0, 0.4);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 1000;
+        }
+        .modal {
+          width: min(640px, 92vw);
+          background: white;
+          border-radius: 16px;
+          padding: 16px;
+          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+        .modal-header {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .modal-title {
+          font-weight: 800;
+        }
+        .modal-body {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+        }
+        .modal-body textarea {
+          width: 100%;
+          min-height: 140px;
+          border-radius: 12px;
+          padding: 10px;
+          border: 1px solid var(--border);
+          resize: vertical;
+          font: inherit;
+        }
+        .modal-actions {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+        }
 
-        @media (max-width: 700px){
-          .page{ max-width:100%; padding: 10px 12px; margin: 16px auto; }
-          .card{ border-radius: 14px; }
-          .card__header{ padding: 8px 10px; }
+        /* Badges & pills */
+        .pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 4px 10px;
+          border-radius: 999px;
+          background: #f3f4f6;
+          border: 1px solid var(--border);
+        }
+        .pill__num {
+          font-weight: 800;
+        }
 
-          .chip{ padding:6px 10px; font-size:12px; }
-          .badge{ font-size:11px; padding:1px 7px; }
+        .badge-min {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          padding: 2px 8px;
+          border-radius: 999px;
+          border: 1px solid #f6ca00;
+          background: #fffbe6;
+          color: #6b5800;
+          font-weight: 700;
+        }
+        .badge-flag {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          padding: 2px 8px;
+          border-radius: 999px;
+          border: 1px solid #f59e0b;
+          background: #fffbeb;
+          color: #92400e;
+          font-weight: 700;
+        }
+        .badge-paid {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          padding: 2px 8px;
+          border-radius: 999px;
+          border: 1px solid #16a34a;
+          background: #ecfdf5;
+          color: #065f46;
+          font-weight: 700;
+        }
+        .badge-unpaid {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          padding: 2px 8px;
+          border-radius: 999px;
+          border: 1px solid #ef4444;
+          background: #fef2f2;
+          color: #7f1d1d;
+          font-weight: 700;
+        }
 
-          .table--stack{ border:0; width:100%; }
-          .table--stack thead{ display:none; }
-          .table--stack tbody, .table--stack tr, .table--stack td{ display:block; width:100%; }
+        /* Softer flagged row */
+        .row-flagged {
+          background: #fff7ed;
+        }
 
-          .table--stack tr{
-            background:#fff; border:1px solid var(--border); border-radius:14px;
-            box-shadow: var(--shadow-md); margin: 14px 0; padding: 12px 14px;
+        /* Misc */
+        .divider {
+          width: 1px;
+          height: 24px;
+          background: var(--border);
+          opacity: 0.5;
+        }
+        .muted {
+          color: #6b7280;
+        }
+        .inline {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+        }
+        .actions {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          flex-wrap: wrap;
+        }
+
+        /* MOBILE: card-style rows for shifts table only */
+        @media (max-width: 700px) {
+          .page {
+            max-width: 100%;
+            padding: 10px 12px;
+            margin: 16px auto;
           }
 
-          .table--stack td{
-            border:0!important; padding: 10px 0;
-            display:flex; align-items:center; justify-content:space-between;
-            gap: 12px; font-size:15px;
+          .table--stack {
+            border: 0;
+            width: 100%;
           }
-          .table--stack td::before{
+          .table--stack thead {
+            display: none;
+          }
+          .table--stack tbody,
+          .table--stack tr,
+          .table--stack td {
+            display: block;
+            width: 100%;
+          }
+          .table--stack tr {
+            background: #fff;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            box-shadow: var(--shadow-md);
+            margin: 14px 0;
+            padding: 12px 14px;
+          }
+          .table--stack td {
+            border: 0 !important;
+            padding: 10px 0;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 12px;
+            font-size: 15px;
+          }
+          .table--stack td::before {
             content: attr(data-label);
-            font-weight: 600; color: var(--ink-subtle);
-            flex: 1; text-align:left;
+            font-weight: 600;
+            color: var(--ink-subtle);
+            flex: 1;
+            text-align: left;
           }
-          .table--stack td{ text-align:right; }
-
-          .table--stack td .badge{ margin-left:auto; }
-
-          .table--stack td .actions{
-            width:100%; display:flex; justify-content:center; gap:10px; margin-top:8px;
+          .table--stack td {
+            text-align: right;
           }
-          .table--stack td .btn-edit,
-          .table--stack td .btn-delete{ flex:1; height:40px; }
+          .table--stack td .badge {
+            margin-left: auto;
+          }
+          .table--stack td .actions {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            gap: 10px;
+            margin-top: 8px;
+          }
+          .table--stack td .btn {
+            flex: 1;
+            height: 40px;
+          }
 
-          .section-bar{ flex-direction:column; align-items:center; gap:10px; }
-          .section-bar__right{ width:100%; justify-content:center; gap:10px; }
-          .section-bar__right .topbar-btn{ flex:1 1 160px; height:40px; border-radius:12px; }
+          .section-bar {
+            flex-direction: column;
+            align-items: center;
+            gap: 10px;
+          }
+          .section-bar__right {
+            width: 100%;
+            justify-content: center;
+            gap: 10px;
+          }
+          .section-bar__right .topbar-btn {
+            flex: 1 1 160px;
+            height: 40px;
+            border-radius: 12px;
+          }
 
-          .col-hide-md{ display: none !important; }
+          .col-hide-md {
+            display: none !important;
+          }
 
-          .table--stack tr.subtotal{
+          .table--stack tr.subtotal {
             padding: 12px 14px;
             border: 1px solid var(--border);
             border-radius: 14px;
@@ -1065,39 +1373,82 @@ export default function Admin() {
             grid-template-columns: 1fr;
             row-gap: 4px;
           }
-          .table--stack tr.subtotal td{ display: none; }
+          .table--stack tr.subtotal td {
+            display: none;
+          }
           .table--stack tr.subtotal td:nth-child(1),
           .table--stack tr.subtotal td:nth-child(2),
-          .table--stack tr.subtotal td:nth-child(3){
+          .table--stack tr.subtotal td:nth-child(3) {
             display: block;
             padding: 6px 0;
           }
-          .table--stack tr.subtotal td:nth-child(1){
-            text-align: center; font-weight: 800; color: var(--ink); padding-bottom: 8px;
+          .table--stack tr.subtotal td:nth-child(1) {
+            text-align: center;
+            font-weight: 800;
+            color: var(--ink);
+            padding-bottom: 8px;
           }
-          .table--stack tr.subtotal td:nth-child(1)::before{ content: ''; }
+          .table--stack tr.subtotal td:nth-child(1)::before {
+            content: '';
+          }
           .table--stack tr.subtotal td:nth-child(2),
-          .table--stack tr.subtotal td:nth-child(3){
-            display: grid; grid-template-columns: 56% 44%; align-items:center; gap: 8px;
+          .table--stack tr.subtotal td:nth-child(3) {
+            display: grid;
+            grid-template-columns: 56% 44%;
+            align-items: center;
+            gap: 8px;
           }
-          .table--stack tr.subtotal td:nth-child(2)::before{ content: 'Hours'; font-weight: 600; color: var(--muted); text-align:left; }
-          .table--stack tr.subtotal td:nth-child(3)::before{ content: 'Pay';   font-weight: 600; color: var(--muted); text-align:left; }
+          .table--stack tr.subtotal td:nth-child(2)::before {
+            content: 'Hours';
+            font-weight: 600;
+            color: var(--muted);
+            text-align: left;
+          }
+          .table--stack tr.subtotal td:nth-child(3)::before {
+            content: 'Pay';
+            font-weight: 600;
+            color: var(--muted);
+            text-align: left;
+          }
         }
 
-        @media (max-width: 900px){
-          .table-wrap{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
+        /* Medium screens: allow gentle horizontal scroll for wide tables */
+        @media (max-width: 900px) {
+          .table-wrap {
+            overflow-x: auto;
+            -webkit-overflow-scrolling: touch;
+          }
         }
 
-        /* === Totals table: keep inline, no side-scroll on mobile === */
+        /* Mobile-only badges under the name (already wired in JSX) */
+        .mobile-badges {
+          display: none;
+        }
+        @media (max-width: 640px) {
+          .section-bar__left {
+            flex-direction: column;
+            align-items: center;
+            gap: 6px;
+          }
+          .mobile-badges {
+            display: inline-flex;
+            gap: 6px;
+            margin-top: 4px;
+            flex-wrap: wrap;
+            justify-content: center;
+          }
+        }
+
+        /* === Totals table: inline, no side-scroll, Venmo sane === */
         .totals-table-wrap {
           width: 100%;
-          overflow-x: visible !important; /* override global auto-scroll */
+          overflow-x: hidden; /* never side-scroll this one */
         }
 
         .totals-table {
           width: 100%;
           border-collapse: collapse;
-          table-layout: fixed;            /* force columns to share space */
+          table-layout: auto;
         }
 
         .totals-table th,
@@ -1106,17 +1457,15 @@ export default function Admin() {
           font-size: 13px;
           text-align: center;
           vertical-align: middle;
+          white-space: normal;
           word-break: break-word;
-          white-space: normal;            /* wrap instead of forcing scroll */
         }
 
-        /* Employee column: left and allowed to wrap */
         .totals-table th:first-child,
         .totals-table td:first-child {
           text-align: left;
         }
 
-        /* Numeric columns: right-align and narrow */
         .totals-table th:nth-child(2),
         .totals-table td:nth-child(2),
         .totals-table th:nth-child(3),
@@ -1126,6 +1475,25 @@ export default function Admin() {
           text-align: right;
         }
 
+        /* Unpaid column: flex row so amount + Venmo sit side-by-side */
+        .totals-table td:nth-child(4) {
+          display: flex;
+          align-items: center;
+          justify-content: flex-end;
+          gap: 4px;
+        }
+
+        .totals-unpaid-amount {
+          white-space: nowrap;
+        }
+
+        .totals-table .btn-venmo {
+          white-space: nowrap;
+          font-size: 11px;
+          padding: 2px 8px;
+          height: 24px;
+        }
+
         @media (max-width: 480px) {
           .totals-table th,
           .totals-table td {
@@ -1133,18 +1501,9 @@ export default function Admin() {
             font-size: 12px;
           }
 
-          .totals-table th:first-child,
-          .totals-table td:first-child {
-            width: 40%;
-          }
-
-          .totals-table th:nth-child(2),
-          .totals-table td:nth-child(2),
-          .totals-table th:nth-child(3),
-          .totals-table td:nth-child(3),
-          .totals-table th:nth-child(4),
           .totals-table td:nth-child(4) {
-            width: 20%;
+            flex-wrap: wrap; /* Venmo can drop under amount instead of letter-stacking */
+            gap: 3px;
           }
         }
       `}</style>
