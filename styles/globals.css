@@ -1,3 +1,15 @@
+/* --- Fix actions column clipping on upcoming schedule table --- */
+.upcoming-table-td-actions {
+  overflow: visible !important;
+  text-overflow: clip !important;
+  white-space: nowrap !important;
+}
+
+/* Make sure the flex wrapper can show fully too */
+.upcoming-table-td-actions .upcoming-table-actions-vert {
+  overflow: visible;
+}
+
 .upcoming-table th {
   text-align: center !important;
   vertical-align: middle !important;
@@ -1939,4 +1951,276 @@ textarea{ min-height:80px; resize:vertical; }
     flex: 1 1 100%;
     min-width: 0;
   }
+}
+/* ==== FINAL ADMIN UPCOMING SCHEDULE TABLE FIX ==== */
+
+/* Card containing upcoming table */
+.admin-upcoming-table-card {
+  width: 100%;
+  max-width: 1100px;
+  margin: 22px auto 0;
+  padding: 20px 18px 18px;
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-md);
+}
+
+/* Wrapper: allow horizontal scroll only if really needed */
+.admin-upcoming-table-wrap {
+  width: 100%;
+  max-width: 100%;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  padding-bottom: 8px;
+}
+
+/* Base table */
+.table.table--admin.upcoming-table {
+  width: 100%;
+  border-collapse: collapse;
+  border-spacing: 0;
+  table-layout: auto;
+  background: #fff;
+}
+
+/* Cells + headers */
+.upcoming-table th,
+.upcoming-table td {
+  padding: 10px 12px;
+  font-size: 14px;
+  line-height: 1.4;
+  border-bottom: 1px solid var(--border-soft);
+  vertical-align: middle;
+  text-align: left;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.upcoming-table th {
+  background: #f4f6fb;
+  font-weight: 700;
+  color: var(--ink-subtle);
+}
+
+/* Row striping */
+.upcoming-table tbody tr.row-alt {
+  background: #f9fafb;
+}
+
+/* Column alignment on desktop */
+.upcoming-table td:nth-child(3),   /* Job */
+.upcoming-table th:nth-child(3) {
+  text-align: center;
+}
+
+.upcoming-table td:nth-child(6),   /* Assigned */
+.upcoming-table th:nth-child(6) {
+  text-align: center;
+}
+
+/* Let address / assigned / notes wrap text */
+.upcoming-table td:nth-child(5),
+.upcoming-table th:nth-child(5),
+.upcoming-table td:nth-child(6),
+.upcoming-table th:nth-child(6),
+.upcoming-table td:nth-child(7),
+.upcoming-table th:nth-child(7) {
+  white-space: normal;
+  word-break: break-word;
+}
+
+/* Notes cell text */
+.upcoming-table-notes,
+.upcoming-table .cell-notes {
+  white-space: normal;
+  line-height: 1.4;
+  font-size: 13px;
+  font-style: italic;
+}
+
+/* Actions column */
+.upcoming-table-td-actions {
+  text-align: right !important;
+  min-width: 150px;
+  padding-right: 20px;
+}
+
+.upcoming-table-actions-vert {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-end;
+  justify-content: center;
+  gap: 6px;
+}
+
+.upcoming-table .btn-edit,
+.upcoming-table .btn-delete {
+  min-width: 80px;
+  height: 34px;
+  font-size: 14px;
+  border-radius: 8px;
+  font-weight: 600;
+}
+
+/* Badges */
+.upcoming-table .badge-job,
+.upcoming-table .badge-assigned,
+.upcoming-table .badge-unassigned {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 4px 10px;
+  border-radius: 8px;
+  font-weight: 700;
+  font-size: 12px;
+  max-width: 100%;
+}
+
+.upcoming-table .badge-job {
+  background: #eef2ff;
+  border: 1px solid #e0e7ff;
+  text-transform: capitalize;
+}
+
+.upcoming-table .badge-assigned {
+  background: #dcfce7;
+  border: 1px solid #bbf7d0;
+  color: #065f46;
+}
+
+.upcoming-table .badge-unassigned {
+  background: #f3f4f6;
+  border: 1px solid #e5e7eb;
+  color: #6b7280;
+}
+
+.upcoming-table-assigned-badge-wrap {
+  white-space: normal;
+  word-break: break-word;
+  min-width: 0;
+  max-width: 100%;
+  margin: 0 auto;
+}
+
+/* ===== Mobile: turn rows into clean cards ===== */
+@media (max-width: 700px) {
+  .admin-upcoming-table-card {
+    padding: 18px 14px;
+    margin-top: 16px;
+  }
+
+  .table.table--admin.upcoming-table {
+    min-width: 0;
+  }
+
+  .upcoming-table thead {
+    display: none;
+  }
+
+  .upcoming-table,
+  .upcoming-table tbody,
+  .upcoming-table tr,
+  .upcoming-table td {
+    display: block;
+    width: 100%;
+  }
+
+  .upcoming-table tr {
+    margin: 12px 0;
+    border: 1px solid var(--border);
+    border-radius: 14px;
+    padding: 10px 12px;
+    box-shadow: var(--shadow-md);
+    background: #fff;
+  }
+
+  .upcoming-table td {
+    border: 0;
+    padding: 6px 0;
+    white-space: normal;
+    text-align: right;
+  }
+
+  .upcoming-table td::before {
+    content: attr(data-label);
+    display: block;
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--muted);
+    margin-bottom: 2px;
+    text-align: left;
+  }
+
+  .upcoming-table-td-actions {
+    margin-top: 8px;
+    text-align: right !important;
+    min-width: 0;
+    padding-right: 0;
+  }
+
+  .upcoming-table-actions-vert {
+    flex-direction: row;
+    justify-content: flex-end;
+    gap: 8px;
+  }
+
+  .upcoming-table .btn-edit,
+  .upcoming-table .btn-delete {
+    flex: 1 1 auto;
+    min-width: 0;
+  }
+
+  .upcoming-table-assigned-badge-wrap,
+  .upcoming-table .badge-unassigned {
+    width: 100%;
+    justify-content: center;
+  }
+}
+/* ==== FINAL OVERRIDE: Admin upcoming schedule table (no more cut-off buttons) ==== */
+
+/* Let this specific table size columns based on content instead of fixed widths */
+.admin-upcoming-table-card .table.table--admin.upcoming-table {
+  table-layout: auto !important;
+}
+
+/* Default: allow content to show fully (no clipping) */
+.admin-upcoming-table-card .upcoming-table th,
+.admin-upcoming-table-card .upcoming-table td {
+  overflow: visible !important;
+  text-overflow: unset !important;
+  white-space: nowrap !important;   /* keep most columns on one line */
+}
+
+/* Let the text-heavy columns wrap instead so the table doesn’t get insanely wide */
+.admin-upcoming-table-card .upcoming-table th:nth-child(5),
+.admin-upcoming-table-card .upcoming-table td:nth-child(5),   /* Address */
+.admin-upcoming-table-card .upcoming-table th:nth-child(6),
+.admin-upcoming-table-card .upcoming-table td:nth-child(6),   /* Assigned */
+.admin-upcoming-table-card .upcoming-table th:nth-child(7),
+.admin-upcoming-table-card .upcoming-table td:nth-child(7) {  /* Notes */
+  white-space: normal !important;
+  word-break: break-word !important;
+}
+
+/* Actions column: give it enough room and keep everything fully visible */
+.admin-upcoming-table-card .upcoming-table-td-actions {
+  min-width: 220px !important;
+  text-align: right !important;
+  padding-right: 20px !important;
+  overflow: visible !important;
+}
+
+.admin-upcoming-table-card .upcoming-table-actions-vert {
+  display: flex !important;
+  flex-direction: column !important;
+  align-items: flex-end !important;
+  justify-content: center !important;
+  gap: 6px !important;
+  width: auto !important;
+}
+/* === Admin upcoming table: keep "Notes" header on one line === */
+.admin-upcoming-table-card .upcoming-table th:nth-child(7) {
+  white-space: nowrap !important;   /* don't break "Notes" */
+  min-width: 80px;                  /* a little extra room */
+  text-align: left;                 /* match other headers */
 }

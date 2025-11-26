@@ -277,7 +277,7 @@ function RedirectTo({ to }: { to: string }) {
 export default function AdminSchedule() {
   const router = useRouter();
 
-  // ---------- Auth/role (mirror /admin.tsx) ----------
+  // ---------- Auth/role ----------
   const [me, setMe] = useState<Profile>(null);
   const [checking, setChecking] = useState(true);
 
@@ -333,7 +333,7 @@ export default function AdminSchedule() {
   // Heartbeat (auto-roll to past)
   const [, setTick] = useState(0);
 
-  // ---- Auth + role check (same behavior as /admin.tsx) ----
+  // ---- Auth + role check ----
   useEffect(() => {
     let alive = true;
 
@@ -346,7 +346,7 @@ export default function AdminSchedule() {
       if (!session?.user) {
         setMe(null);
         setChecking(false);
-        router.replace('/'); // signed out -> home
+        router.replace('/');
         return;
       }
 
@@ -360,14 +360,14 @@ export default function AdminSchedule() {
       if (error || !data) {
         setMe(null);
         setChecking(false);
-        router.replace('/dashboard?msg=not_admin'); // signed in, no profile -> treat as not admin
+        router.replace('/dashboard?msg=not_admin');
         return;
       }
 
       setMe(data as any);
       setChecking(false);
       if ((data as any).role !== 'admin') {
-        router.replace('/dashboard?msg=not_admin'); // signed in but not admin
+        router.replace('/dashboard?msg=not_admin');
       }
     }
 
@@ -386,7 +386,7 @@ export default function AdminSchedule() {
     };
   }, [router]);
 
-  // Heartbeat tick (purely cosmetic here)
+  // Heartbeat tick (purely cosmetic)
   useEffect(() => {
     const id = setInterval(() => setTick((t) => t + 1), 60000);
     return () => clearInterval(id);
@@ -421,6 +421,7 @@ export default function AdminSchedule() {
       setLoading(false);
     }
   }
+
   useEffect(() => {
     if (me && me.role === 'admin') loadRows();
     // eslint-disable-next-line react-hooks/exhaustive-deps
@@ -478,7 +479,7 @@ export default function AdminSchedule() {
       });
       setAssignedMap(map);
     })();
-  }, [me, upcoming.length]);
+  }, [me, upcoming.length, upcoming]);
 
   // ---------- Actions ----------
   function validateForm() {
@@ -562,14 +563,11 @@ export default function AdminSchedule() {
   }
 
   // Prefill create form from an existing shift (for Duplicate)
-  // Now: duplicates location + dates, but clears times and resets job type.
   function prefillFormFromShift(row: SRow) {
-    // Source start date
     const start = row.start_time ? new Date(row.start_time) : new Date();
     const startLocal = toLocalInput(start);
     const start_date = startLocal.slice(0, 10);
 
-    // End date (if we had an end time), else same as start
     let end_date = start_date;
     if (row.end_time) {
       const end = new Date(row.end_time);
@@ -579,12 +577,12 @@ export default function AdminSchedule() {
 
     setForm({
       start_date,
-      start_time: '', // admin sets start time manually
+      start_time: '',
       end_date,
-      end_time: '', // admin sets end time manually
+      end_time: '',
       location_name: row.location_name ?? '',
       address: row.address ?? '',
-      job_type: 'setup', // admin sets job type manually if needed
+      job_type: 'setup',
       notes: row.notes ?? '',
     });
     setFormError(null);
@@ -700,7 +698,7 @@ export default function AdminSchedule() {
     }));
   }
 
-  // ---------- UI GUARD (same destinations as /admin.tsx) ----------
+  // ---------- UI GUARD ----------
   if (checking) {
     return (
       <div className="page">
@@ -709,7 +707,6 @@ export default function AdminSchedule() {
     );
   }
   if (!me || me.role !== 'admin') {
-    // mirror /admin.tsx behavior:
     const target = me ? '/dashboard?msg=not_admin' : '/';
     return <RedirectTo to={target} />;
   }
@@ -902,7 +899,8 @@ export default function AdminSchedule() {
 
         {upcoming.length > 0 && (
           <div className="table-wrap mt-10 admin-upcoming-table-wrap">
-            <table className="table table--admin table--striped table--compact table--stack upcoming-table">
+            {/* NOTE: removed table--stack so the desktop layout is stable */}
+            <table className="table table--admin table--striped table--compact upcoming-table">
               <thead>
                 <tr>
                   <th>Start</th>
