@@ -519,7 +519,7 @@ export default function Admin() {
         </div>
       </div>
 
-      {/* Totals by Employee (classic table view, inline on all devices) */}
+      {/* Totals by Employee */}
       <div className="card card--tight full center">
         <div className="card__header center">
           <h3>Totals by Employee</h3>
@@ -547,7 +547,7 @@ export default function Admin() {
         </div>
 
         <div className="table-wrap totals-table-wrap">
-          <table className="table table--center table--compact table--admin totals-table">
+          <table className="table table--center table--compact table--admin center totals-table">
             <thead>
               <tr>
                 <th>Employee</th>
@@ -562,14 +562,14 @@ export default function Admin() {
                 const hasUnpaid = t.unpaid > 0.0001;
                 return (
                   <tr key={t.id}>
-                    <td data-label="Employee">
+                    <td>
                       {t.name}
                       {t.minCount > 0 && <span className="muted" style={{ marginLeft: 8 }}>({t.minCount}× MIN)</span>}
                       {t.flaggedCount > 0 && <span className="muted" style={{ marginLeft: 8 }}>({t.flaggedCount}× Flagged)</span>}
                     </td>
-                    <td data-label="Hours">{t.hours.toFixed(2)}</td>
-                    <td data-label="Pay">${t.pay.toFixed(2)}</td>
-                    <td data-label="Unpaid">
+                    <td>{t.hours.toFixed(2)}</td>
+                    <td>${t.pay.toFixed(2)}</td>
+                    <td>
                       ${t.unpaid.toFixed(2)}
                       {hasUnpaid && vHref && (
                         <a className="btn-venmo" href={vHref} target="_blank" rel="noopener noreferrer" style={{ marginLeft: 8 }}>
@@ -946,30 +946,205 @@ export default function Admin() {
         .inline { display:inline-flex; align-items:center; gap:6px; }
         .actions { display:flex; align-items:center; justify-content:center; gap:6px; flex-wrap:wrap; }
 
-        /* Totals table: classic table on all breakpoints */
+        .page {
+          max-width: 1100px;
+          margin: 20px auto;
+          padding: 0 14px;
+        }
+        .page__title{
+          text-align:center;
+          margin: 8px 0 14px;
+          font-weight: 800;
+          letter-spacing:.2px;
+        }
+        .page--center{ display:flex; flex-direction:column; align-items:center; }
+        .full{ width:100%; }
+
+        .card{
+          background:var(--card); border:1px solid var(--border); border-radius:var(--radius);
+          box-shadow:var(--shadow-sm);
+          margin-top: 10px;
+        }
+        .card--tight .table th, .card--tight .table td{ padding:10px; }
+        .card__header{
+          padding: 10px 12px; display:flex; align-items:center; justify-content:space-between;
+          border-bottom:1px solid var(--border-soft);
+        }
+
+        .tabs{ display:flex; gap:8px; flex-wrap: wrap; margin: 10px 0 0; justify-content:center; }
+        .tabs button{
+          background:#fff; color:#111827; border:1px solid var(--border);
+          padding:8px 12px; border-radius:10px; font-weight:700; cursor:pointer;
+          transition: background .15s, border-color .15s, color .15s, transform .02s;
+        }
+        .tabs button.active{ background: var(--brand-weak); color:#3730a3; border-color: var(--brand-border); }
+        .tabs button:hover{ background:#f9fafb; }
+        .tabs button:active{ transform: translateY(1px); }
+
+        .table{
+          width:100%;
+          border-collapse: collapse;
+          background:var(--card);
+          border:1px solid var(--border);
+          border-radius: var(--radius);
+          overflow: hidden;
+          box-shadow: var(--shadow-sm);
+          table-layout: auto;
+        }
+        .table th, .table td{ padding:12px; border-top:1px solid var(--border-soft); }
+        .table thead th{
+          background:#f8fafc; border-top:0; text-align:left; font-weight:700; color: var(--ink-subtle);
+        }
+        .table--compact th, .table--compact td{ padding:9px; }
+        .table--admin{ font-size:14px; }
+
+        .table--center th, .table--center td{ text-align:center; vertical-align: middle; }
+        .table--center th:first-child, .table--center td:first-child{ text-align:left; }
+        .table--center td .actions{ display:inline-flex; gap:10px; justify-content:center; align-items:center; }
+
+        .table-wrap{ width:100%; }
+
+        .section-head td{
+          font-weight:800; background:#f8fafc; color:#111827; border-top:2px solid var(--border);
+          padding: 0;
+        }
+        .employee-name{ font-size:16px; font-weight:800; }
+
+        .subtotal td{ background:#fbfbff; color:#1f2937; font-weight:700; border-top:2px solid var(--brand-border); }
+
+        @media (max-width: 700px){
+          .page{ max-width:100%; padding: 10px 12px; margin: 16px auto; }
+          .card{ border-radius: 14px; }
+          .card__header{ padding: 8px 10px; }
+
+          .chip{ padding:6px 10px; font-size:12px; }
+          .badge{ font-size:11px; padding:1px 7px; }
+
+          .table--stack{ border:0; width:100%; }
+          .table--stack thead{ display:none; }
+          .table--stack tbody, .table--stack tr, .table--stack td{ display:block; width:100%; }
+
+          .table--stack tr{
+            background:#fff; border:1px solid var(--border); border-radius:14px;
+            box-shadow: var(--shadow-md); margin: 14px 0; padding: 12px 14px;
+          }
+
+          .table--stack td{
+            border:0!important; padding: 10px 0;
+            display:flex; align-items:center; justify-content:space-between;
+            gap: 12px; font-size:15px;
+          }
+          .table--stack td::before{
+            content: attr(data-label);
+            font-weight: 600; color: var(--ink-subtle);
+            flex: 1; text-align:left;
+          }
+          .table--stack td{ text-align:right; }
+
+          .table--stack td .badge{ margin-left:auto; }
+
+          .table--stack td .actions{
+            width:100%; display:flex; justify-content:center; gap:10px; margin-top:8px;
+          }
+          .table--stack td .btn-edit,
+          .table--stack td .btn-delete{ flex:1; height:40px; }
+
+          .section-bar{ flex-direction:column; align-items:center; gap:10px; }
+          .section-bar__right{ width:100%; justify-content:center; gap:10px; }
+          .section-bar__right .topbar-btn{ flex:1 1 160px; height:40px; border-radius:12px; }
+
+          .col-hide-md{ display: none !important; }
+
+          .table--stack tr.subtotal{
+            padding: 12px 14px;
+            border: 1px solid var(--border);
+            border-radius: 14px;
+            box-shadow: var(--shadow-sm);
+            background: #fff;
+            display: grid;
+            grid-template-columns: 1fr;
+            row-gap: 4px;
+          }
+          .table--stack tr.subtotal td{ display: none; }
+          .table--stack tr.subtotal td:nth-child(1),
+          .table--stack tr.subtotal td:nth-child(2),
+          .table--stack tr.subtotal td:nth-child(3){
+            display: block;
+            padding: 6px 0;
+          }
+          .table--stack tr.subtotal td:nth-child(1){
+            text-align: center; font-weight: 800; color: var(--ink); padding-bottom: 8px;
+          }
+          .table--stack tr.subtotal td:nth-child(1)::before{ content: ''; }
+          .table--stack tr.subtotal td:nth-child(2),
+          .table--stack tr.subtotal td:nth-child(3){
+            display: grid; grid-template-columns: 56% 44%; align-items:center; gap: 8px;
+          }
+          .table--stack tr.subtotal td:nth-child(2)::before{ content: 'Hours'; font-weight: 600; color: var(--muted); text-align:left; }
+          .table--stack tr.subtotal td:nth-child(3)::before{ content: 'Pay';   font-weight: 600; color: var(--muted); text-align:left; }
+        }
+
+        @media (max-width: 900px){
+          .table-wrap{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
+        }
+
+        /* === Totals table: keep inline, no side-scroll on mobile === */
         .totals-table-wrap {
           width: 100%;
-          overflow-x: auto;
+          overflow-x: visible !important; /* override global auto-scroll */
         }
+
         .totals-table {
           width: 100%;
+          border-collapse: collapse;
+          table-layout: fixed;            /* force columns to share space */
         }
+
         .totals-table th,
         .totals-table td {
+          padding: 6px 4px;
+          font-size: 13px;
           text-align: center;
           vertical-align: middle;
-          white-space: nowrap;
+          word-break: break-word;
+          white-space: normal;            /* wrap instead of forcing scroll */
         }
+
+        /* Employee column: left and allowed to wrap */
         .totals-table th:first-child,
         .totals-table td:first-child {
           text-align: left;
-          white-space: normal;
         }
-        @media (max-width: 700px) {
+
+        /* Numeric columns: right-align and narrow */
+        .totals-table th:nth-child(2),
+        .totals-table td:nth-child(2),
+        .totals-table th:nth-child(3),
+        .totals-table td:nth-child(3),
+        .totals-table th:nth-child(4),
+        .totals-table td:nth-child(4) {
+          text-align: right;
+        }
+
+        @media (max-width: 480px) {
           .totals-table th,
           .totals-table td {
-            padding: 8px 6px;
-            font-size: 13px;
+            padding: 4px 2px;
+            font-size: 12px;
+          }
+
+          .totals-table th:first-child,
+          .totals-table td:first-child {
+            width: 40%;
+          }
+
+          .totals-table th:nth-child(2),
+          .totals-table td:nth-child(2),
+          .totals-table th:nth-child(3),
+          .totals-table td:nth-child(3),
+          .totals-table th:nth-child(4),
+          .totals-table td:nth-child(4) {
+            width: 20%;
           }
         }
       `}</style>
