@@ -1851,8 +1851,8 @@ textarea{ min-height:80px; resize:vertical; }
 .admin-upcoming-table-card .table.table--admin.upcoming-table {
   width: 100%;
   margin: 0 auto;
-  table-layout: auto;
-  min-width: 760px;
+  table-layout: fixed;
+  min-width: 700px;
 }
 
 /* Let text breathe instead of clipping/ellipses */
@@ -1867,24 +1867,25 @@ textarea{ min-height:80px; resize:vertical; }
 
 /* Actions column: roomy, centered buttons that wrap when needed */
 .admin-upcoming-table-card .upcoming-table-td-actions {
-  min-width: 220px;
+  min-width: 200px;
   text-align: center !important;
   padding-right: 8px;
 }
 
 .admin-upcoming-table-card .upcoming-table-actions-vert {
-  flex-direction: row;
-  flex-wrap: wrap;
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
   gap: 10px;
-  justify-content: center;
   width: 100%;
+  justify-items: stretch;
+  align-items: stretch;
 }
 
 .admin-upcoming-table-card .upcoming-table-td-actions .btn-edit,
 .admin-upcoming-table-card .upcoming-table-td-actions .btn-delete {
-  flex: 1 1 120px;
-  min-width: 120px;
-  width: auto;
+  flex: 1 1 auto;
+  width: 100%;
+  min-width: 0;
   justify-content: center;
 }
 
@@ -1903,7 +1904,9 @@ textarea{ min-height:80px; resize:vertical; }
   }
 
   .admin-upcoming-table-card .upcoming-table-actions-vert {
+    grid-template-columns: repeat(2, minmax(120px, 1fr));
     justify-content: flex-end;
+    justify-items: flex-end;
   }
 }
 
@@ -1925,7 +1928,9 @@ textarea{ min-height:80px; resize:vertical; }
   }
 
   .admin-upcoming-table-card .upcoming-table-actions-vert {
+    grid-template-columns: 1fr;
     justify-content: flex-start;
+    justify-items: stretch;
     align-items: stretch;
   }
 
