@@ -38,6 +38,8 @@ export default function MySchedule() {
   const [typeFilter, setTypeFilter] =
     useState<'all' | 'setup' | 'Lights' | 'breakdown' | 'other'>('all');
 
+  const [showPast, setShowPast] = useState(false); // ⬅️ expand/collapse past
+
   const [, setTick] = useState(0);
   useEffect(() => {
     const id = setInterval(() => setTick(t => t + 1), 60_000);
@@ -260,7 +262,11 @@ export default function MySchedule() {
         {/* Row 3: ⭐ CLICKABLE LOCATION */}
         <div
           className="row wrap gap-md"
-          style={{ marginTop: 8, justifyContent: 'center', cursor: s.address ? 'pointer' : 'default' }}
+          style={{
+            marginTop: 8,
+            justifyContent: 'center',
+            cursor: s.address ? 'pointer' : 'default',
+          }}
         >
           {s.address ? (
             <a
@@ -368,17 +374,40 @@ export default function MySchedule() {
         </div>
       </section>
 
-      {/* PAST */}
+      {/* PAST (expandable) */}
       <section className="mt-lg full">
-        <div className="section-bar card" style={{ padding: 10 }}>
-          <div className="section-bar__left">
+        <button
+          type="button"
+          className="section-bar card"
+          style={{
+            padding: 10,
+            width: '100%',
+            textAlign: 'left',
+            cursor: past.length === 0 ? 'default' : 'pointer',
+            opacity: past.length === 0 ? 0.6 : 1,
+          }}
+          onClick={() => {
+            if (past.length === 0) return;
+            setShowPast(prev => !prev);
+          }}
+        >
+          <div className="section-bar__left" style={{ alignItems: 'center' }}>
+            <span
+              style={{
+                display: 'inline-flex',
+                marginRight: 8,
+                fontSize: 18,
+              }}
+            >
+              {showPast ? '▾' : '▸'}
+            </span>
             <span className="employee-name">Past</span>
-            <span className="pill">
+            <span className="pill" style={{ marginLeft: 8 }}>
               <span className="pill__num">{past.length}</span>
               <span className="pill__label">shifts</span>
             </span>
           </div>
-        </div>
+        </button>
 
         {!loading && past.length === 0 && (
           <div
@@ -389,11 +418,13 @@ export default function MySchedule() {
           </div>
         )}
 
-        <div style={{ display: 'grid', gap: 12, marginTop: 8 }}>
-          {past.map(s => (
-            <ShiftCard key={s.id} s={s} me={me} />
-          ))}
-        </div>
+        {showPast && past.length > 0 && (
+          <div style={{ display: 'grid', gap: 12, marginTop: 8 }}>
+            {past.map(s => (
+              <ShiftCard key={s.id} s={s} me={me} />
+            ))}
+          </div>
+        )}
       </section>
 
       <div className="mt-lg center muted" style={{ fontSize: 12 }}>
