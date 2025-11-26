@@ -408,7 +408,7 @@ export default function Admin() {
       {err && <div className="alert error" role="alert">Error: {err}</div>}
 
       {/* Summary */}
-      <div className="card card--tight full center">
+      <div className="card card--tight full admin-card">
         <div className="summary-grid">
           <span className="chip chip--xl">Total Unpaid: ${unpaidTotal.toFixed(2)}</span>
           <span className="meta">Employees with Unpaid: {totals.filter(t => t.unpaid > 0).length}</span>
@@ -426,8 +426,8 @@ export default function Admin() {
       </div>
 
       {/* Tabs */}
-      <div className="card card--tight full center" style={{ marginTop: 10, padding: 10 }}>
-        <div className="tabs tabs--center" style={{ margin: 0 }}>
+      <div className="card card--tight full admin-card">
+        <div className="tabs tabs--center">
           <button
             className={tab === 'unpaid' ? 'active' : ''}
             onClick={() => { setTab('unpaid'); setUserSorted(false); }}
@@ -450,7 +450,7 @@ export default function Admin() {
       </div>
 
       {/* Date / Week Filters */}
-      <div className="card card--tight full center" style={{ marginTop: 10, padding: 12 }}>
+      <div className="card card--tight full admin-card">
         <div className="filters">
           <div className="filters-row">
             <label className="inline">
@@ -487,7 +487,7 @@ export default function Admin() {
                 checked={!useWeek}
                 onChange={() => setUseWeek(false)}
               />
-              <span>Range / All-time</span>
+            <span>Range / All-time</span>
             </label>
 
             <div className="inline range-controls" aria-label="Custom range">
@@ -520,8 +520,8 @@ export default function Admin() {
       </div>
 
       {/* Totals by Employee */}
-      <div className="card card--tight full center">
-        <div className="card__header center">
+      <div className="card card--tight full admin-card">
+        <div className="card__header header-row">
           <h3>Totals by Employee</h3>
           <div className="row row-center">
             <label className="sr-only" htmlFor="sort-by">Sort by</label>
@@ -547,7 +547,8 @@ export default function Admin() {
         </div>
 
         <div className="table-wrap">
-          <table className="table table--center table--compact table--admin center">
+          {/* add table--stack here so mobile gets card layout */}
+          <table className="table table--center table--compact table--admin table--stack">
             <thead>
               <tr>
                 <th>Employee</th>
@@ -563,16 +564,27 @@ export default function Admin() {
                 return (
                   <tr key={t.id}>
                     <td data-label="Employee">
-                      {t.name}
-                      {t.minCount > 0 && <span className="muted" style={{ marginLeft: 8 }}>({t.minCount}× MIN)</span>}
-                      {t.flaggedCount > 0 && <span className="muted" style={{ marginLeft: 8 }}>({t.flaggedCount}× Flagged)</span>}
+                      <div className="emp-cell">
+                        <span>{t.name}</span>
+                        {t.minCount > 0 && (
+                          <span className="muted badge-text">({t.minCount}× MIN)</span>
+                        )}
+                        {t.flaggedCount > 0 && (
+                          <span className="muted badge-text">({t.flaggedCount}× Flagged)</span>
+                        )}
+                      </div>
                     </td>
                     <td data-label="Hours">{t.hours.toFixed(2)}</td>
                     <td data-label="Pay">${t.pay.toFixed(2)}</td>
                     <td data-label="Unpaid">
                       ${t.unpaid.toFixed(2)}
                       {hasUnpaid && vHref && (
-                        <a className="btn-venmo" href={vHref} target="_blank" rel="noopener noreferrer" style={{ marginLeft: 8 }}>
+                        <a
+                          className="btn-venmo"
+                          href={vHref}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                        >
                           Venmo
                         </a>
                       )}
@@ -586,15 +598,15 @@ export default function Admin() {
       </div>
 
       {/* Shifts */}
-      <div className="card card--tight full center" style={{ marginTop: 12 }}>
-        <div className="card__header center">
+      <div className="card card--tight full admin-card">
+        <div className="card__header header-row">
           <h3>Shifts</h3>
         </div>
 
         {loading && <p className="center">Loading…</p>}
 
         <div className="table-wrap">
-          <table className="table table--center table--compact table--admin table--stack center">
+          <table className="table table--center table--compact table--admin table--stack">
             <thead>
               <tr>
                 <th>Employee</th>
@@ -644,10 +656,14 @@ export default function Admin() {
                             {totalsById[uid] && (
                               <div className="mobile-badges">
                                 {totalsById[uid].minCount > 0 && (
-                                  <span className="badge badge-min"> {totalsById[uid].minCount}× MIN </span>
+                                  <span className="badge badge-min">
+                                    {totalsById[uid].minCount}× MIN
+                                  </span>
                                 )}
                                 {totalsById[uid].flaggedCount > 0 && (
-                                  <span className="badge badge-flag"> {totalsById[uid].flaggedCount}× FLAGGED </span>
+                                  <span className="badge badge-flag">
+                                    {totalsById[uid].flaggedCount}× FLAGGED
+                                  </span>
                                 )}
                               </div>
                             )}
@@ -699,19 +715,30 @@ export default function Admin() {
                           <td data-label="Date">{s.shift_date}</td>
                           <td data-label="Type">{s.shift_type}</td>
                           <td data-label="In">
-                            {s.time_in ? new Date(s.time_in).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
+                            {s.time_in
+                              ? new Date(s.time_in).toLocaleTimeString([], {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })
+                              : '—'}
                           </td>
                           <td data-label="Out">
-                            {s.time_out ? new Date(s.time_out).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
+                            {s.time_out
+                              ? new Date(s.time_out).toLocaleTimeString([], {
+                                  hour: '2-digit',
+                                  minute: '2-digit',
+                                })
+                              : '—'}
                           </td>
-                          <td data-label="Hours">{Number(s.hours_worked ?? 0).toFixed(2)}</td>
+                          <td data-label="Hours">
+                            {Number(s.hours_worked ?? 0).toFixed(2)}
+                          </td>
                           <td data-label="Pay">
                             ${pay.toFixed(2)}{' '}
                             {minApplied && (
                               <span
                                 className="badge badge-min"
                                 title={`Breakdown minimum applied (base ${base.toFixed(2)} < $50)`}
-                                style={{ marginLeft: 6 }}
                               >
                                 MIN $50
                               </span>
@@ -735,7 +762,7 @@ export default function Admin() {
                             {s.paid_at ? new Date(s.paid_at).toLocaleString() : '—'}
                           </td>
                           <td data-label="Actions">
-                            <div className="actions center">
+                            <div className="actions">
                               <button className="btn" onClick={() => editRow(s)}>Edit</button>
                               <button className="btn btn-danger" onClick={() => deleteRow(s)}>Delete</button>
 
@@ -782,7 +809,9 @@ export default function Admin() {
         <div className="modal-backdrop" role="dialog" aria-modal="true">
           <div className="modal">
             <div className="modal-header">
-              <span className="modal-title">📝 Note — {names[noteModal.row.user_id] || '—'} · {noteModal.row.shift_date}</span>
+              <span className="modal-title">
+                📝 Note — {names[noteModal.row.user_id] || '—'} · {noteModal.row.shift_date}
+              </span>
             </div>
             <div className="modal-body">
               <textarea
@@ -803,88 +832,366 @@ export default function Admin() {
       )}
 
       <style jsx>{`
-        /* Centering helpers */
-        .center { text-align: center; }
-        .row-center {
-          display: flex; align-items: center; justify-content: center; gap: 12px; flex-wrap: wrap;
+        .page {
+          max-width: 1100px;
+          margin: 20px auto;
+          padding: 0 14px;
+        }
+        .page__title {
+          text-align: center;
+          margin: 8px 0 14px;
+          font-size: var(--h1);
+          font-weight: 800;
+          letter-spacing: 0.2px;
+        }
+        .page--center {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+        }
+        .admin-card {
+          margin-top: 10px;
+          padding: 10px 12px;
+          width: 100%;
         }
 
-        .summary-grid{
-          display:grid;
-          grid-template-columns: 1fr;
-          padding:10px;
-          gap:10px;
-          align-items:center;
-          justify-items:center;
+        .center {
+          text-align: center;
         }
-        @media(min-width: 720px){
-          .summary-grid{
+        .row-center {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 12px;
+          flex-wrap: wrap;
+        }
+
+        .summary-grid {
+          display: grid;
+          grid-template-columns: 1fr;
+          padding: 10px;
+          gap: 10px;
+          align-items: center;
+          justify-items: center;
+        }
+        @media (min-width: 720px) {
+          .summary-grid {
             grid-template-columns: repeat(2, auto);
-            grid-auto-rows: auto;
           }
         }
-        .summary-badges{
-          display:flex; align-items:center; gap:8px; flex-wrap:wrap; justify-content:center;
+        .summary-badges {
+          display: flex;
+          align-items: center;
+          gap: 8px;
+          flex-wrap: wrap;
+          justify-content: center;
+        }
+        .meta {
+          font-size: 13px;
+          color: var(--muted);
         }
 
-        /* Filters layout: no weird scrolling */
-        .filters{
-          display:flex; flex-direction:column; gap:10px; align-items:center; justify-content:center;
+        .filters {
+          display: flex;
+          flex-direction: column;
+          gap: 10px;
+          align-items: center;
+          justify-content: center;
         }
-        .filters-row{
-          display:flex; align-items:center; justify-content:center; gap:12px; flex-wrap:wrap; width:100%;
+        .filters-row {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 12px;
+          flex-wrap: wrap;
+          width: 100%;
         }
-        .week-controls, .range-controls{
-          display:flex; align-items:center; justify-content:center; gap:8px; flex-wrap:wrap;
+        .week-controls,
+        .range-controls {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 8px;
+          flex-wrap: wrap;
         }
-        .range-text{ white-space:nowrap; }
+        .range-text {
+          white-space: nowrap;
+        }
 
-        /* Buttons (unified) */
-        .btn, .topbar-btn, .btn-venmo {
-          display:inline-flex; align-items:center; justify-content:center;
-          height:36px; padding:0 14px; border-radius:10px;
-          border:1px solid var(--border); background:#f8fafc; color:#1f2937;
-          font-weight:600; cursor:pointer; text-decoration:none;
+        .btn,
+        .topbar-btn,
+        .btn-venmo {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          height: 36px;
+          padding: 0 14px;
+          border-radius: 10px;
+          border: 1px solid var(--border);
+          background: #f8fafc;
+          color: #1f2937;
+          font-weight: 600;
+          cursor: pointer;
+          text-decoration: none;
+          box-shadow: var(--shadow-sm);
+          font-size: 14px;
+        }
+        .btn:hover,
+        .topbar-btn:hover,
+        .btn-venmo:hover {
+          filter: brightness(0.98);
+        }
+        .btn:active,
+        .topbar-btn:active {
+          transform: translateY(1px);
+        }
+        .btn-primary {
+          background: #e8f0ff;
+        }
+        .btn-danger {
+          background: #ffe8e8;
+        }
+        .btn-flag {
+          background: #fff;
+        }
+        .btn-flag-on {
+          background: #fffbeb;
+          border-color: #f59e0b;
+          font-weight: 800;
+        }
+        .clear-btn {
+          margin-left: 8px;
+        }
+
+        .icon-btn {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          width: 28px;
+          height: 28px;
+          margin-left: 6px;
+          border-radius: 999px;
+          border: 1px solid var(--border);
+          background: #fff;
+          cursor: pointer;
+          line-height: 1;
+        }
+
+        .emp-cell {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+        }
+        .badge-text {
+          font-size: 12px;
+        }
+
+        .header-row {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 10px;
+        }
+        .header-row h3 {
+          margin: 0;
+        }
+
+        .section-head td {
+          font-weight: 800;
+          background: #f8fafc;
+          color: #111827;
+          border-top: 2px solid var(--border);
+          padding: 0;
+        }
+        .section-bar {
+          display: flex;
+          align-items: center;
+          justify-content: space-between;
+          gap: 16px;
+          padding: 10px 12px;
+        }
+        .section-bar__left,
+        .section-bar__right {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+          flex-wrap: wrap;
+        }
+        .employee-name {
+          font-size: 16px;
+          font-weight: 800;
+        }
+
+        .pill {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+          padding: 6px 10px;
+          background: #fff;
+          border: 1px solid var(--border);
+          border-radius: 999px;
+          font-weight: 700;
           box-shadow: var(--shadow-sm);
         }
-        .btn:hover, .topbar-btn:hover, .btn-venmo:hover { filter:brightness(0.98); }
-        .btn:active, .topbar-btn:active { transform: translateY(1px); }
-
-        .btn-primary { background:#e8f0ff; }
-        .btn-danger { background:#ffe8e8; }
-
-        .btn-flag { background:#fff; }
-        .btn-flag-on { background:#fffbeb; border-color:#f59e0b; font-weight:800; }
-
-        .clear-btn{ margin-left: 8px; }
-
-        .icon-btn{
-          display:inline-flex; align-items:center; justify-content:center;
-          width:28px; height:28px; margin-left:6px; border-radius:999px;
-          border:1px solid var(--border); background:#fff; cursor:pointer;
-          line-height:1;
+        .pill__num {
+          background: #111827;
+          color: #fff;
+          border-radius: 999px;
+          padding: 2px 6px;
+          font-size: 12px;
+          line-height: 1;
+        }
+        .pill__label {
+          font-size: 12px;
+          color: var(--muted);
+          font-weight: 600;
         }
 
-        .emp-cell { display:flex; align-items:center; justify-content:center; gap:6px; }
-
-        /* Table: center everything */
-        .table th, .table td { text-align:center; vertical-align:middle; }
-
-        /* Section bar */
-        .section-bar {
-          display:flex; align-items:center; justify-content:space-between; gap:12px; flex-wrap:wrap;
+        .subtotal td {
+          background: #fbfbff;
+          color: #1f2937;
+          font-weight: 700;
+          border-top: 2px solid var(--brand-border);
         }
-        .section-bar__left, .section-bar__right { display:flex; align-items:center; gap:10px; flex-wrap:wrap; }
 
-        /* Mobile-only badges under the name */
-        .mobile-badges{ display:none; }
-        @media (max-width: 640px){
-          .section-bar__left{
+        .badge-min {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          padding: 2px 8px;
+          border-radius: 999px;
+          border: 1px solid #f6ca00;
+          background: #fffbe6;
+          color: #6b5800;
+          font-weight: 700;
+        }
+        .badge-flag {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          padding: 2px 8px;
+          border-radius: 999px;
+          border: 1px solid #f59e0b;
+          background: #fffbeb;
+          color: #92400e;
+          font-weight: 700;
+        }
+        .badge-paid {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          padding: 2px 8px;
+          border-radius: 999px;
+          border: 1px solid #16a34a;
+          background: #ecfdf5;
+          color: #065f46;
+          font-weight: 700;
+        }
+        .badge-unpaid {
+          display: inline-flex;
+          align-items: center;
+          justify-content: center;
+          padding: 2px 8px;
+          border-radius: 999px;
+          border: 1px solid #ef4444;
+          background: #fef2f2;
+          color: #7f1d1d;
+          font-weight: 700;
+        }
+
+        .row-flagged {
+          background: #fff7ed;
+        }
+
+        .muted {
+          color: #6b7280;
+        }
+        .inline {
+          display: inline-flex;
+          align-items: center;
+          gap: 6px;
+        }
+        .actions {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 6px;
+          flex-wrap: wrap;
+        }
+
+        .modal-backdrop {
+          position: fixed;
+          inset: 0;
+          background: rgba(0, 0, 0, 0.4);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 1000;
+        }
+        .modal {
+          width: min(640px, 92vw);
+          background: white;
+          border-radius: 16px;
+          padding: 16px;
+          box-shadow: 0 10px 25px rgba(0, 0, 0, 0.2);
+          display: flex;
+          flex-direction: column;
+          gap: 12px;
+        }
+        .modal-header {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+        }
+        .modal-title {
+          font-weight: 800;
+        }
+        .modal-body {
+          display: flex;
+          flex-direction: column;
+          align-items: center;
+        }
+        .modal-body textarea {
+          width: 100%;
+          min-height: 140px;
+          border-radius: 12px;
+          padding: 10px;
+          border: 1px solid var(--border);
+          resize: vertical;
+          font: inherit;
+        }
+        .modal-actions {
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          gap: 10px;
+        }
+
+        .mobile-badges {
+          display: none;
+        }
+
+        @media (max-width: 640px) {
+          .section-bar {
+            flex-direction: column;
+            align-items: center;
+            gap: 8px;
+          }
+          .section-bar__right {
+            width: 100%;
+            justify-content: center;
+          }
+          .section-bar__right .topbar-btn {
+            flex: 1 1 160px;
+            height: 40px;
+            border-radius: 12px;
+          }
+          .section-bar__left {
             flex-direction: column;
             align-items: center;
             gap: 6px;
           }
-          .mobile-badges{
+          .mobile-badges {
             display: inline-flex;
             gap: 6px;
             margin-top: 4px;
@@ -893,58 +1200,16 @@ export default function Admin() {
           }
         }
 
-        /* Modal */
-        .modal-backdrop{
-          position:fixed; inset:0; background:rgba(0,0,0,0.4);
-          display:flex; align-items:center; justify-content:center; z-index:1000;
+        @media (max-width: 700px) {
+          .page {
+            max-width: 100%;
+            padding: 10px 12px;
+            margin: 16px auto;
+          }
+          .admin-card {
+            padding: 10px 10px;
+          }
         }
-        .modal{
-          width:min(640px, 92vw); background:white; border-radius:16px; padding:16px;
-          box-shadow:0 10px 25px rgba(0,0,0,0.2); display:flex; flex-direction:column; gap:12px;
-        }
-        .modal-header{ display:flex; align-items:center; justify-content:center; }
-        .modal-title{ font-weight:800; }
-        .modal-body{ display:flex; flex-direction:column; align-items:center; }
-        .modal-body textarea{
-          width:100%F; min-height:140px; border-radius:12px; padding:10px;
-          border:1px solid var(--border); resize:vertical; font:inherit;
-        }
-        .modal-actions{
-          display:flex; align-items:center; justify-content:center; gap:10px;
-        }
-
-        /* Badges & pills */
-        .pill{
-          display:inline-flex; align-items:center; gap:6px; padding:4px 10px; border-radius:999px;
-          background:#f3f4f6; border:1px solid var(--border);
-        }
-        .pill__num{ font-weight:800; }
-
-        .badge-min{
-          display:inline-flex; align-items:center; justify-content:center;
-          padding:2px 8px; border-radius:999px; border:1px solid #f6ca00; background:#fffbe6; color:#6b5800; font-weight:700;
-        }
-        .badge-flag{
-          display:inline-flex; align-items:center; justify-content:center;
-          padding:2px 8px; border-radius:999px; border:1px solid #f59e0b; background:#fffbeb; color:#92400e; font-weight:700;
-        }
-        .badge-paid{
-          display:inline-flex; align-items:center; justify-content:center;
-          padding:2px 8px; border-radius:999px; border:1px solid #16a34a; background:#ecfdf5; color:#065f46; font-weight:700;
-        }
-        .badge-unpaid{
-          display:inline-flex; align-items:center; justify-content:center;
-          padding:2px 8px; border-radius:999px; border:1px solid #ef4444; background:#fef2f2; color:#7f1d1d; font-weight:700;
-        }
-
-        /* Softer flagged row */
-        .row-flagged { background:#fff7ed; } /* warm, subtle (amber-50) */
-
-        /* Misc */
-        .divider { width:1px; height:24px; background:var(--border); opacity:0.5; }
-        .muted { color:#6b7280; }
-        .inline { display:inline-flex; align-items:center; gap:6px; }
-        .actions { display:flex; align-items:center; justify-content:center; gap:6px; flex-wrap:wrap; }
       `}</style>
     </main>
   );
