@@ -670,53 +670,33 @@ export default function AdminSchedule() {
     );
   }
 
-async function saveAssignments() {
-  if (!assignShift?.id) return;
-
-  // Capture id before we mutate state
-  const shiftId = assignShift.id;
-
-  const add = assignees.filter((x) => !currentAssignees.includes(x));
-  const remove = currentAssignees.filter((x) => !assignees.includes(x));
-
-  // Add new assignments
-  if (add.length) {
-    const r = await fetch(`/api/schedule/shifts/${shiftId}/assign`, {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ employee_ids: add }),
-    });
-    if (!r.ok) return alert('Failed to add assignments');
+  async function saveAssignments() {
+    if (!assignShift?.id) return;
+    const add = assignees.filter((x) => !currentAssignees.includes(x));
+    const remove = currentAssignees.filter((x) => !assignees.includes(x));
+    if (add.length) {
+      const r = await fetch(`/api/schedule/shifts/${assignShift.id}/assign`, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ employee_ids: add }),
+      });
+      if (!r.ok) return alert('Failed to add assignments');
+    }
+    if (remove.length) {
+      const r = await fetch(`/api/schedule/shifts/${assignShift.id}/assign`, {
+        method: 'DELETE',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ employee_ids: remove }),
+      });
+      if (!r.ok) return alert('Failed to remove assignments');
+    }
+    setAssignShift(null);
+    alert('Assignments updated.');
+    setAssignedMap((prev) => ({
+      ...prev,
+      [assignShift.id!]: employees.filter((e) => assignees.includes(e.id)),
+    }));
   }
-
-  // Remove un-checked assignments
-  if (remove.length) {
-    const r = await fetch(`/api/schedule/shifts/${shiftId}/assign`, {
-      method: 'DELETE',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ employee_ids: remove }),
-    });
-    if (!r.ok) return alert('Failed to remove assignments');
-  }
-
-  // ✅ Fire SMS notification AFTER assignments are saved
-  // You can make this conditional if you only want on "add" (use add.length > 0)
-  if (assignees.length > 0) {
-    fetch('/api/sendShiftSms', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ scheduleShiftId: shiftId }),
-    }).catch((err) => console.error('Error sending SMS', err));
-  }
-
-  // Update UI
-  setAssignShift(null);
-  alert('Assignments updated.');
-  setAssignedMap((prev) => ({
-    ...prev,
-    [shiftId]: employees.filter((e) => assignees.includes(e.id)),
-  }));
-}
 
   // ---------- UI GUARD ----------
   if (checking) {
@@ -737,13 +717,14 @@ async function saveAssignments() {
       <h1 className="page__title">Admin – Scheduling (separate from payroll)</h1>
 
       {/* Top actions */}
-      <div className="center mb-12">
+      <div className="center" style={{ marginBottom: 12 }}>
         <Link href="/admin-schedule-past" className="nav-link">
           View Past Shifts
         </Link>
         <button
           type="button"
-          className="topbar-btn ml-8"
+          className="topbar-btn"
+          style={{ marginLeft: 8 }}
           onClick={loadRows}
         >
           Refresh
@@ -920,22 +901,18 @@ async function saveAssignments() {
           <div className="table-wrap mt-10 admin-upcoming-table-wrap">
             {/* NOTE: removed table--stack so the desktop layout is stable */}
             <table className="table table--admin table--striped table--compact upcoming-table">
-<thead>
-  <tr>
-    <th>Start</th>
-    <th>End</th>
-    <th>Job</th>
-    <th>Location</th>
-    <th>Address</th>
-    <th>Assigned</th>
-    <th className="col-hide-md">Notes</th>
-    <th
-      style={{ textAlign: 'right', paddingRight: 20, width: 190 }}
-    >
-      Actions
-    </th>
-  </tr>
-</thead>
+              <thead>
+                <tr>
+                  <th>Start</th>
+                  <th>End</th>
+                  <th>Job</th>
+                  <th>Location</th>
+                  <th>Address</th>
+                  <th>Assigned</th>
+                  <th className="col-hide-md">Notes</th>
+                  <th>Actions</th>
+                </tr>
+              </thead>
               <tbody>
                 {upcoming.map((r, i) => {
                   const emps = assignedMap[r.id] || [];
@@ -1059,7 +1036,8 @@ async function saveAssignments() {
       {edit && (
         <div
           id="edit-panel"
-          className="card mt-lg p-16"
+          className="card mt-lg"
+          style={{ padding: 16 }}
         >
           <div className="row between">
             <strong>Edit Scheduled Shift</strong>
@@ -1072,7 +1050,14 @@ async function saveAssignments() {
             </button>
           </div>
 
-          <div className="mt-lg grid-2cols">
+          <div
+            className="mt-lg"
+            style={{
+              display: 'grid',
+              gap: 12,
+              gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)',
+            }}
+          >
             <div>
               <label>Start</label>
               <input
@@ -1115,7 +1100,7 @@ async function saveAssignments() {
                 }
               />
             </div>
-            <div className="grid-col-span-full">
+            <div style={{ gridColumn: '1 / -1' }}>
               <label>Job Type</label>
               <select
                 value={edit.job_type ?? 'setup'}
@@ -1129,7 +1114,7 @@ async function saveAssignments() {
                 <option value="other">Other</option>
               </select>
             </div>
-            <div className="grid-col-span-full">
+            <div style={{ gridColumn: '1 / -1' }}>
               <label>Notes</label>
               <textarea
                 value={edit.notes ?? ''}
@@ -1157,7 +1142,8 @@ async function saveAssignments() {
       {assignShift && (
         <div
           id="assign-panel"
-          className="card mt-lg p-16"
+          className="card mt-lg"
+          style={{ padding: 16 }}
         >
           <div className="row between">
             <strong>
@@ -1180,7 +1166,15 @@ async function saveAssignments() {
             onChange={(e) => setSearch(e.target.value)}
           />
 
-          <div className="mt-lg grid-auto-fill-220">
+          <div
+            className="mt-lg"
+            style={{
+              display: 'grid',
+              gridTemplateColumns:
+                'repeat(auto-fill, minmax(220px, 1fr))',
+              gap: 12,
+            }}
+          >
             {employees
               .filter((e) =>
                 [e.full_name ?? '', e.email ?? '', e.id].some((v) =>
@@ -1190,7 +1184,8 @@ async function saveAssignments() {
               .map((e) => (
                 <label
                   key={e.id}
-                  className="inline-check card p-10"
+                  className="inline-check card"
+                  style={{ padding: 10 }}
                 >
                   <input
                     type="checkbox"
