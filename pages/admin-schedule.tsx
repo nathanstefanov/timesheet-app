@@ -392,13 +392,7 @@ export default function AdminSchedule() {
     return () => clearInterval(id);
   }, []);
 
-const fmt = (s?: string | null) =>
-  s
-    ? new Date(s).toLocaleString(undefined, {
-        dateStyle: 'short', // 12/6/25
-        timeStyle: 'short', // 8:00 AM
-      })
-    : '';
+  const fmt = (s?: string | null) => (s ? new Date(s).toLocaleString() : '');
 
   async function parseMaybeJson(r: Response) {
     const ct = r.headers.get('content-type') || '';
@@ -936,7 +930,7 @@ async function saveAssignments() {
                   <th>Address</th>
                   <th>Assigned</th>
                   <th className="col-hide-md">Notes</th>
-                  <th></th>
+                  <th>Actions</th>
                 </tr>
               </thead>
               <tbody>
