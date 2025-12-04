@@ -85,36 +85,39 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(404).json({ error: 'Shift not found' });
     }
 
-    const assignments = shift.schedule_assignments || [];
+const assignments = shift.schedule_assignments || [];
 
-    if (!assignments.length) {
-      console.warn('No assignments for shift', scheduleShiftId);
-      return res.status(200).json({ ok: true, info: 'No employees assigned' });
-    }
+// 2) For each assigned employee, send SMS if they have a phone
+const sendPromises: Promise<any>[] = [];
 
-    // 2) For each assigned employee, send SMS if they have a phone
-    const sendPromises: Promise<any>[] = [];
+for (const assignment of assignments as any[]) {
+  // Supabase sometimes returns a single related row or an array.
+  const profilesField = (assignment as any).profiles;
+  const profile = Array.isArray(profilesField) ? profilesField[0] : profilesField;
 
-    for (const assignment of assignments) {
-      const profile = assignment.profiles;
-      const phone = profile?.phone;
+  if (!profile) {
+    console.warn('No profile found for assignment', assignment);
+    continue;
+  }
 
-      if (!phone) {
-        console.warn('No phone number for employee', assignment.employee_id);
-        continue;
-      }
+  const phone = profile.phone as string | undefined;
 
-      const name = profile.full_name || 'You';
-      const body = formatShiftMessage(shift, name);
+  if (!phone) {
+    console.warn('No phone number for employee', assignment.employee_id);
+    continue;
+  }
 
-      sendPromises.push(
-        twilioClient.messages.create({
-          from: process.env.TWILIO_FROM_NUMBER!,
-          to: phone,
-          body,
-        })
-      );
-    }
+  const name = (profile.full_name as string) || 'You';
+  const body = formatShiftMessage(shift, name);
+
+  sendPromises.push(
+    twilioClient.messages.create({
+      from: process.env.TWILIO_FROM_NUMBER!,
+      to: phone,
+      body,
+    })
+  );
+}
 
     await Promise.all(sendPromises);
 
