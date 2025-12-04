@@ -152,7 +152,7 @@ export default function AdminSchedulePast() {
     <div className="page">
       <h1 className="page__title">Past Scheduled Shifts</h1>
 
-      <div className="center mb-12 flex-center-wrap">
+      <div className="center" style={{ marginBottom: 12, display: 'flex', gap: 8, justifyContent: 'center', flexWrap: 'wrap' }}>
         <Link href="/admin-schedule" className="nav-link">← Back to Upcoming</Link>
         <button className="topbar-btn" onClick={loadRows}>Refresh</button>
         {past.length > 0 && (
@@ -164,7 +164,7 @@ export default function AdminSchedulePast() {
 
       {loading && <div className="toast">Loading…</div>}
       {!loading && past.length === 0 && !err && (
-        <div className="card p-12">
+        <div className="card" style={{ padding: 12 }}>
           <div className="muted">No past shifts yet.</div>
         </div>
       )}
@@ -209,7 +209,7 @@ export default function AdminSchedulePast() {
 
       {/* Inline Edit Panel */}
       {edit && (
-        <div id="edit-panel" className="card mt-lg p-16">
+        <div id="edit-panel" className="card mt-lg" style={{ padding: 16 }}>
           <div className="row between">
             <strong>Edit Past Shift</strong>
             <button type="button" className="topbar-btn" onClick={() => setEdit(null)}>Close</button>
