@@ -1,7 +1,17 @@
 // pages/api/sendShiftSms.ts
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { supabaseAdmin } from '../../lib/supabaseAdmin';
-import { twilioClient } from '../../lib/twilioClient.ts';
+import twilio from 'twilio';
+
+// Inline Twilio client so we don't need a separate module
+const accountSid = process.env.TWILIO_ACCOUNT_SID;
+const authToken = process.env.TWILIO_AUTH_TOKEN;
+
+if (!accountSid || !authToken) {
+  throw new Error('Missing Twilio environment variables');
+}
+
+const twilioClient = twilio(accountSid, authToken);
 
 function formatShiftMessage(shift: any, employeeName: string) {
   const start = new Date(shift.start_time);
