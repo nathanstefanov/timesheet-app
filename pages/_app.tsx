@@ -89,7 +89,7 @@ export default function App({ Component, pageProps }: AppProps) {
         <div className="shell">
           <div className="brand-wrap">
             <img
-              src="https://cdn.prod.website-files.com/67c10208e6e94bb6c9fba39b/689d0fe09b90825b708049a1_ChatGPT%20Image%20Aug%2013%2C%202025%2C%2005_18_33%20PM.png"
+              src="https://https://img-cache.oppcdn.com/img/v1.0/s:19132/t:QkxBTksrVEVYVCtIRVJF/p:12/g:tl/o:2.5/a:50/q:90/1088x638-4m6ylFaGtDF4CWYS.jpg/1088x638/f1fcd04d418588c0d21fb3b36a70f9af.jpg"
               alt="Logo"
               className="logo"
             />
