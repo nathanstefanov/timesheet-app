@@ -1,17 +1,7 @@
 // pages/api/sendShiftSms.ts
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { supabaseAdmin } from '../../lib/supabaseAdmin';
-import twilio from 'twilio';
-
-// Inline Twilio client so we don't need a separate module
-const accountSid = process.env.TWILIO_ACCOUNT_SID;
-const authToken = process.env.TWILIO_AUTH_TOKEN;
-
-if (!accountSid || !authToken) {
-  throw new Error('Missing Twilio environment variables');
-}
-
-const twilioClient = twilio(accountSid, authToken);
+import { twilioClient } from '../../lib/twilioClient';
 
 function formatShiftMessage(shift: any, employeeName: string) {
   const start = new Date(shift.start_time);
@@ -85,39 +75,36 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       return res.status(404).json({ error: 'Shift not found' });
     }
 
-const assignments = shift.schedule_assignments || [];
+    const assignments = shift.schedule_assignments || [];
 
-// 2) For each assigned employee, send SMS if they have a phone
-const sendPromises: Promise<any>[] = [];
+    if (!assignments.length) {
+      console.warn('No assignments for shift', scheduleShiftId);
+      return res.status(200).json({ ok: true, info: 'No employees assigned' });
+    }
 
-for (const assignment of assignments as any[]) {
-  // Supabase sometimes returns a single related row or an array.
-  const profilesField = (assignment as any).profiles;
-  const profile = Array.isArray(profilesField) ? profilesField[0] : profilesField;
+    // 2) For each assigned employee, send SMS if they have a phone
+    const sendPromises: Promise<any>[] = [];
 
-  if (!profile) {
-    console.warn('No profile found for assignment', assignment);
-    continue;
-  }
+    for (const assignment of assignments) {
+      const profile = assignment.profiles;
+      const phone = profile?.phone;
 
-  const phone = profile.phone as string | undefined;
+      if (!phone) {
+        console.warn('No phone number for employee', assignment.employee_id);
+        continue;
+      }
 
-  if (!phone) {
-    console.warn('No phone number for employee', assignment.employee_id);
-    continue;
-  }
+      const name = profile.full_name || 'You';
+      const body = formatShiftMessage(shift, name);
 
-  const name = (profile.full_name as string) || 'You';
-  const body = formatShiftMessage(shift, name);
-
-  sendPromises.push(
-    twilioClient.messages.create({
-      from: process.env.TWILIO_FROM_NUMBER!,
-      to: phone,
-      body,
-    })
-  );
-}
+      sendPromises.push(
+        twilioClient.messages.create({
+          from: process.env.TWILIO_FROM_NUMBER!,
+          to: phone,
+          body,
+        })
+      );
+    }
 
     await Promise.all(sendPromises);
 
