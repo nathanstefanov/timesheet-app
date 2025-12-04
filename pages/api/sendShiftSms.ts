@@ -1,7 +1,7 @@
 // pages/api/sendShiftSms.ts
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { supabaseAdmin } from '../../lib/supabaseAdmin';
-import { twilioClient } from '../../lib/twilioClient';
+import { twilioClient } from '../../lib/twilioClient.ts';
 
 function formatShiftMessage(shift: any, employeeName: string) {
   const start = new Date(shift.start_time);
