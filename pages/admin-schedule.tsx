@@ -392,7 +392,13 @@ export default function AdminSchedule() {
     return () => clearInterval(id);
   }, []);
 
-  const fmt = (s?: string | null) => (s ? new Date(s).toLocaleString() : '');
+const fmt = (s?: string | null) =>
+  s
+    ? new Date(s).toLocaleString(undefined, {
+        dateStyle: 'short', // 12/6/25
+        timeStyle: 'short', // 8:00 AM
+      })
+    : '';
 
   async function parseMaybeJson(r: Response) {
     const ct = r.headers.get('content-type') || '';
@@ -670,33 +676,53 @@ export default function AdminSchedule() {
     );
   }
 
-  async function saveAssignments() {
-    if (!assignShift?.id) return;
-    const add = assignees.filter((x) => !currentAssignees.includes(x));
-    const remove = currentAssignees.filter((x) => !assignees.includes(x));
-    if (add.length) {
-      const r = await fetch(`/api/schedule/shifts/${assignShift.id}/assign`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ employee_ids: add }),
-      });
-      if (!r.ok) return alert('Failed to add assignments');
-    }
-    if (remove.length) {
-      const r = await fetch(`/api/schedule/shifts/${assignShift.id}/assign`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ employee_ids: remove }),
-      });
-      if (!r.ok) return alert('Failed to remove assignments');
-    }
-    setAssignShift(null);
-    alert('Assignments updated.');
-    setAssignedMap((prev) => ({
-      ...prev,
-      [assignShift.id!]: employees.filter((e) => assignees.includes(e.id)),
-    }));
+async function saveAssignments() {
+  if (!assignShift?.id) return;
+
+  // Capture id before we mutate state
+  const shiftId = assignShift.id;
+
+  const add = assignees.filter((x) => !currentAssignees.includes(x));
+  const remove = currentAssignees.filter((x) => !assignees.includes(x));
+
+  // Add new assignments
+  if (add.length) {
+    const r = await fetch(`/api/schedule/shifts/${shiftId}/assign`, {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ employee_ids: add }),
+    });
+    if (!r.ok) return alert('Failed to add assignments');
   }
+
+  // Remove un-checked assignments
+  if (remove.length) {
+    const r = await fetch(`/api/schedule/shifts/${shiftId}/assign`, {
+      method: 'DELETE',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ employee_ids: remove }),
+    });
+    if (!r.ok) return alert('Failed to remove assignments');
+  }
+
+  // ✅ Fire SMS notification AFTER assignments are saved
+  // You can make this conditional if you only want on "add" (use add.length > 0)
+  if (assignees.length > 0) {
+    fetch('/api/sendShiftSms', {
+      method: 'POST',
+      headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ scheduleShiftId: shiftId }),
+    }).catch((err) => console.error('Error sending SMS', err));
+  }
+
+  // Update UI
+  setAssignShift(null);
+  alert('Assignments updated.');
+  setAssignedMap((prev) => ({
+    ...prev,
+    [shiftId]: employees.filter((e) => assignees.includes(e.id)),
+  }));
+}
 
   // ---------- UI GUARD ----------
   if (checking) {
@@ -910,7 +936,7 @@ export default function AdminSchedule() {
                   <th>Address</th>
                   <th>Assigned</th>
                   <th className="col-hide-md">Notes</th>
-                  <th>Actions</th>
+                  <th></th>
                 </tr>
               </thead>
               <tbody>
