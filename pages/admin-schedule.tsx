@@ -1224,12 +1224,3 @@ async function saveAssignments() {
     </div>
   );
 }
-
-/** Force SSR so Vercel does not emit /admin-schedule static HTML */
-export async function getServerSideProps() {
-  return { props: {} };
-}
-/** Force SSR so Vercel does not emit /admin-schedule static HTML */
-export async function getServerSideProps() {
-  return { props: {} };
-}
