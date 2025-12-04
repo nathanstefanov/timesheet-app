@@ -737,14 +737,13 @@ async function saveAssignments() {
       <h1 className="page__title">Admin – Scheduling (separate from payroll)</h1>
 
       {/* Top actions */}
-      <div className="center" style={{ marginBottom: 12 }}>
+      <div className="center mb-12">
         <Link href="/admin-schedule-past" className="nav-link">
           View Past Shifts
         </Link>
         <button
           type="button"
-          className="topbar-btn"
-          style={{ marginLeft: 8 }}
+          className="topbar-btn ml-8"
           onClick={loadRows}
         >
           Refresh
@@ -1056,8 +1055,7 @@ async function saveAssignments() {
       {edit && (
         <div
           id="edit-panel"
-          className="card mt-lg"
-          style={{ padding: 16 }}
+          className="card mt-lg p-16"
         >
           <div className="row between">
             <strong>Edit Scheduled Shift</strong>
@@ -1070,14 +1068,7 @@ async function saveAssignments() {
             </button>
           </div>
 
-          <div
-            className="mt-lg"
-            style={{
-              display: 'grid',
-              gap: 12,
-              gridTemplateColumns: 'minmax(0,1fr) minmax(0,1fr)',
-            }}
-          >
+          <div className="mt-lg grid-2cols">
             <div>
               <label>Start</label>
               <input
@@ -1120,7 +1111,7 @@ async function saveAssignments() {
                 }
               />
             </div>
-            <div style={{ gridColumn: '1 / -1' }}>
+            <div className="grid-col-span-full">
               <label>Job Type</label>
               <select
                 value={edit.job_type ?? 'setup'}
@@ -1134,7 +1125,7 @@ async function saveAssignments() {
                 <option value="other">Other</option>
               </select>
             </div>
-            <div style={{ gridColumn: '1 / -1' }}>
+            <div className="grid-col-span-full">
               <label>Notes</label>
               <textarea
                 value={edit.notes ?? ''}
@@ -1162,8 +1153,7 @@ async function saveAssignments() {
       {assignShift && (
         <div
           id="assign-panel"
-          className="card mt-lg"
-          style={{ padding: 16 }}
+          className="card mt-lg p-16"
         >
           <div className="row between">
             <strong>
@@ -1186,15 +1176,7 @@ async function saveAssignments() {
             onChange={(e) => setSearch(e.target.value)}
           />
 
-          <div
-            className="mt-lg"
-            style={{
-              display: 'grid',
-              gridTemplateColumns:
-                'repeat(auto-fill, minmax(220px, 1fr))',
-              gap: 12,
-            }}
-          >
+          <div className="mt-lg grid-auto-fill-220">
             {employees
               .filter((e) =>
                 [e.full_name ?? '', e.email ?? '', e.id].some((v) =>
@@ -1204,8 +1186,7 @@ async function saveAssignments() {
               .map((e) => (
                 <label
                   key={e.id}
-                  className="inline-check card"
-                  style={{ padding: 10 }}
+                  className="inline-check card p-10"
                 >
                   <input
                     type="checkbox"
