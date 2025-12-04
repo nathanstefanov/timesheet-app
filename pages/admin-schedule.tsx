@@ -1012,54 +1012,48 @@ async function saveAssignments() {
                         </span>
                       </td>
                       <td
-  data-label="Actions"
-  className="upcoming-table-td"
-  style={{
-    textAlign: 'right',
-    paddingRight: 20,
-    verticalAlign: 'top',
-    width: 190,
-  }}
->
-  <div
-    className="upcoming-table-actions-vert"
-    style={{
-      display: 'flex',
-      flexDirection: 'column',
-      alignItems: 'flex-end',
-      gap: 6,
-    }}
-  >
-    <button
-      type="button"
-      className="btn-edit"
-      onClick={() => openEdit(r)}
-    >
-      Edit
-    </button>
-    <button
-      type="button"
-      className="btn-edit"
-      onClick={() => openAssign(r)}
-    >
-      Assign
-    </button>
-    <button
-      type="button"
-      className="btn-edit"
-      onClick={() => prefillFormFromShift(r)}
-    >
-      Duplicate
-    </button>
-    <button
-      type="button"
-      className="btn-delete"
-      onClick={() => deleteRow(r.id)}
-    >
-      Delete
-    </button>
-  </div>
-</td>
+                        data-label="Actions"
+                        className="upcoming-table-td upcoming-table-td-actions"
+                      >
+                        <div className="upcoming-table-actions-vert">
+                          <button
+                            type="button"
+                            className="btn-edit"
+                            onClick={() => openEdit(r)}
+                          >
+                            Edit
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-edit"
+                            onClick={() => openAssign(r)}
+                          >
+                            Assign
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-edit"
+                            onClick={() => prefillFormFromShift(r)}
+                          >
+                            Duplicate
+                          </button>
+                          <button
+                            type="button"
+                            className="btn-delete"
+                            onClick={() => deleteRow(r.id)}
+                          >
+                            Delete
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  );
+                })}
+              </tbody>
+            </table>
+          </div>
+        )}
+      </div>
 
       {/* Edit panel */}
       {edit && (
