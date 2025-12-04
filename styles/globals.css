@@ -330,29 +330,6 @@
   text-align: center;
 }
 
-/* Small spacing utility helpers used when removing inline styles */
-.m-0 { margin: 0 !important; }
-.mt-8 { margin-top: 8px !important; }
-.mt-10 { margin-top: 10px !important; }
-.mt-12 { margin-top: 12px !important; }
-.mb-12 { margin-bottom: 12px !important; }
-.p-10 { padding: 10px !important; }
-.p-12 { padding: 12px !important; }
-.ml-8 { margin-left: 8px !important; }
-.ml-6 { margin-left: 6px !important; }
-
-/* Utility grid helpers used by admin-schedule page */
-.p-16 { padding: 16px !important; }
-.grid-2cols { display: grid; gap: 12px; grid-template-columns: minmax(0,1fr) minmax(0,1fr); }
-.grid-auto-fill-220 { display: grid; gap: 12px; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
-.grid-col-span-full { grid-column: 1 / -1 !important; }
-
-/* small flex helper for centered rows with wrapping */
-.flex-center-wrap { display:flex; gap:8px; justify-content:center; align-items:center; flex-wrap:wrap; }
-
-
-
-
 /* job cell wrapper for consistent spacing and alignment */
 .job-cell{
   display:flex;
@@ -2777,15 +2754,6 @@ textarea:focus {
   font-size: 0.88rem;
 }
 
-/* Force compact single-line rows for admin tables (tighter look) */
-.table--admin th,
-.table--admin td {
-  white-space: nowrap;
-  padding: 6px 8px;
-  font-size: 0.86rem;
-}
-
-
 /* center mode */
 .table--center th,
 .table--center td {
@@ -2991,22 +2959,4 @@ textarea:focus {
 
 .ovf-y-auto {
   overflow-y: auto;
-}
-/* ===== ADMIN UPCOMING TABLE: lock Actions column ===== */
-
-/* Header + cells: align with button stack */
-.admin-upcoming-table-card .upcoming-table th:last-child,
-.admin-upcoming-table-card .upcoming-table td:last-child {
-  text-align: right !important;
-  padding-right: 20px !important;
-  width: 200px !important;    /* you can tweak 180–220 if needed */
-}
-
-/* Stack buttons neatly in that last cell */
-.admin-upcoming-table-card .upcoming-table td:last-child .upcoming-table-actions-vert {
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: flex-end !important;
-  justify-content: flex-start !important;
-  gap: 6px !important;
 }
