@@ -2734,3 +2734,54 @@ textarea:focus {
     align-items: center;
   }
 }
+/* Never break words in the upcoming table */
+.admin-upcoming-table-card .upcoming-table th,
+.admin-upcoming-table-card .upcoming-table td {
+  word-break: normal !important;
+  overflow-wrap: normal !important;
+}
+/* ===== FINAL MOBILE LAYOUT FOR UPCOMING SCHEDULE TABLE ===== */
+@media (max-width: 768px) {
+  /* Wrapper: full width, no clipping */
+  .admin-upcoming-table-card .admin-upcoming-table-wrap {
+    width: 100%;
+    margin: 0 auto;
+    overflow-x: visible;              /* let content show */
+  }
+
+  /* Table: full width, slightly tighter */
+  .admin-upcoming-table-card .upcoming-table {
+    width: 100%;
+    table-layout: fixed;
+    margin: 0 auto;
+  }
+
+  .admin-upcoming-table-card .upcoming-table th,
+  .admin-upcoming-table-card .upcoming-table td {
+    font-size: 12px;
+    padding: 4px 4px;
+    text-align: center;
+  }
+
+  /* Job pill + buttons: compact but allowed to wrap */
+  .admin-upcoming-table-card .badge-job,
+  .admin-upcoming-table-card .btn-edit,
+  .admin-upcoming-table-card .btn-delete {
+    font-size: 11px;
+    padding: 4px 8px;
+    white-space: normal;              /* <-- IMPORTANT: no clipping */
+  }
+
+  /* Actions column: stack buttons nicely */
+  .admin-upcoming-table-card .upcoming-table-td-actions {
+    text-align: center;
+  }
+
+  .admin-upcoming-table-card .upcoming-table-actions-vert {
+    display: inline-flex;
+    flex-direction: column;
+    gap: 4px;
+    align-items: center;
+    justify-content: center;
+  }
+}
