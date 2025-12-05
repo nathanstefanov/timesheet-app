@@ -2611,3 +2611,60 @@ textarea:focus {
     white-space: nowrap;
   }
 }
+/* === FINAL MOBILE FIX: Upcoming table fits, no horizontal scroll === */
+@media (max-width: 768px) {
+  /* let the card hug the screen */
+  .admin-upcoming-table-card {
+    padding-left: 0;
+    padding-right: 0;
+  }
+
+  /* container itself never creates sideways scroll */
+  .admin-upcoming-table-wrap {
+    width: 100%;
+    margin: 0 auto;
+    overflow-x: hidden;
+  }
+
+  /* table uses full width and columns share space */
+  .admin-upcoming-table-wrap .table {
+    width: 100%;
+    table-layout: fixed;
+    border-collapse: collapse;
+  }
+
+  /* smaller font + tighter padding so 5 cols fit */
+  .admin-upcoming-table-wrap th,
+  .admin-upcoming-table-wrap td {
+    padding: 4px 2px;
+    font-size: 11px;
+    white-space: normal;      /* allow wrapping */
+    word-break: break-word;   /* wrap long text instead of stretching */
+  }
+
+  /* assigned badge wraps nicely instead of stretching */
+  .badge-assigned,
+  .badge-unassigned {
+    display: inline-block;
+    max-width: 100%;
+    white-space: normal;
+  }
+
+  /* action buttons wrap inside the cell */
+  .upcoming-table-actions-vert {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px;
+  }
+
+  .upcoming-table-td-actions {
+    text-align: center;
+  }
+
+  .upcoming-table-actions-vert .btn-edit,
+  .upcoming-table-actions-vert .btn-delete {
+    padding: 3px 6px;
+    font-size: 11px;
+  }
+}
