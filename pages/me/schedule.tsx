@@ -38,7 +38,7 @@ export default function MySchedule() {
   const [typeFilter, setTypeFilter] =
     useState<'all' | 'setup' | 'Lights' | 'breakdown' | 'other'>('all');
 
-  const [showPast, setShowPast] = useState(false); // ⬅️ expand/collapse past
+  const [showPast, setShowPast] = useState(false);
 
   const [, setTick] = useState(0);
   useEffect(() => {
@@ -55,6 +55,13 @@ export default function MySchedule() {
         })
       : '';
 
+  const fmtDateLong = (s: string) =>
+    new Date(s).toLocaleDateString(undefined, {
+      weekday: 'long',
+      month: 'long',
+      day: 'numeric',
+    });
+
   const fmtTime = (s?: string | null) =>
     s
       ? new Date(s).toLocaleTimeString(undefined, {
@@ -66,22 +73,7 @@ export default function MySchedule() {
   const JobBadgeXL = ({ text }: { text?: string | null }) => {
     if (!text) return null;
     const label = text[0].toUpperCase() + text.slice(1);
-    return (
-      <span
-        className="badge"
-        style={{
-          display: 'inline-flex',
-          fontSize: 16,
-          fontWeight: 900,
-          padding: '8px 16px',
-          letterSpacing: '.3px',
-          textTransform: 'none',
-          boxShadow: 'var(--shadow-sm)',
-        }}
-      >
-        {label}
-      </span>
-    );
+    return <span className="badge job-badge-xl">{label}</span>;
   };
 
   async function parseMaybeJson(r: Response) {
@@ -191,7 +183,7 @@ export default function MySchedule() {
     );
   }, [upcoming]);
 
-  // ==== TEAMMATES PILL COMPONENT (initials only) ====
+  // teammates pill
   const Teammates = ({ mates, me }: { mates?: Mate[]; me: Mate | null }) => {
     const list: Mate[] = [];
 
@@ -207,10 +199,7 @@ export default function MySchedule() {
     }
 
     return (
-      <div
-        className="row wrap gap-sm"
-        style={{ justifyContent: 'center' }}
-      >
+      <div className="row wrap gap-sm teammates-row">
         {list.map(m => {
           const name = m.full_name || 'Teammate';
           const initials = name
@@ -220,13 +209,8 @@ export default function MySchedule() {
             .join('');
 
           return (
-            <div key={m.id} className="pill" title={name}>
-              <span
-                className="pill__num"
-                style={{ minWidth: 22, textAlign: 'center' }}
-              >
-                {initials}
-              </span>
+            <div key={m.id} className="pill teammate-pill" title={name}>
+              <span className="pill__num teammate-initials">{initials}</span>
             </div>
           );
         })}
@@ -234,59 +218,46 @@ export default function MySchedule() {
     );
   };
 
-  // ==== SHIFT CARD COMPONENT ====
   const ShiftCard = ({ s, me }: { s: Shift; me: Mate | null }) => {
-    const day = fmtDate(s.start_time);
+    const dayShort = fmtDate(s.start_time);
     const start = fmtTime(s.start_time);
     const end = fmtTime(s.end_time);
 
     return (
-      <div className="card" style={{ padding: 16, textAlign: 'center' }}>
-        {/* Row 1: job type */}
-        <div>
+      <div className="card shift-card">
+        <div className="shift-card-job">
           <JobBadgeXL text={s.job_type ?? undefined} />
         </div>
 
-        {/* Row 2: date/time */}
-        <div
-          className="row wrap gap-md"
-          style={{ marginTop: 8, justifyContent: 'center' }}
-        >
-          <strong style={{ fontSize: 16 }}>{day}</strong>
-          <span className="muted">
+        <div className="row wrap gap-md shift-card-datetime">
+          <strong className="shift-card-day">{dayShort}</strong>
+          <span className="muted shift-card-time">
             {start}
             {end ? ` – ${end}` : ''}
           </span>
         </div>
 
-        {/* Row 3: ⭐ CLICKABLE LOCATION */}
-        <div
-          className="row wrap gap-md"
-          style={{
-            marginTop: 8,
-            justifyContent: 'center',
-            cursor: s.address ? 'pointer' : 'default',
-          }}
-        >
+        <div className="row wrap gap-md shift-card-location">
           {s.address ? (
             <a
               href={getMapLink(s.address)}
               target="_blank"
               rel="noopener noreferrer"
-              style={{ textDecoration: 'none', textAlign: 'center' }}
+              className="shift-card-location-link"
             >
-              <strong style={{ color: '#007aff' }}>
+              <strong className="shift-card-location-name">
                 {s.location_name || 'Location'}
               </strong>
-              <div className="muted">{s.address}</div>
+              <div className="muted shift-card-location-address">
+                {s.address}
+              </div>
             </a>
           ) : (
             <strong>{s.location_name || 'Location TBD'}</strong>
           )}
         </div>
 
-        {/* Row 4: teammates */}
-        <div className="mt-lg">
+        <div className="shift-card-teammates">
           <Teammates mates={s.mates} me={me} />
         </div>
       </div>
@@ -294,143 +265,354 @@ export default function MySchedule() {
   };
 
   return (
-    <div className="page page--center">
-      <h1 className="page__title">My Schedule</h1>
+    <main className="page page--center me-schedule-page">
+      <div className="me-schedule-inner">
+        <h1 className="page__title me-schedule-title">My Schedule</h1>
 
-      {/* Toolbar */}
-      <div className="toolbar">
-        <input
-          placeholder="Search location, address, teammates…"
-          value={q}
-          onChange={e => setQ(e.target.value)}
-          style={{ minWidth: 260 }}
-        />
-        <select
-          value={typeFilter}
-          onChange={e => setTypeFilter(e.target.value as any)}
-        >
-          <option value="all">All types</option>
-          <option value="setup">Setup</option>
-          <option value="Lights">Lights</option>
-          <option value="breakdown">Breakdown</option>
-          <option value="other">Other</option>
-        </select>
-        <button className="topbar-btn" onClick={load}>
-          Refresh
-        </button>
-      </div>
-
-      {err && <div className="alert error">{err}</div>}
-      {loading && <div className="toast">Loading…</div>}
-
-      {/* UPCOMING (grouped) */}
-      <section className="mt-lg full">
-        <div className="section-bar card" style={{ padding: 10 }}>
-          <div className="section-bar__left">
-            <span className="employee-name">Upcoming</span>
-            <span className="pill">
-              <span className="pill__num">{upcoming.length}</span>
-              <span className="pill__label">shifts</span>
-            </span>
-          </div>
+        {/* TOOLBAR */}
+        <div className="me-schedule-toolbar">
+          <input
+            className="me-schedule-search"
+            placeholder="Search location, address, teammates…"
+            value={q}
+            onChange={e => setQ(e.target.value)}
+          />
+          <select
+            className="me-schedule-filter"
+            value={typeFilter}
+            onChange={e => setTypeFilter(e.target.value as any)}
+          >
+            <option value="all">All types</option>
+            <option value="setup">Setup</option>
+            <option value="Lights">Lights</option>
+            <option value="breakdown">Breakdown</option>
+            <option value="other">Other</option>
+          </select>
+          <button className="topbar-btn me-schedule-refresh" onClick={load}>
+            Refresh
+          </button>
         </div>
 
-        {!loading && upcoming.length === 0 && (
-          <div
-            className="card"
-            style={{ padding: 12, marginTop: 8, textAlign: 'center' }}
-          >
-            <span className="muted">No upcoming shifts.</span>
-          </div>
-        )}
+        {err && <div className="alert error">{err}</div>}
+        {loading && <div className="toast mt-sm">Loading…</div>}
 
-        <div style={{ display: 'grid', gap: 16, marginTop: 10 }}>
-          {upcomingGroups.map(([dayKey, list]) => (
-            <div key={dayKey} className="card" style={{ padding: 12 }}>
-              <div
-                className="row between wrap"
-                style={{ justifyContent: 'center', gap: 8 }}
-              >
-                <strong>
-                  {dayKey === 'TBD'
-                    ? 'Date TBD'
-                    : new Date(dayKey).toLocaleDateString(undefined, {
-                        weekday: 'long',
-                        month: 'long',
-                        day: 'numeric',
-                      })}
-                </strong>
-                <span className="muted">
-                  {list.length} shift{list.length > 1 ? 's' : ''}
-                </span>
-              </div>
-              <div style={{ display: 'grid', gap: 12, marginTop: 10 }}>
-                {list.map(s => (
-                  <ShiftCard key={s.id} s={s} me={me} />
-                ))}
-              </div>
+        {/* UPCOMING */}
+        <section className="mt-lg full">
+          <div className="section-bar card me-schedule-sectionbar">
+            <div className="section-bar__left">
+              <span className="employee-name">Upcoming</span>
+              <span className="pill">
+                <span className="pill__num">{upcoming.length}</span>
+                <span className="pill__label">shifts</span>
+              </span>
             </div>
-          ))}
-        </div>
-      </section>
-
-      {/* PAST (expandable) */}
-      <section className="mt-lg full">
-        <button
-          type="button"
-          className="section-bar card"
-          style={{
-            padding: 10,
-            width: '100%',
-            textAlign: 'left',
-            cursor: past.length === 0 ? 'default' : 'pointer',
-            opacity: past.length === 0 ? 0.6 : 1,
-          }}
-          onClick={() => {
-            if (past.length === 0) return;
-            setShowPast(prev => !prev);
-          }}
-        >
-          <div className="section-bar__left" style={{ alignItems: 'center' }}>
-            <span
-              style={{
-                display: 'inline-flex',
-                marginRight: 8,
-                fontSize: 18,
-              }}
-            >
-              {showPast ? '▾' : '▸'}
-            </span>
-            <span className="employee-name">Past</span>
-            <span className="pill" style={{ marginLeft: 8 }}>
-              <span className="pill__num">{past.length}</span>
-              <span className="pill__label">shifts</span>
-            </span>
           </div>
-        </button>
 
-        {!loading && past.length === 0 && (
-          <div
-            className="card"
-            style={{ padding: 12, marginTop: 8, textAlign: 'center' }}
-          >
-            <span className="muted">No past shifts yet.</span>
-          </div>
-        )}
+          {!loading && upcoming.length === 0 && (
+            <div className="card me-schedule-empty">
+              <span className="muted">No upcoming shifts.</span>
+            </div>
+          )}
 
-        {showPast && past.length > 0 && (
-          <div style={{ display: 'grid', gap: 12, marginTop: 8 }}>
-            {past.map(s => (
-              <ShiftCard key={s.id} s={s} me={me} />
+          <div className="me-schedule-groups">
+            {upcomingGroups.map(([dayKey, list]) => (
+              <div key={dayKey} className="card me-schedule-group-card">
+                <div className="row between wrap me-schedule-group-header">
+                  <strong>
+                    {dayKey === 'TBD'
+                      ? 'Date TBD'
+                      : fmtDateLong(dayKey)}
+                  </strong>
+                  <span className="muted">
+                    {list.length} shift{list.length > 1 ? 's' : ''}
+                  </span>
+                </div>
+                <div className="me-schedule-group-grid">
+                  {list.map(s => (
+                    <ShiftCard key={s.id} s={s} me={me} />
+                  ))}
+                </div>
+              </div>
             ))}
           </div>
-        )}
-      </section>
+        </section>
 
-      <div className="mt-lg center muted" style={{ fontSize: 12 }}>
-        Scheduling is separate from payroll. You still log your own hours on{' '}
-        <strong>Log Shift</strong>.
+        {/* PAST */}
+        <section className="mt-lg full">
+          <button
+            type="button"
+            className="section-bar card me-schedule-past-toggle"
+            style={{
+              cursor: past.length === 0 ? 'default' : 'pointer',
+              opacity: past.length === 0 ? 0.6 : 1,
+            }}
+            onClick={() => {
+              if (past.length === 0) return;
+              setShowPast(prev => !prev);
+            }}
+          >
+            <div className="section-bar__left me-schedule-past-header">
+              <span className="me-schedule-past-chevron">
+                {showPast ? '▾' : '▸'}
+              </span>
+              <span className="employee-name">Past</span>
+              <span className="pill me-schedule-past-pill">
+                <span className="pill__num">{past.length}</span>
+                <span className="pill__label">shifts</span>
+              </span>
+            </div>
+          </button>
+
+          {!loading && past.length === 0 && (
+            <div className="card me-schedule-empty">
+              <span className="muted">No past shifts yet.</span>
+            </div>
+          )}
+
+          {showPast && past.length > 0 && (
+            <div className="me-schedule-past-grid">
+              {past.map(s => (
+                <ShiftCard key={s.id} s={s} me={me} />
+              ))}
+            </div>
+          )}
+        </section>
+
+        <div className="mt-lg me-schedule-footer muted">
+          Scheduling is separate from payroll. You still log your own hours on{' '}
+          <strong>Log Shift</strong>.
+        </div>
       </div>
-    </div>
+
+      {/* Scoped layout + responsive styles */}
+      <style jsx>{`
+        .me-schedule-page {
+          padding: 24px 16px 32px;
+        }
+
+        .me-schedule-inner {
+          width: 100%;
+          max-width: 960px;
+          margin: 0 auto;
+        }
+
+        .me-schedule-title {
+          text-align: center;
+          margin-bottom: 16px;
+        }
+
+        /* TOOLBAR */
+        .me-schedule-toolbar {
+          display: flex;
+          gap: 12px;
+          justify-content: center;
+          align-items: center;
+          flex-wrap: wrap;
+          margin-bottom: 12px;
+        }
+
+        .me-schedule-search {
+          box-sizing: border-box;
+          display: block;
+          width: 100%;
+          max-width: 380px;
+          min-width: 0;
+          padding: 10px 16px !important;
+          border-radius: 999px !important;
+          border: 1px solid #e5e7eb !important;
+          background: #f9fafb !important;
+          font-size: 14px !important;
+          line-height: 1.2 !important;
+          height: 44px !important;
+          max-height: 44px !important;
+          aspect-ratio: auto !important;
+        }
+
+        .me-schedule-filter {
+          flex: 0 0 auto;
+          min-width: 150px;
+          padding: 10px 14px;
+          border-radius: 999px;
+        }
+
+        .me-schedule-refresh {
+          flex: 0 0 auto;
+          padding-inline: 20px;
+        }
+
+        /* SECTIONS */
+        .me-schedule-sectionbar {
+          padding: 10px 14px;
+        }
+
+        .me-schedule-empty {
+          padding: 12px;
+          margin-top: 8px;
+          text-align: center;
+        }
+
+        .me-schedule-groups {
+          display: grid;
+          gap: 16px;
+          margin-top: 10px;
+        }
+
+        .me-schedule-group-card {
+          padding: 12px 14px 14px;
+        }
+
+        .me-schedule-group-header {
+          align-items: center;
+          gap: 8px;
+        }
+
+        .me-schedule-group-grid {
+          display: grid;
+          grid-template-columns: repeat(auto-fit, minmax(260px, 1fr));
+          gap: 12px;
+          margin-top: 10px;
+        }
+
+        /* SHIFT CARD */
+        .job-badge-xl {
+          display: inline-flex;
+          font-size: 16px;
+          font-weight: 900;
+          padding: 8px 16px;
+          letter-spacing: 0.3px;
+          text-transform: none;
+          box-shadow: var(--shadow-sm);
+        }
+
+        .shift-card {
+          padding: 16px;
+          text-align: center;
+        }
+
+        .shift-card-job {
+          margin-bottom: 6px;
+        }
+
+        .shift-card-datetime {
+          margin-top: 4px;
+          justify-content: center;
+          gap: 8px;
+        }
+
+        .shift-card-day {
+          font-size: 16px;
+        }
+
+        .shift-card-time {
+          font-size: 14px;
+        }
+
+        .shift-card-location {
+          margin-top: 8px;
+          justify-content: center;
+        }
+
+        .shift-card-location-link {
+          text-decoration: none;
+          text-align: center;
+        }
+
+        .shift-card-location-name {
+          color: #007aff;
+        }
+
+        .shift-card-location-address {
+          max-width: 320px;
+          margin: 2px auto 0;
+        }
+
+        .shift-card-teammates {
+          margin-top: 12px;
+        }
+
+        .teammates-row {
+          justify-content: center;
+        }
+
+        .teammate-pill {
+          padding-inline: 10px;
+        }
+
+        .teammate-initials {
+          min-width: 22px;
+          text-align: center;
+        }
+
+        /* PAST */
+        .me-schedule-past-toggle {
+          width: 100%;
+          text-align: left;
+        }
+
+        .me-schedule-past-header {
+          align-items: center;
+        }
+
+        .me-schedule-past-chevron {
+          display: inline-flex;
+          margin-right: 8px;
+          font-size: 18px;
+        }
+
+        .me-schedule-past-pill {
+          margin-left: 8px;
+        }
+
+        .me-schedule-past-grid {
+          display: grid;
+          gap: 12px;
+          margin-top: 8px;
+        }
+
+        .me-schedule-footer {
+          font-size: 12px;
+          text-align: center;
+        }
+
+        /* MOBILE */
+        @media (max-width: 768px) {
+          .me-schedule-page {
+            padding: 20px 10px 28px;
+          }
+
+          .me-schedule-inner {
+            max-width: 100%;
+          }
+
+          .me-schedule-toolbar {
+            flex-direction: column;
+            align-items: stretch;
+          }
+
+          .me-schedule-search {
+            width: 100%;
+            max-width: 100%;
+          }
+
+          .me-schedule-filter,
+          .me-schedule-refresh {
+            width: 100%;
+            justify-content: center;
+          }
+
+          .me-schedule-sectionbar {
+            padding-inline: 12px;
+          }
+
+          .me-schedule-group-grid {
+            grid-template-columns: 1fr;
+          }
+
+          .shift-card-location-address {
+            max-width: 100%;
+          }
+        }
+      `}</style>
+    </main>
   );
 }

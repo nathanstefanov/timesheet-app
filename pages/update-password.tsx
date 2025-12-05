@@ -12,11 +12,17 @@ export default function UpdatePassword() {
   const [loading, setLoading] = useState(false);
 
   async function save() {
-    setErr(undefined); setMsg(undefined); setLoading(true);
+    setErr(undefined);
+    setMsg(undefined);
+    setLoading(true);
+
     try {
-      if (pw.length < 8) throw new Error('Password must be at least 8 characters');
+      if (pw.length < 8)
+        throw new Error('Password must be at least 8 characters');
+
       const { error } = await supabase.auth.updateUser({ password: pw });
       if (error) throw error;
+
       setMsg('Password updated. Redirecting…');
       setTimeout(() => r.replace('/dashboard'), 800);
     } catch (e: any) {
@@ -30,6 +36,7 @@ export default function UpdatePassword() {
     <main className="auth-wrap">
       <div className="auth-card">
         <h1 className="auth-title">Set New Password</h1>
+
         <div className="auth-input-row">
           <input
             className="auth-input"
@@ -38,14 +45,25 @@ export default function UpdatePassword() {
             value={pw}
             onChange={(e) => setPw(e.target.value)}
           />
+
           <label className="auth-showpw">
-            <input type="checkbox" checked={show} onChange={(e)=>setShow(e.target.checked)} />
+            <input
+              type="checkbox"
+              checked={show}
+              onChange={(e) => setShow(e.target.checked)}
+            />
             Show
           </label>
         </div>
+
         {err && <div className="auth-alert error">{err}</div>}
         {msg && <div className="auth-alert ok">{msg}</div>}
-        <button className="auth-btn primary" onClick={save} disabled={loading}>
+
+        <button
+          className="auth-btn primary"
+          onClick={save}
+          disabled={loading}
+        >
           {loading ? 'Saving…' : 'Save Password'}
         </button>
       </div>

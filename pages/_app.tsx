@@ -23,14 +23,14 @@ export default function App({ Component, pageProps }: AppProps) {
       .eq('id', userId)
       .maybeSingle();
 
-    // 🔥 If anything goes wrong with profile/role, force logout + relogin
+    // If anything goes wrong with profile/role, force logout + relogin
     if (error || !data) {
       console.error('Failed to load profile for user', userId, error);
       setErr('Session error. Please sign in again.');
       setProfile(null);
 
       await supabase.auth.signOut();
-      router.replace('/'); // send them back to login
+      router.replace('/');
       return;
     }
 
@@ -44,8 +44,12 @@ export default function App({ Component, pageProps }: AppProps) {
       if (!checking && router.pathname !== '/') router.replace('/');
       return;
     }
+
     fetchProfile(session.user.id);
-    if (!checking && router.pathname === '/') router.replace('/dashboard');
+
+    if (!checking && router.pathname === '/') {
+      router.replace('/dashboard');
+    }
   }
 
   useEffect(() => {
@@ -60,6 +64,7 @@ export default function App({ Component, pageProps }: AppProps) {
 
     const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
       if (!alive) return;
+
       if (
         event === 'SIGNED_IN' ||
         event === 'SIGNED_OUT' ||
@@ -96,7 +101,6 @@ export default function App({ Component, pageProps }: AppProps) {
             <span className="brand">Timesheet</span>
           </div>
 
-          {/* While checking, don't render nav to avoid flicker */}
           {!checking && profile && (
             <nav className="nav">
               {/* Everyone */}
@@ -130,8 +134,14 @@ export default function App({ Component, pageProps }: AppProps) {
         </div>
       </header>
 
-      {err && <div className="alert error">Profile error: {err}</div>}
-      <Component {...pageProps} />
+      <main>
+        {err && (
+          <div className="wrap">
+            <div className="alert error">Profile error: {err}</div>
+          </div>
+        )}
+        <Component {...pageProps} />
+      </main>
     </>
   );
 }

@@ -6,9 +6,12 @@ export default class MyDocument extends Document {
     return (
       <Html lang="en">
         <Head />
+
         <body>
-          {/* Important: put the viewport *before* scripts so Safari applies it */}
+          {/* Main app content */}
           <Main />
+
+          {/* Next.js scripts */}
           <NextScript />
         </body>
       </Html>

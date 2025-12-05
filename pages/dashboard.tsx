@@ -4,9 +4,13 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
 import {
-  startOfWeek, endOfWeek, addWeeks,
-  startOfMonth, endOfMonth, addMonths,
-  format
+  startOfWeek,
+  endOfWeek,
+  addWeeks,
+  startOfMonth,
+  endOfMonth,
+  addMonths,
+  format,
 } from 'date-fns';
 
 type Mode = 'week' | 'month' | 'all';
@@ -14,14 +18,14 @@ type Mode = 'week' | 'month' | 'all';
 type Shift = {
   id: string;
   user_id: string;
-  shift_date: string;          // 'YYYY-MM-DD'
-  shift_type: string;          // 'Setup' | 'Breakdown' | 'Shop' | ...
-  time_in: string;             // ISO
-  time_out: string;            // ISO
+  shift_date: string; // 'YYYY-MM-DD'
+  shift_type: string; // 'Setup' | 'Breakdown' | 'Shop' | ...
+  time_in: string; // ISO
+  time_out: string; // ISO
   hours_worked: number;
   pay_due: number;
   is_paid?: boolean;
-  paid_at?: string | null;     // ISO
+  paid_at?: string | null; // ISO
 };
 
 export default function Dashboard() {
@@ -33,17 +37,19 @@ export default function Dashboard() {
   const [offset, setOffset] = useState(0);
   const [err, setErr] = useState<string | undefined>();
 
-  // NEW: all–time unpaid total
+  // All–time unpaid total
   const [unpaidAllTime, setUnpaidAllTime] = useState(0);
 
   // Get current user once
   useEffect(() => {
     (async () => {
-      const { data: { session } } = await supabase.auth.getSession();
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
       if (!session?.user) {
         setUser(null);
         setLoading(false);
-        // let _app.tsx handle redirect; do nothing here
+        // _app.tsx handles redirect; nothing here
         return;
       }
       setUser({ id: session.user.id });
@@ -68,9 +74,19 @@ export default function Dashboard() {
       const base = addMonths(now, offset);
       const start = startOfMonth(base);
       const end = endOfMonth(base);
-      return { start, end, label: format(start, 'MMMM yyyy'), kind: 'month' as const };
+      return {
+        start,
+        end,
+        label: format(start, 'MMMM yyyy'),
+        kind: 'month' as const,
+      };
     }
-    return { start: null as any, end: null as any, label: 'All time', kind: 'all' as const };
+    return {
+      start: null as any,
+      end: null as any,
+      label: 'All time',
+      kind: 'all' as const,
+    };
   }, [mode, offset]);
 
   // Load shifts when user/range changes
@@ -116,8 +132,7 @@ export default function Dashboard() {
           }, 0);
           setUnpaidAllTime(totalUnpaid);
         }
-        // if unpaidError, we just skip updating unpaidAllTime (no need to blow up the page)
-
+        // If unpaidError, skip updating unpaidAllTime
       } catch (e: any) {
         if (!alive) return;
         setErr(e?.message || 'Failed to load shifts.');
@@ -126,7 +141,9 @@ export default function Dashboard() {
       }
     })();
 
-    return () => { alive = false; };
+    return () => {
+      alive = false;
+    };
   }, [user, mode, offset, range.start, range.end]);
 
   const totals = useMemo(() => {
@@ -142,18 +159,22 @@ export default function Dashboard() {
       alert(error.message);
       return;
     }
-    setShifts(prev => prev.filter(x => x.id !== id));
-
-    // Also adjust all-time unpaid if needed (optional, but keeps it in sync)
-    // You can refetch unpaidAllTime instead if you prefer.
+    setShifts((prev) => prev.filter((x) => x.id !== id));
+    // Could refetch unpaidAllTime here if needed
   }
 
   if (!user) return null;
 
   return (
-    <main className="page page--center">
+    <main className="page page--center page--dashboard">
       <h1 className="page__title">
-        My Shifts ({mode === 'week' ? 'This Week' : mode === 'month' ? 'This Month' : 'All Time'})
+        My Shifts (
+        {mode === 'week'
+          ? 'This Week'
+          : mode === 'month'
+          ? 'This Month'
+          : 'All Time'}
+        )
       </h1>
 
       {err && (
@@ -165,11 +186,16 @@ export default function Dashboard() {
       {/* Toolbar */}
       <div className="toolbar toolbar--center full">
         <div className="toolbar__left row wrap">
-          <label className="sr-only" htmlFor="range-mode">Range</label>
+          <label className="sr-only" htmlFor="range-mode">
+            Range
+          </label>
           <select
             id="range-mode"
             value={mode}
-            onChange={(e) => { setMode(e.target.value as Mode); setOffset(0); }}
+            onChange={(e) => {
+              setMode(e.target.value as Mode);
+              setOffset(0);
+            }}
           >
             <option value="week">This week</option>
             <option value="month">This month</option>
@@ -178,34 +204,48 @@ export default function Dashboard() {
 
           {mode !== 'all' && (
             <>
-              <button className="topbar-btn" onClick={() => setOffset(n => n - 1)} aria-label="Previous range">◀ Prev</button>
+              <button
+                className="topbar-btn"
+                onClick={() => setOffset((n) => n - 1)}
+                aria-label="Previous range"
+              >
+                ◀ Prev
+              </button>
               <button className="topbar-btn" onClick={() => setOffset(0)}>
                 {mode === 'week' ? 'This week' : 'This month'}
               </button>
               <button
                 className="topbar-btn"
-                onClick={() => setOffset(n => n + 1)}
+                onClick={() => setOffset((n) => n + 1)}
                 disabled={offset >= 0}
                 aria-label="Next range"
                 title={offset >= 0 ? 'Cannot view future range' : 'Next'}
               >
                 Next ▶
               </button>
-              <div className="muted" aria-live="polite" style={{ alignSelf: 'center' }}>
+              <div
+                className="muted toolbar-range-label"
+                aria-live="polite"
+              >
                 {range.label}
               </div>
             </>
           )}
         </div>
 
-        <Link href="/new-shift" className="btn-primary">+ Log Shift</Link>
+        <Link href="/new-shift" className="btn-primary">
+          + Log Shift
+        </Link>
       </div>
 
       {/* Totals */}
       <div className="totals totals--center">
-        <div className="chip chip--xl">Hours:&nbsp;<b>{totals.hours.toFixed(2)}</b></div>
-        <div className="chip chip--xl">Pay:&nbsp;<b>${totals.pay.toFixed(2)}</b></div>
-        {/* Unpaid is now ALL-TIME */}
+        <div className="chip chip--xl">
+          Hours:&nbsp;<b>{totals.hours.toFixed(2)}</b>
+        </div>
+        <div className="chip chip--xl">
+          Pay:&nbsp;<b>${totals.pay.toFixed(2)}</b>
+        </div>
         <div className="chip chip--xl">
           Unpaid:&nbsp;<b>${unpaidAllTime.toFixed(2)}</b>
         </div>
@@ -228,47 +268,82 @@ export default function Dashboard() {
             </tr>
           </thead>
           <tbody>
-            {!loading && shifts.map((s) => {
-              const paid = Boolean(s.is_paid);
-              return (
-                <tr key={s.id}>
-                  <td data-label="Date">{s.shift_date}</td>
-                  <td data-label="Type">{s.shift_type}</td>
-                  <td data-label="In">
-                    {s.time_in ? new Date(s.time_in).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
-                  </td>
-                  <td data-label="Out">
-                    {s.time_out ? new Date(s.time_out).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }) : '—'}
-                  </td>
-                  <td data-label="Hours">{Number(s.hours_worked ?? 0).toFixed(2)}</td>
-                  <td data-label="Pay">${Number(s.pay_due ?? 0).toFixed(2)}</td>
-                  <td data-label="Status">
-                    <span className={paid ? 'badge badge-paid' : 'badge badge-unpaid'}>
-                      {paid ? 'PAID' : 'NOT PAID'}
-                    </span>
-                  </td>
-                  <td data-label="Paid at" className="col-hide-md">
-                    {s.paid_at ? new Date(s.paid_at).toLocaleDateString() : '—'}
-                  </td>
-                  <td data-label="Actions">
-                    <div className="actions">
-                      <Link href={`/shift/${s.id}`} className="btn-edit">Edit</Link>
-                      <button className="btn-delete" onClick={() => delShift(s.id)}>Delete</button>
-                    </div>
-                  </td>
-                </tr>
-              );
-            })}
+            {!loading &&
+              shifts.map((s) => {
+                const paid = Boolean(s.is_paid);
+                return (
+                  <tr key={s.id}>
+                    <td data-label="Date">{s.shift_date}</td>
+                    <td data-label="Type">{s.shift_type}</td>
+                    <td data-label="In">
+                      {s.time_in
+                        ? new Date(s.time_in).toLocaleTimeString([], {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })
+                        : '—'}
+                    </td>
+                    <td data-label="Out">
+                      {s.time_out
+                        ? new Date(s.time_out).toLocaleTimeString([], {
+                            hour: '2-digit',
+                            minute: '2-digit',
+                          })
+                        : '—'}
+                    </td>
+                    <td data-label="Hours">
+                      {Number(s.hours_worked ?? 0).toFixed(2)}
+                    </td>
+                    <td data-label="Pay">
+                      ${Number(s.pay_due ?? 0).toFixed(2)}
+                    </td>
+                    <td data-label="Status">
+                      <span
+                        className={
+                          paid ? 'badge badge-paid' : 'badge badge-unpaid'
+                        }
+                      >
+                        {paid ? 'PAID' : 'NOT PAID'}
+                      </span>
+                    </td>
+                    <td data-label="Paid at" className="col-hide-md">
+                      {s.paid_at
+                        ? new Date(s.paid_at).toLocaleDateString()
+                        : '—'}
+                    </td>
+                    <td data-label="Actions">
+                      <div className="actions">
+                        <Link
+                          href={`/shift/${s.id}`}
+                          className="btn-edit"
+                        >
+                          Edit
+                        </Link>
+                        <button
+                          className="btn-delete"
+                          onClick={() => delShift(s.id)}
+                        >
+                          Delete
+                        </button>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
 
             {!loading && shifts.length === 0 && (
               <tr>
-                <td colSpan={9} className="muted center">No shifts in this range.</td>
+                <td colSpan={9} className="muted center">
+                  No shifts in this range.
+                </td>
               </tr>
             )}
 
             {loading && (
               <tr>
-                <td colSpan={9} className="center">Loading…</td>
+                <td colSpan={9} className="center">
+                  Loading…
+                </td>
               </tr>
             )}
           </tbody>

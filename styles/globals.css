@@ -1,2911 +1,1094 @@
-/* --- Fix actions column clipping on upcoming schedule table --- */
-.upcoming-table-td-actions {
-  overflow: visible !important;
-  text-overflow: clip !important;
-  white-space: nowrap !important;
+/* --------------------------------
+   RESET & BASE
+-----------------------------------*/
+
+*,
+*::before,
+*::after {
+  box-sizing: border-box;
 }
 
-/* Make sure the flex wrapper can show fully too */
-.upcoming-table-td-actions .upcoming-table-actions-vert {
-  overflow: visible;
-}
-
-.upcoming-table th {
-  text-align: center !important;
-  vertical-align: middle !important;
-}
-.upcoming-table-td-middle {
-  vertical-align: middle !important;
-  text-align: left !important;
-  height: 56px;
-}
-.upcoming-table-td-top {
-  vertical-align: top !important;
-  text-align: left !important;
-  height: 56px;
-}
-.upcoming-table-td-actions {
-  vertical-align: middle !important;
-  text-align: right !important;
-  min-width: 120px;
-  height: 56px;
-}
-.upcoming-table-actions-vert {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  justify-content: center;
-  gap: 8px;
+html,
+body {
+  margin: 0;
+  padding: 0;
   height: 100%;
 }
-.upcoming-table-notes {
-  color: var(--muted);
-  font-size: 13px;
-  font-style: italic;
-  line-height: 1.4;
-  margin: 0;
-  padding: 0;
-  white-space: pre-line;
-  word-break: break-word;
-}
-.upcoming-table-td {
-  vertical-align: middle !important;
-  text-align: left !important;
-  padding-top: 8px;
-  padding-bottom: 8px;
-  padding-left: 10px;
-  padding-right: 10px;
-  line-height: 1.4;
-  height: 48px;
-}
-.upcoming-table-cell-main {
-  font-weight: 600;
-  font-size: 15px;
-  color: var(--ink);
-  line-height: 1.4;
-  display: inline-block;
-}
-.upcoming-table-assigned-badge {
-  display: inline-block;
-  background: #dcfce7;
-  color: #065f46;
-  border: 1px solid #bbf7d0;
-  font-weight: 700;
-  font-size: 14px;
-  padding: 4px 10px;
-  border-radius: 8px;
-  margin: 0;
-  white-space: pre-line;
-  word-break: break-word;
-  min-width: 96px;
-}
-.upcoming-table-actions {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  justify-content: flex-start;
-}
-.upcoming-table-td .cell-notes {
-  color: var(--muted);
-  font-size: 13px;
-  font-style: italic;
-  line-height: 1.4;
-  margin: 0;
-  padding: 0;
-  white-space: pre-line;
-}
-.upcoming-table-cell-flex {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 36px;
-  width: 100%;
-}
-.upcoming-table-cell-main {
-  font-weight: 600;
-  font-size: 15px;
-  color: var(--ink);
-  line-height: 1.4;
-}
-.upcoming-table th, .upcoming-table td {
-  vertical-align: middle;
-  text-align: center;
-  padding: 6px 8px;
-  line-height: 1.35;
-  font-size: 13px;
-}
-.upcoming-table th {
-  font-size: 16px;
-  font-weight: 800;
-  letter-spacing: 0.2px;
-  background: #f4f6fb;
-  border-bottom: 2px solid var(--border);
-  text-align: center;
-}
-.upcoming-table td {
-  font-size: 15px;
-  background: #fff;
-  text-align: center;
-}
-.upcoming-table .cell-flex {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  min-height: 36px;
-  width: 100%;
-}
-.upcoming-table .cell-flex-left {
-  justify-content: flex-start;
-}
-.upcoming-table .cell-flex-right {
-  justify-content: flex-end;
-}
-.upcoming-table .badge-job,
-.upcoming-table .badge-assigned,
-.upcoming-table .badge-unassigned {
-  margin: 0 auto;
-}
-.upcoming-table .actions {
-  gap: 14px;
-  margin: 0 auto;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-}
-.upcoming-table .btn-edit,
-.upcoming-table .btn-delete {
-  min-width: 80px;
-  height: 38px;
-  font-size: 15px;
-  border-radius: 8px;
-  font-weight: 700;
-  margin: 0 2px;
-}
-.upcoming-table .cell-notes {
-  color: var(--muted);
-  font-size: 13px;
-  font-style: italic;
-  line-height: 1.4;
-  margin-top: 2px;
-}
-@media (max-width: 900px) {
-  .upcoming-table th, .upcoming-table td {
-    padding-left: 10px;
-    padding-right: 10px;
-  }
-}
-@media (max-width: 700px) {
-  .upcoming-table th, .upcoming-table td {
-    padding-top: 12px;
-    padding-bottom: 12px;
-    font-size: 15px;
-  }
-  .upcoming-table .actions {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
-    margin: 0;
-  }
-  .upcoming-table .btn-edit,
-  .upcoming-table .btn-delete {
-    width: 100%;
-    min-width: 0;
-    margin: 0 0 6px 0;
-  }
-}
-.upcoming-table th, .upcoming-table td {
-  vertical-align: middle;
-  text-align: center;
-  padding: 14px;
-  line-height: 1.5;
-  border-bottom: 1px solid var(--border-soft);
-}
-.upcoming-table th {
-  font-size: 16px;
-  font-weight: 800;
-  letter-spacing: 0.2px;
-  background: #f4f6fb;
-  border-bottom: 2px solid var(--border);
-}
-.upcoming-table td {
-  font-size: 15px;
-  background: #fff;
-}
-.upcoming-table tbody tr {
-  transition: background-color 0.15s ease;
-}
-.upcoming-table tbody tr:hover {
-  background-color: var(--brand-weak);
-}
-.upcoming-table tbody tr:last-child td {
-  border-bottom: none;
-}
-.upcoming-table .badge-job,
-.upcoming-table .badge-assigned,
-.upcoming-table .badge-unassigned {
-  margin-top: 2px;
-  margin-bottom: 2px;
-  margin-right: 0;
-  margin-left: 0;
-}
-.upcoming-table .actions {
-  gap: 14px;
-  margin-top: 2px;
-  margin-bottom: 2px;
-}
-.upcoming-table .btn-edit,
-.upcoming-table .btn-delete {
-  min-width: 80px;
-  height: 38px;
-  font-size: 15px;
-  border-radius: 8px;
-  font-weight: 700;
-  margin: 0 2px;
-}
-.upcoming-table .cell-main {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--ink);
-  line-height: 1.4;
-  margin-bottom: 2px;
-}
-.upcoming-table .cell-sub {
-  font-size: 12px;
-  color: var(--muted);
-  margin-top: 2px;
-  line-height: 1.2;
-}
-.upcoming-table .cell-notes {
-  color: var(--muted);
-  font-size: 13px;
-  font-style: italic;
-  line-height: 1.4;
-  margin-top: 2px;
-}
-@media (max-width: 900px) {
-  .upcoming-table th, .upcoming-table td {
-    padding-left: 10px;
-    padding-right: 10px;
-  }
-}
-@media (max-width: 700px) {
-  .upcoming-table th, .upcoming-table td {
-    padding-top: 12px;
-    padding-bottom: 12px;
-    font-size: 15px;
-  }
-  .upcoming-table .actions {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 10px;
-    margin: 0;
-  }
-  .upcoming-table .btn-edit,
-  .upcoming-table .btn-delete {
-    width: 100%;
-    min-width: 0;
-    margin: 0 0 6px 0;
-  }
-}
-.upcoming-table {
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
-  background: #fff;
-  overflow: hidden;
-  margin: 1rem 0;
-  border-spacing: 0;
-  width: 100%;
-}
-.upcoming-table th {
-  background: #f4f6fb;
-  color: var(--ink-subtle);
-  font-size: 15px;
-  font-weight: 700;
-  letter-spacing: 0.1px;
-  border-bottom: 2px solid var(--border);
-  padding-top: 14px;
-  padding-bottom: 14px;
-}
-.upcoming-table tbody tr {
-  transition: background 0.13s; padding:0; margin:0;
-}
-.upcoming-table tbody tr:hover {
-  background: #f8fafc;
-}
-.upcoming-table .badge-job {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  background: linear-gradient(90deg, #eef2ff 60%, #e0e7ff 100%);
-  color: #3730a3;
-  border: 1px solid var(--brand-border);
-  font-weight: 700;
-  font-size: 14px;
-  padding: 4px 10px;
-  border-radius: 8px;
-  text-transform: capitalize;
-  box-shadow: 0 1px 2px rgba(79,70,229,0.07);
-  min-width: 96px;
-  max-width: 220px;
-  text-align: center;
-}
-
-/* job cell wrapper for consistent spacing and alignment */
-.job-cell{
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  width:100%;
-  min-height:36px;
-}
-
-@media (min-width: 700px){
-  /* allow job cell to left-align badge on larger screens if desired by toggling this rule */
-  .upcoming-table td.job-cell-left .job-cell{ justify-content:flex-start; }
-}
-.upcoming-table .badge-assigned {
-  background: linear-gradient(90deg, #dcfce7 60%, #bbf7d0 100%);
-  color: #065f46;
-  border: 1px solid #bbf7d0;
-  font-weight: 700;
-  font-size: 13px;
-  padding: 4px 12px;
-  border-radius: 8px;
-  box-shadow: 0 1px 2px rgba(16,185,129,0.07);
-}
-.upcoming-table .badge-unassigned {
-  background: #f3f4f6;
-  color: #b0b0b0;
-  border: 1px solid #e5e7eb;
-  font-weight: 600;
-  font-size: 13px;
-  padding: 4px 12px;
-  border-radius: 8px;
-}
-.upcoming-table .actions {
-  gap: 10px;
-}
-.upcoming-table .btn-edit,
-.upcoming-table .btn-delete {
-  border-radius: 8px;
-  font-weight: 700;
-  box-shadow: 0 1px 2px rgba(0,0,0,0.04);
-  border: 1.5px solid var(--border);
-  background: #f8fafc;
-  color: #1e293b;
-  transition: background 0.13s, border-color 0.13s, color 0.13s;
-}
-.upcoming-table .btn-edit:hover,
-.upcoming-table .btn-delete:hover {
-  background: #eef2ff;
-  border-color: var(--brand-border);
-  color: #3730a3;
-}
-.upcoming-table .btn-delete {
-  background: #fff4f4;
-  color: #7a1f1f;
-  border-color: #ffd7d7;
-}
-.upcoming-table .btn-delete:hover {
-  background: #ffeaea;
-  color: #b91c1c;
-  border-color: #fecaca;
-}
-.upcoming-table .cell-main {
-  font-size: 15px;
-  font-weight: 600;
-  color: var(--ink);
-  line-height: 1.3;
-}
-.upcoming-table .cell-sub {
-  font-size: 12px;
-  color: var(--muted);
-  margin-top: 2px;
-  line-height: 1.1;
-}
-.upcoming-table .cell-notes {
-  color: var(--muted);
-  font-size: 13px;
-  font-style: italic;
-  line-height: 1.3;
-}
-.upcoming-table th, .upcoming-table td {
-  vertical-align: middle;
-  text-align: left;
-}
-.upcoming-table td {
-  padding-top: 12px;
-  padding-bottom: 12px;
-}
-.upcoming-table .badge,
-.upcoming-table .badge-assigned,
-.upcoming-table .badge-unassigned {
-  display: inline-flex;
-  align-items: center;
-  justify-content: flex-start;
-  vertical-align: middle;
-  min-height: 28px;
-}
-/* job badge should be centered inside its cell (override the group above) */
-.upcoming-table .badge-job {
-  justify-content: center;
-}
-.upcoming-table .actions {
-  display: flex;
-  gap: 8px;
-  align-items: center;
-  justify-content: flex-start;
-}
-.upcoming-table .btn-edit,
-.upcoming-table .btn-delete {
-  min-width: 72px;
-  height: 36px;
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 14px;
-}
-.upcoming-table .cell-main {
-  display: block;
-  font-weight: 600;
-  color: var(--ink);
-  font-size: 15px;
-  line-height: 1.4;
-  margin-bottom: 4px;
-}
-.upcoming-table .cell-sub {
-  display: block;
-  color: var(--muted);
-  font-size: 12px;
-  margin-top: 2px;
-  line-height: 1.1;
-}
-.upcoming-table .cell-notes {
-  color: var(--muted);
-  font-size: 13px;
-  font-style: italic;
-  line-height: 1.3;
-}
-@media (max-width: 700px) {
-  .upcoming-table th, .upcoming-table td {
-    text-align: left;
-    vertical-align: top;
-    padding-top: 10px;
-    padding-bottom: 10px;
-  }
-  .upcoming-table .actions {
-    flex-direction: column;
-    align-items: stretch;
-    gap: 8px;
-  }
-  .upcoming-table .btn-edit,
-  .upcoming-table .btn-delete {
-    width: 100%;
-    min-width: 0;
-    margin-bottom: 0;
-  }
-}
-/* ========== Upcoming Table Enhanced ========== */
-.cell-main {
-  font-weight: 600;
-  color: var(--ink);
-  font-size: 15px;
-}
-.cell-sub {
-  color: var(--muted);
-  font-size: 12px;
-  margin-top: 2px;
-}
-.cell-notes {
-  color: var(--muted);
-  font-size: 13px;
-  font-style: italic;
-}
-.badge-job {
-  background: var(--brand-weak);
-  color: var(--brand);
-  border: 1px solid var(--brand-border);
-  font-weight: 700;
-  font-size: 13px;
-  padding: 4px 10px;
-  border-radius: 8px;
-  text-transform: capitalize;
-}
-.badge-assigned {
-  background: var(--success-bg);
-  color: var(--success-ink);
-  border: 1px solid var(--success-brd);
-  font-weight: 700;
-  font-size: 13px;
-  padding: 4px 10px;
-  border-radius: 8px;
-}
-.badge-unassigned {
-  background: #f3f4f6;
-  color: #b0b0b0;
-  border: 1px solid #e5e7eb;
-  font-weight: 600;
-  font-size: 13px;
-  padding: 4px 10px;
-  border-radius: 8px;
-}
-.upcoming-table-card {
-  padding: 20px 18px 18px 18px;
-  margin-top: 18px;
-  box-shadow: var(--shadow-md);
-  border-radius: var(--radius-lg);
-}
-.upcoming-table-header {
-  margin-bottom: 10px;
-}
-.upcoming-table-empty {
-  margin-top: 10px;
-  padding: 16px 12px;
-  background: #f8fafc;
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-}
-.upcoming-table {
-  border-radius: var(--radius);
-  overflow: hidden;
-}
-.mt-10 { margin-top: 10px; }
-.table--striped tbody tr.row-alt {
-  background: #f6f8fa;
-}
-.table--compact th, .table--compact td {
-  padding: 8px 10px;
-}
-/* ========== Upcoming Table Card ========== */
-.upcoming-table-card {
-  padding: 20px 18px 18px 18px;
-  margin-top: 18px;
-  box-shadow: var(--shadow-md);
-  border-radius: var(--radius-lg);
-}
-.upcoming-table-header {
-  margin-bottom: 10px;
-}
-.upcoming-table-empty {
-  margin-top: 10px;
-  padding: 16px 12px;
-  background: #f8fafc;
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
-}
-.upcoming-table {
-  border-radius: var(--radius);
-  overflow: hidden;
-}
-.mt-10 { margin-top: 10px; }
-.table--striped tbody tr.row-alt {
-  background: #f6f8fa;
-}
-.table--compact th, .table--compact td {
-  padding: 8px 10px;
-}
-/* ========== Location Picker Card ========== */
-.location-picker-card {
-  background: var(--card);
-  border: 1.5px solid var(--brand-border);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
-  padding: 24px 22px 18px 22px;
-  margin-bottom: 18px;
-  max-width: 540px;
-  margin-left: auto;
-  margin-right: auto;
-}
-.location-picker-section {
-  margin-bottom: 18px;
-}
-.location-picker-label {
-  font-weight: 600;
-  color: var(--ink-subtle);
-  margin-bottom: 6px;
-  display: block;
-}
-.location-picker-input {
-  width: 100%;
-  padding: 10px 12px;
-  border-radius: 10px;
-  border: 1px solid #d1d5db;
-  background: #f8fafc;
-  color: var(--ink);
-  margin-bottom: 8px;
-  font-size: 15px;
-  transition: border-color .15s, box-shadow .15s, background .15s;
-}
-.location-picker-input:focus {
-  border-color: var(--brand);
-  background: #fff;
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 12%, transparent);
-}
-.location-picker-fields {
-  display: flex;
-  gap: 16px;
-  flex-wrap: wrap;
-}
-.location-picker-field {
-  flex: 1 1 220px;
-  min-width: 180px;
-}
-.location-picker-preds {
-  margin-top: 4px;
-}
-/* ======================================================
-   Timesheet – Global Styles (mobile-first)
-   Paste this entire file as globals.css
-====================================================== */
-
-/* ---------- Theme ---------- */
-:root{
-  --bg: #f7f8fc;
-  --card: #ffffff;
-
-  --ink: #0f172a;
-  --ink-subtle: #334155;
-  --muted: #6b7280;
-
-  --brand: #4f46e5;
-  --brand-weak: #eef2ff;
-  --brand-border: #c7d2fe;
-
-  --border: #e5e7eb;
-  --border-soft: #f1f5f9;
-
-  --success-bg: #dcfce7; --success-ink:#065f46; --success-brd:#bbf7d0;
-  --danger-bg:  #fee2e2; --danger-ink:#7a1111;  --danger-brd:#fecaca;
-  --warn-bg:    #fff7e6; --warn-ink:#b26b00;   --warn-brd:#ffe1b3;
-
-  --shadow-sm: 0 1px 2px rgba(0,0,0,.06);
-  --shadow-md: 0 6px 24px rgba(15, 23, 42, .07);
-
-  --radius-sm: 8px;
-  --radius:    12px;
-  --radius-lg: 16px;
-
-  --gap: 12px;
-
-  /* Pro polish type scales */
-  --h1: clamp(22px, 4.6vw, 28px);
-  --label: 600;
-}
-
-/* ---------- Reset / Base ---------- */
-*{ box-sizing:border-box; }
-html, body{ margin:0; padding:0; }
-html{ -webkit-text-size-adjust: 100%; }
-body{
-  font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-  color: var(--ink);
-  background: var(--bg);
-  line-height: 1.55;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
-}
-img{ max-width:100%; height:auto; display:block; }
-a{ color:inherit; text-decoration:none; }
-button{ font: inherit; }
-
-:focus-visible{
-  outline:3px solid color-mix(in oklab, var(--brand) 40%, transparent);
-  outline-offset:2px; border-radius:10px;
-}
-
-.sr-only{
-  position:absolute!important; width:1px; height:1px; padding:0; margin:-1px;
-  overflow:hidden; clip:rect(0,0,0,0); white-space:nowrap; border:0;
-}
-
-/* ---------- Page Layout ---------- */
-.page{
-  max-width: 1100px;
-  margin: 20px auto;
-  padding: 0 14px;
-}
-.page__title{
-  text-align:center;
-  margin: 8px 0 14px;
-  font-size: var(--h1);
-  font-weight: 800;
-  letter-spacing:.2px;
-}
-.page--center{ display:flex; flex-direction:column; align-items:center; }
-.center{ text-align:center; }
-.full{ width:100%; }
-
-.row{ display:flex; align-items:center; gap: var(--gap); }
-.wrap{ flex-wrap:wrap; }
-.between{ justify-content:space-between; }
-.gap-sm{ gap:8px; } .gap-md{ gap:16px; }
-.mb-sm{ margin-bottom:10px; } .mb-md{ margin-bottom:16px; } .mt-lg{ margin-top:24px; }
-
-/* ======================================================
-   Topbar (centered on mobile, inline on desktop)
-====================================================== */
-.topbar{
-  position:sticky; top:0; z-index:20; background:var(--card);
-  border-bottom:1px solid #eaecef; padding-top: env(safe-area-inset-top);
-}
-.shell{
-  max-width:1100px; margin:0 auto; padding:10px 14px;
-  display:flex; align-items:center; gap:12px; justify-content:space-between;
-}
-.brand-wrap{ display:inline-flex; align-items:center; gap:10px; }
-.logo{ height:44px; width:auto; object-fit:contain; }
-.brand{ font-weight:800; color:#111827; letter-spacing:.2px; }
-
-.nav{ display:sticky; gap:8px; flex-wrap:wrap; align-items:center; }
-.nav-link{
-  padding:8px 12px; border-radius:10px; color:#1f2937;
-  border:1px solid transparent; transition: background .15s, border-color .15s, color .15s;
-  font-weight: 600;
-}
-.nav-link:hover{ background:#f3f4f6; border-color:var(--border); }
-.nav-link.active{ background:var(--brand-weak); color:#3730a3; border-color:var(--brand-border); }
-
-.topbar-btn, .signout{
-  padding:8px 12px; border-radius:10px; font-weight:700;
-  border:1px solid var(--border); background:#fff; color:#111827; cursor:pointer;
-  transition: background .15s, border-color .15s, transform .02s;
-}
-.topbar-btn:hover, .signout:hover{ background:#f9fafb; }
-.topbar-btn:active, .signout:active{ transform: translateY(1px); }
-.topbar-btn[disabled]{ opacity:.55; cursor:not-allowed; }
-
-/* Mobile: stack + center */
-@media (max-width: 700px){
-  .shell{ flex-direction:column; align-items:center; gap:6px; }
-  .logo{ height:36px; }
-  .brand{ font-size:16px; }
-  .nav{ width:100%; justify-content:center; gap:8px; }
-  .brand-wrap{ order:1; }
-  .nav{ order:2; }
-  .signout{ order:3; }
-}
-
-/* ======================================================
-   Cards / Toasts / Alerts
-====================================================== */
-.card{
-  background:var(--card); border:1px solid var(--border); border-radius:var(--radius);
-  box-shadow:var(--shadow-sm);
-}
-.card--tight .table th, .card--tight .table td{ padding:10px; }
-.card__header{
-  padding: 10px 12px; display:flex; align-items:center; justify-content:space-between;
-  border-bottom:1px solid var(--border-soft);
-}
-
-.toast, .alert{
-  margin:12px auto; max-width:840px; padding:10px 12px; border-radius:10px;
-  border:1px solid var(--border); background:#fff; color:#111827; box-shadow:var(--shadow-sm);
-}
-.alert.error, .toast--error{ background:#fff4f4; border-color:#ffd7d7; color:#7a1f1f; }
-.alert.ok{ background:var(--success-bg); color:var(--success-ink); border-color:var(--success-brd); }
-
-/* ======================================================
-   Toolbar / Totals (centered)
-====================================================== */
-.toolbar{
-  display:flex; align-items:center; justify-content:center;
-  gap:12px; margin:12px 0 10px; flex-wrap:wrap;
-}
-.totals{
-  display:flex; gap:12px; margin:6px 0 14px; flex-wrap:wrap; justify-content:center;
-}
-.chip{
-  padding:8px 12px; background:#fff; border:1px solid var(--border);
-  border-radius:999px; font-weight:700; color:#1f2937;
-  box-shadow: var(--shadow-sm);
-}
-.chip--xl{ font-size:15px; padding:10px 14px; }
-
-/* ======================================================
-   Buttons
-====================================================== */
-.btn-primary{
-  display:inline-flex; align-items:center; justify-content:center;
-  height:44px; padding:0 18px; border-radius:14px;
-  background:#3b5bfd; color:#fff; font-weight:800; text-decoration:none;
-  border:0; box-shadow: var(--shadow-md); transition: filter .15s, transform .02s;
-  letter-spacing:.2px;
-}
-.btn-primary:hover{ filter: brightness(0.98); }
-.btn-primary:active{ transform: translateY(1px); }
-
-.actions{ display:flex; gap:12px; flex-wrap:wrap; }
-.btn-edit, .btn-delete{
-  display:inline-flex; align-items:center; justify-content:center;
-  min-width:92px; height:38px; padding:0 14px; border-radius:var(--radius);
-  font-weight:800; text-decoration:none; border:0; cursor:pointer;
-  transition: transform .02s ease, filter .15s ease, background .15s ease, border-color .15s ease;
-  box-shadow: var(--shadow-sm);
-}
-.btn-edit{ background:#2563eb; color:#fff; }
-.btn-edit:hover{ filter: brightness(0.98); }
-.btn-edit:active{ transform: translateY(1px); }
-
-.btn-delete{ background:var(--danger-bg); color:var(--danger-ink); border:1px solid var(--danger-brd); }
-.btn-delete:hover{ background:#fecaca; }
-.btn-delete:active{ transform: translateY(1px); }
-
-/* ======================================================
-   Forms
-====================================================== */
-label{ display:block; margin:8px 0 6px; color: var(--ink-subtle); font-size:14px; }
-input[type="text"], input[type="email"], input[type="time"], input[type="date"], select, textarea{
-  width:100%; padding:10px 12px; border-radius:10px;
-  border:1px solid #d1d5db; background:#fff; color:var(--ink); outline:none;
-  transition: border-color .15s, box-shadow .15s, background .15s;
-}
-input:focus, select:focus, textarea:focus{
-  border-color: var(--brand);
-  box-shadow: 0 0 0 3px color-mix(in srgb, var(--brand) 20%, transparent);
-}
-textarea{ min-height:80px; resize:vertical; }
-.inline-check{ display:inline-flex; align-items:center; gap:10px; }
-.inline-check input{ width:18px; height:18px; }
-
-/* ======================================================
-   Tables (desktop) + Section Bars
-====================================================== */
-.table{
-  width:100%; border-collapse: collapse; background:var(--card);
-  border:1px solid var(--border); border-radius: var(--radius); overflow: hidden;
-  box-shadow: var(--shadow-sm);
-  table-layout: auto;
-}
-.table th, .table td{ padding:12px; border-top:1px solid var(--border-soft); }
-.table thead th{
-  background:#f8fafc; border-top:0; text-align:left; font-weight:700; color: var(--ink-subtle);
-}
-.table tbody tr:hover{ background: #fdfdfd; }
-.table--compact th, .table--compact td{ padding:9px; }
-.table--admin{ font-size:14px; }
-
-.table--center th, .table--center td{ text-align:center; vertical-align: middle; }
-.table--center th:first-child, .table--center td:first-child{ text-align:left; }
-.table--center td .actions{ display:inline-flex; gap:10px; justify-content:center; align-items:center; }
-
-.table-wrap{ width:100%; }
-
-/* section header row for grouped tables (Admin) */
-.section-head td{
-  font-weight:800; background:#f8fafc; color:#111827; border-top:2px solid var(--border);
-  padding: 0;
-}
-.section-bar{
-  display:flex; align-items:center; justify-content:space-between;
-  gap:16px; padding:10px 12px;
-  border-radius: 12px;
-}
-.section-bar__left{ display:flex; align-items:center; gap:12px; }
-.section-bar__right{ display:flex; gap:10px; flex-wrap:wrap; justify-content:flex-end; }
-.employee-name{ font-size:16px; font-weight:800; }
-
-.pill{
-  display:inline-flex; align-items:center; gap:6px; padding:6px 10px; background:#fff;
-  border:1px solid var(--border); border-radius:999px; font-weight:700; box-shadow: var(--shadow-sm);
-}
-.pill__num{ background:#111827; color:#fff; border-radius:999px; padding:2px 6px; font-size:12px; line-height:1; }
-.pill__label{ font-size:12px; color:var(--muted); font-weight:600; }
-
-.subtotal td{ background:#fbfbff; color:#1f2937; font-weight:700; border-top:2px solid var(--brand-border); }
-
-/* ======================================================
-   Badges
-====================================================== */
-.badge{
-  display:inline-flex; align-items:center; justify-content:center; padding:2px 8px; border-radius:999px;
-  font-size:12px; font-weight:700; border:1px solid transparent; line-height: 1.6;
-  min-width: 84px; box-shadow: var(--shadow-sm);
-}
-.badge-paid{    background:var(--success-bg); color:var(--success-ink); border-color:var(--success-brd); }
-.badge-unpaid{  background:var(--danger-bg);  color:var(--danger-ink);  border-color:var(--danger-brd); }
-.badge-min{     background:var(--warn-bg);    color:var(--warn-ink);    border-color:var(--warn-brd); }
-
-/* ======================================================
-   Admin Summary / Tabs
-====================================================== */
-.tabs{ display:flex; gap:8px; flex-wrap: wrap; margin: 10px 0 16px; justify-content:center; }
-.tabs button{
-  background:#fff; color:#111827; border:1px solid var(--border);
-  padding:8px 12px; border-radius:10px; font-weight:700; cursor:pointer;
-  transition: background .15s, border-color .15s, color .15s, transform .02s;
-}
-.tabs button.active{ background: var(--brand-weak); color:#3730a3; border-color: var(--brand-border); }
-.tabs button:hover{ background:#f9fafb; }
-.tabs button:active{ transform: translateY(1px); }
-
-.admin-summary{
-  margin:16px 0; padding:12px 14px; background:#f6f7ff;
-  border:1px solid var(--brand-border); border-radius: var(--radius);
-  display:flex; gap:16px; align-items:center; font-weight:700; box-shadow: var(--shadow-sm);
-  justify-content:center; flex-wrap:wrap;
-}
-.admin-summary .meta{ font-weight:500; font-size:12px; color: var(--muted); }
-.admin-summary .inline{ display:inline-flex; align-items:center; gap:8px; }
-
-/* ======================================================
-   MOBILE: Card-style rows for stacked tables
-   (Clean, centered, professional)
-====================================================== */
-@media (max-width: 700px){
-  .page{ max-width:100%; padding: 10px 12px; margin: 16px auto; }
-  .card{ border-radius: 14px; }
-  .card__header{ padding: 8px 10px; }
-
-  .btn-edit, .btn-delete{ min-width:72px; height:36px; padding:0 12px; border-radius:10px; box-shadow:none; }
-  .chip{ padding:6px 10px; font-size:12px; }
-  .badge{ font-size:11px; padding:1px 7px; }
-
-  /* --- Stacked table turns into cards --- */
-  .table--stack{ border:0; width:100%; }
-  .table--stack thead{ display:none; }
-  .table--stack tbody, .table--stack tr, .table--stack td{ display:block; width:100%; }
-
-  /* turn each row into a neat card */
-  .table--stack tr{
-    background:#fff; border:1px solid var(--border); border-radius:14px;
-    box-shadow: var(--shadow-md); margin: 14px 0; padding: 12px 14px;
-  }
-
-  /* each cell is a labeled row */
-  .table--stack td{
-    border:0!important; padding: 10px 0;
-    display:flex; align-items:center; justify-content:space-between;
-    gap: 12px; font-size:15px;
-  }
-  .table--stack td::before{
-    content: attr(data-label);
-    font-weight: var(--label); color: var(--ink-subtle);
-    flex: 1; text-align:left;
-  }
-  .table--stack td{ text-align:right; }
-
-  /* center badges */
-  .table--stack td .badge{ margin-left:auto; }
-  /* job and assigned badges should be centered in stacked (mobile) layout */
-  .table--stack td .badge-job,
-  .table--stack td .badge-assigned,
-  .table--stack td .badge-unassigned {
-    margin-left: auto;
-    margin-right: auto;
-  }
-
-  /* actions: big tap targets */
-  .table--stack td .actions{
-    width:100%; display:flex; justify-content:center; gap:10px; margin-top:8px;
-  }
-  .table--stack td .btn-edit,
-  .table--stack td .btn-delete{ flex:1; height:40px; }
-
-  /* Section header bar stacks nicely */
-  .section-bar{ flex-direction:column; align-items:center; gap:10px; }
-  .section-bar__right{ width:100%; justify-content:center; gap:10px; }
-  .section-bar__right .topbar-btn{ flex:1 1 160px; height:40px; border-radius:12px; }
-
-  /* Hide medium-only columns cleanly */
-  .col-hide-md{ display: none !important; }
-
-  /* Subtotal row as mini card */
-  .table--stack tr.subtotal{
-    padding: 12px 14px;
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    box-shadow: var(--shadow-sm);
-    background: #fff;
-    display: grid;
-    grid-template-columns: 1fr;
-    row-gap: 4px;
-  }
-  .table--stack tr.subtotal td{ display: none; }
-  .table--stack tr.subtotal td:nth-child(1),
-  .table--stack tr.subtotal td:nth-child(2),
-  .table--stack tr.subtotal td:nth-child(3){
-    display: block;
-    padding: 6px 0;
-  }
-  .table--stack tr.subtotal td:nth-child(1){
-    text-align: center; font-weight: 800; color: var(--ink); padding-bottom: 8px;
-  }
-  .table--stack tr.subtotal td:nth-child(1)::before{ content: ''; }
-  .table--stack tr.subtotal td:nth-child(2),
-  .table--stack tr.subtotal td:nth-child(3){
-    display: grid; grid-template-columns: 56% 44%; align-items:center; gap: 8px;
-  }
-  .table--stack tr.subtotal td:nth-child(2)::before{ content: 'Hours'; font-weight: var(--label); color: var(--muted); text-align:left; }
-  .table--stack tr.subtotal td:nth-child(3)::before{ content: 'Pay';   font-weight: var(--label); color: var(--muted); text-align:left; }
-}
-
-/* ======================================================
-   Medium screens: enable gentle horizontal scroll for wide tables
-====================================================== */
-@media (max-width: 900px){
-  .table-wrap{ overflow-x:auto; -webkit-overflow-scrolling:touch; }
-}
-
-/* ======================================================
-   Small helpers
-====================================================== */
-.muted{ color: var(--muted); }
-.link-right{ margin-left:auto; color:#2563eb; font-weight:600; }
-/* flag badge (same visual weight as MIN badge, not loud) */
-.badge-flag{
-  display:inline-flex; align-items:center; justify-content:center;
-  padding:2px 8px; border-radius:999px;
-  border:1px solid #f59e0b;           /* amber-500-ish border */
-  background:#fffbeb;                  /* amber-50-ish background */
-  color:#92400e;                       /* amber-800-ish text */
-  font-weight:700;
-}
-
-/* Utilities used by admin-schedule.tsx (small helpers to replace inline styles) */
-.gap-10{ gap:10px; }
-.fs-12{ font-size:12px; }
-.p-14{ padding:14px; }
-.p-16{ padding:16px; }
-.p-10{ padding:10px; }
-.p-6{ padding:6px; }
-.maxh-220{ max-height:220px; }
-.ovf-y-auto{ overflow-y:auto; }
-.btn-list{ width:100%; text-align:left; padding:6px 8px; }
-.mb-12{ margin-bottom:12px; }
-.ml-8{ margin-left:8px; }
-.gap-16{ gap:16px; }
-.flex-1-380{ flex: 1 1 380px; }
-.flex-2-520{ flex: 2 1 520px; }
-.grid{ display:grid; }
-.flex-1-min220{ flex:1; min-width:220px; }
-.fs-16{ font-size:16px; }
-.grid-auto-fit-160{ display:grid; gap:12px; grid-template-columns: repeat(auto-fit, minmax(160px, 1fr)); }
-.maxw-620{ max-width:620px; }
-.pill-active{ border:2px solid var(--brand-border); font-weight:700; }
-.p-12{ padding:12px; }
-.mt-10{ margin-top:10px; }
-.align-items-center{ align-items:center; }
-.align-self-end{ align-self:end; }
-.mt-6{ margin-top:6px; }
-.gap-8{ gap:8px; }
-.table-wrap-mt10{ margin-top:10px; }
-.grid-two-cols{ display:grid; gap:12px; grid-template-columns: minmax(0,1fr) minmax(0,1fr); }
-.grid-col-span{ grid-column: 1 / -1; }
-.grid-auto-fill-220{ display:grid; gap:12px; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); }
-.p-10{ padding:10px; }
-
-/* Scheduling form helpers */
-.form-container{ display:flex; justify-content:center; width:100%; margin: 8px 0 18px; }
-.form-card{ max-width:780px; width:100%; padding:20px; border-radius:16px; box-shadow: var(--shadow-md); border:1px solid var(--border); }
-.form-card .grid-auto-fit-160{ gap:14px; }
-.form-card label{ color:var(--ink-subtle); font-weight:600; }
-.form-actions{ display:flex; gap:12px; justify-content:flex-start; align-items:center; flex-wrap:wrap; }
-.form-intro{ color:var(--muted); margin-bottom:8px; }
-.pill{ transition: transform .08s ease, border-color .12s ease; }
-.pill:hover{ transform: translateY(-2px); }
-.pill-active{ background: linear-gradient(180deg, var(--brand-weak), #f3f4ff); border:2px solid var(--brand-border); }
-
-/* mobile-only row for badges under the name */
-.mobile-badges{ display:none; }
-
-/* stack name + counts on mobile neatly centered */
-@media (max-width: 640px){
-  .section-bar__left{
-    flex-direction: column;
-    align-items: center;
-    gap: 6px;
-  }
-  .mobile-badges{
-    display: inline-flex;
-    gap: 6px;
-    margin-top: 4px;
-    flex-wrap: wrap;
-    justify-content: center;
-  }
-}
-/* globals.css (or wherever your nav styles live) */
-.nav { display:flex; gap:1rem; flex-wrap:wrap; overflow:visible; }
-.nav-link { display:inline-block; }
-/* ===== Overrides: Upcoming Scheduled Shifts ===== */
-
-/* 1) Make rows more compact */
-.upcoming-table th,
-.upcoming-table td {
-  padding: 6px 8px !important;   /* tighter */
-  line-height: 1.25 !important;
-}
-
-/* Optional: reduce min-heights from helper wrappers */
-.upcoming-table .cell-flex,
-.upcoming-table .upcoming-table-cell-flex,
-.upcoming-table-td,
-.upcoming-table-td-middle,
-.upcoming-table-td-top,
-.upcoming-table-td-actions {
-  height: auto !important;
-  min-height: 0 !important;
-}
-
-/* Buttons and gaps a bit smaller so rows stay tight */
-.upcoming-table .actions { gap: 8px !important; }
-.upcoming-table .btn-edit,
-.upcoming-table .btn-delete {
-  height: 30px !important;
-  min-width: 68px !important;
-  padding: 0 8px !important;
-  font-size: 13px !important;
-  border-radius: 8px;
-}
-
-/* 2) Kill the green background for Assigned badges */
-.upcoming-table .badge-assigned,
-.upcoming-table-assigned-badge,
-.upcoming-table-assigned-badge-wrap {
-  background: #ffffff !important;     /* neutral gray chip */
-  border: 1px solid #e5e7eb !important;
-  color: var(--ink) !important;
-  background-image: none !important;  /* remove any gradients */
-  box-shadow: none !important;
-}
-
-/* Keep badges centered in their cells */
-.upcoming-table .badge-job,
-.upcoming-table .badge-unassigned,
-.upcoming-table .badge-assigned {
-  margin: 0 auto;
-}
-
-/* Slightly softer hover so compact rows don’t feel crowded */
-.upcoming-table tbody tr:hover {
-  background: #f9fafb !important;
-}
-/* ---------- Table shell ---------- */
-.table-wrap {
-  width: 100%;
-  overflow-x: auto;
-}
-
-.table.table--admin.upcoming-table {
-  width: 100%;
-  border-collapse: separate;
-  border-spacing: 0;
-  table-layout: fixed; /* consistent column widths */
-  background: #fff;
-}
-
-/* Row striping (already applied via row-alt, but normalize anyway) */
-.table--striped tbody tr:nth-child(2n) {
-  background: #fafafa;
-}
-
-/* ---------- Cells & headers ---------- */
-.upcoming-table th,
-.upcoming-table td {
-  padding: 12px 14px;
-  vertical-align: middle;
-  text-align: left;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  line-height: 1.35;
-  border-bottom: 1px solid #eee;
-}
-
-.upcoming-table th {
-  font-weight: 600;
-  font-size: 14px;
-  color: #222;
-  background: #f7f7f7;
-  position: sticky;
-  top: 0;
-  z-index: 1;
-}
-
-/* Tighten “Notes” wrapping but keep clean lines */
-.upcoming-table .upcoming-table-notes,
-.upcoming-table .cell-notes {
-  white-space: normal;
-  line-height: 1.4;
-}
-
-/* ---------- Column alignment (desktop) ---------- */
-.upcoming-table th:nth-child(1),
-.upcoming-table td:nth-child(1) { /* Start */
-  width: 170px;
-}
-.upcoming-table th:nth-child(2),
-.upcoming-table td:nth-child(2) { /* End */
-  width: 170px;
-}
-.upcoming-table th:nth-child(3),
-.upcoming-table td:nth-child(3) { /* Job */
-  width: 120px;
-}
-.upcoming-table th:nth-child(4),
-.upcoming-table td:nth-child(4) { /* Location */
-  width: 180px;
-}
-.upcoming-table th:nth-child(5),
-.upcoming-table td:nth-child(5) { /* Address */
-  width: 260px;
-}
-.upcoming-table th:nth-child(6),
-.upcoming-table td:nth-child(6) { /* Assigned */
-  width: 240px;
-}
-.upcoming-table th:nth-child(7),
-.upcoming-table td:nth-child(7) { /* Notes */
-  width: 280px;
-}
-.upcoming-table th:nth-child(8),
-.upcoming-table td:nth-child(8) { /* Actions */
-  width: 120px;
-  text-align: right;
-}
-
-/* Ensure the actions column is always right-aligned */
-.upcoming-table-td-actions {
-  text-align: right !important;
-}
-
-/* Middle/top helpers (normalize) */
-.upcoming-table-td-middle { vertical-align: middle !important; }
-.upcoming-table-td-top { vertical-align: top !important; }
-
-/* ---------- Badges & pills ---------- */
-.badge {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 4px 10px;
-  border-radius: 8px;
-  font-weight: 700;
-  font-size: 12px;
-  line-height: 1.2;
-  border: 1px solid transparent;
-  max-width: 100%;
-}
-
-.badge-job {
-  background: #eef2ff;
-  border-color: #e0e7ff;
-  text-transform: capitalize;
-}
-
-.badge-assigned {
-  background: #dcfce7;
-  border-color: #bbf7d0;
-}
-
-.badge-unassigned {
-  background: #fee2e2;
-  border-color: #fecaca;
-}
-
-/* Keep the assigned list readable */
-.upcoming-table-assigned-badge-wrap {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  text-align: center;
-  min-height: 28px;
-  min-width: 96px;
-  max-width: 100%;
-  padding: 6px 10px;
-  white-space: normal;       /* allow wrap */
-  word-break: break-word;
-}
-
-/* Action buttons vertical stack stays tight but consistent */
-.upcoming-table-actions-vert {
-  display: inline-flex;
-  flex-direction: column;
-  gap: 6px;
-  align-items: flex-end;
-  padding-right: 10px;
-}
-
-/* ---------- Responsive (mobile ≤ 768px) ---------- */
-@media (max-width: 768px) {
-  /* Stack rows as cards while preserving alignment via data-labels */
-  .upcoming-table thead {
-    display: none;
-  }
-  .upcoming-table,
-  .upcoming-table tbody,
-  .upcoming-table tr,
-  .upcoming-table td {
-    display: block;
-    width: 100%;
-  }
-  .upcoming-table tr {
-    background: #fff;
-    border: 1px solid #eee;
-    border-radius: 12px;
-    margin: 10px 0;
-    padding: 8px 10px;
-  }
-  .upcoming-table td {
-    border: 0;
-    padding: 8px 0;
-    white-space: normal;
-  }
-  .upcoming-table td::before {
-    content: attr(data-label);
-    display: block;
-    font-size: 12px;
-    font-weight: 600;
-    color: #6b7280; /* muted */
-    margin-bottom: 4px;
-    text-transform: none;
-    letter-spacing: 0;
-  }
-  /* Make badges full-width when needed */
-  .upcoming-table-assigned-badge-wrap,
-  .badge-unassigned {
-    width: 100%;
-    justify-content: center;
-  }
-  /* Actions row pinned to bottom of card */
-  .upcoming-table-td-actions {
-    margin-top: 6px;
-    text-align: right !important;
-  }
-  .upcoming-table-actions-vert {
-    flex-direction: row;
-    justify-content: flex-end;
-    gap: 8px;
-  }
-
-  /* Looser widths (let content breathe on small screens) */
-  .upcoming-table td { width: 100% !important; }
-}
-
-/* ---------- Misc polish ---------- */
-.upcoming-table-header {
-  padding: 10px 0 0;
-}
-
-.pill {
-  display: inline-flex;
-  gap: 6px;
-  align-items: center;
-  padding: 4px 8px;
-  background: #f3f4f6;
-  border: 1px solid #e5e7eb;
-  border-radius: 999px;
-  font-size: 12px;
-  line-height: 1;
-}
-
-.pill__num {
-  font-weight: 700;
-}
-/* ===== Compact desktop: no horizontal scroll ===== */
-@media (min-width: 1440px) {
-  /* Let content wrap instead of forcing a scroll */
-  .table-wrap {
-    overflow-x: visible; /* disable the horizontal scroller on desktop */
-  }
-
-  .table.table--admin.upcoming-table {
-    table-layout: fixed;     /* keep columns aligned across rows */
-    width: auto;
-  }
-
-  /* Allow wrapping in text-heavy columns */
-  .upcoming-table th,
-  .upcoming-table td {
-    white-space: normal;      /* wrap lines when needed */
-    word-break: break-word;   /* break long chunks like addresses/emails */
-  }
-
-  /* Tighter vertical rhythm so wrapped rows still feel compact */
-  .upcoming-table th,
-  .upcoming-table td {
-    padding: 10px 12px;
-    line-height: 1.3;
-  }
-
-  /* Percentage widths that fit inside 100% total */
-  .upcoming-table th:nth-child(1),
-  .upcoming-table td:nth-child(1) { /* Start */
-    width: 13%;
-  }
-  .upcoming-table th:nth-child(2),
-  .upcoming-table td:nth-child(2) { /* End */
-    width: 12%;
-  }
-  .upcoming-table th:nth-child(3),
-  .upcoming-table td:nth-child(3) { /* Job */
-    width: 10%;
-  }
-  .upcoming-table th:nth-child(4),
-  .upcoming-table td:nth-child(4) { /* Location */
-    width: 13%;
-  }
-  .upcoming-table th:nth-child(5),
-  .upcoming-table td:nth-child(5) { /* Address (wraps) */
-    width: 20%;
-  }
-  .upcoming-table th:nth-child(6),
-  .upcoming-table td:nth-child(6) { /* Assigned (wraps) */
-    width: 16%;
-  }
-  .upcoming-table th:nth-child(7),
-  .upcoming-table td:nth-child(7) { /* Notes (wraps) */
-    width: 11%;
-  }
-  .upcoming-table th:nth-child(8),
-  .upcoming-table td:nth-child(8) { /* Actions */
-    width: 5%;
-    text-align: right;
-  }
-
-  /* Make the “Assigned” badge & Notes behave nicely when wrapping */
-  .upcoming-table-assigned-badge-wrap {
-    display: inline-flex;
-    padding: 4px 8px;
-    min-width: 0;
-  }
-  .upcoming-table .upcoming-table-notes,
-  .upcoming-table .cell-notes {
-    display: -webkit-box;
-    -webkit-line-clamp: 4; /* clamp to ~4 lines to keep rows tidy */
-    -webkit-box-orient: vertical;
-    overflow: hidden;
-  }
-
-  /* Fit the action buttons inside 5% without cramping */
-  .upcoming-table-actions-vert {
-    gap: 4px;
-  }
-  .upcoming-table-td-actions .btn-edit,
-  .upcoming-table-td-actions .btn-delete {
-    font-size: 12px;
-    padding: 4px 8px;
-  }
-}
-/* ==== FIX DESKTOP WRAPS (append-only) ==== */
-
-/* Keep table visible and fixed layout */
-.upcoming-table-card { overflow: visible !important; }
-.table-wrap { overflow-x: visible !important; }
-.table.table--admin.upcoming-table { table-layout: fixed !important; width: 100% !important; }
-
-/* Let the text-heavy columns wrap; keep structural columns on one line */
-@media (min-width: 1024px) {
-  /* 1) Never wrap these columns */
-  .upcoming-table th:nth-child(1),
-  .upcoming-table td:nth-child(1), /* Start */
-  .upcoming-table th:nth-child(2),
-  .upcoming-table td:nth-child(2), /* End */
-  .upcoming-table th:nth-child(3),
-  .upcoming-table td:nth-child(3), /* Job */
-  .upcoming-table th:nth-child(4),
-  .upcoming-table td:nth-child(4), /* Location */
-  .upcoming-table th:nth-child(8),
-  .upcoming-table td:nth-child(8)  /* Actions */
-  { white-space: nowrap !important; word-break: normal !important; overflow: hidden !important; text-overflow: ellipsis !important; }
-
-  /* 2) Allow wrapping for Address / Assigned / Notes */
-  .upcoming-table th:nth-child(5),
-  .upcoming-table td:nth-child(5),
-  .upcoming-table th:nth-child(6),
-  .upcoming-table td:nth-child(6),
-  .upcoming-table th:nth-child(7),
-  .upcoming-table td:nth-child(7)
-  { white-space: normal !important; word-break: break-word !important; }
-
-  /* 3) Give Job/Actions a bit more elbow room so badges/buttons don't hard-wrap */
-  .upcoming-table th:nth-child(3),
-  .upcoming-table td:nth-child(3) { width: 11% !important; } /* was 10 */
-  .upcoming-table th:nth-child(8),
-  .upcoming-table td:nth-child(8) { width: 7%  !important; } /* was 5 */
-
-  /* Rebalance to keep total at ~100% */
-  .upcoming-table th:nth-child(5),
-  .upcoming-table td:nth-child(5) { width: 19% !important; } /* Address -1% */
-  .upcoming-table th:nth-child(7),
-  .upcoming-table td:nth-child(7) { width: 8%  !important; } /* Notes -1% */
-
-  /* 4) Stop “Breakdown” splitting inside the badge */
-  .upcoming-table .badge-job { white-space: nowrap !important; word-break: normal !important; min-width: 92px; }
-
-  /* 5) Make Actions fit inside its column without pushing layout */
-  .upcoming-table-td-actions { text-align: right !important; }
-  .upcoming-table-actions-vert { gap: 6px !important; }
-  .upcoming-table-td-actions .btn-edit,
-  .upcoming-table-td-actions .btn-delete {
-    height: 32px !important;
-    min-width: 72px !important;
-    padding: 0 10px !important;
-    font-size: 13px !important;
-  }
-}
-
-/* Assigned chip can wrap lines but stay compact & centered */
-.upcoming-table-assigned-badge-wrap {
-  white-space: normal !important;
-  word-break: break-word !important;
-  min-width: 0 !important;
-  max-width: 100% !important;
-  margin: 0 auto !important;
-}
-
-/* Slightly tighter rows so multi-line cells don't look bulky */
-.upcoming-table th,
-.upcoming-table td { line-height: 1.3 !important; padding: 10px 12px !important; }
-/* === FIX: start/end clipping + actions truncation (append-only) === */
-
-/* 1) Let Start / End wrap to 2 lines on desktop (date, then time) */
-@media (min-width: 1024px) {
-  .table.table--admin.upcoming-table td:nth-child(1),
-  .table.table--admin.upcoming-table th:nth-child(1), /* Start */
-  .table.table--admin.upcoming-table td:nth-child(2),
-  .table.table--admin.upcoming-table th:nth-child(2)  /* End */
-  {
-    white-space: normal !important;      /* allow wrapping at comma/space */
-    word-break: normal !important;
-    overflow: visible !important;
-    text-overflow: unset !important;
-  }
-}
-
-/* 2) Give Actions a touch more room so header doesn't show "Actio..." */
-@media (min-width: 1024px) {
-  .upcoming-table th:nth-child(8),
-  .upcoming-table td:nth-child(8) { width: 8% !important; }   /* was 5–7% somewhere */
-  /* Rebalance by shaving 1% each from these: */
-  .upcoming-table th:nth-child(5),
-  .upcoming-table td:nth-child(5) { width: 18% !important; }  /* Address -1% */
-  .upcoming-table th:nth-child(7),
-  .upcoming-table td:nth-child(7) { width: 7%  !important; }  /* Notes -1% */
-}
-
-/* 3) Keep Job badge from splitting (“Breakdown”) */
-@media (min-width: 1024px) {
-  .upcoming-table .badge-job {
-    white-space: nowrap !important;
-    word-break: normal !important;
-    min-width: 92px;
-  }
-}
-
-/* 4) Make sure Assigned chip wraps nicely without stretching rows */
-.upcoming-table-assigned-badge-wrap {
-  white-space: normal !important;
-  word-break: break-word !important;
-  min-width: 0 !important;
-  max-width: 100% !important;
-  margin: 0 auto !important;
-}
-
-/* 5) Slightly tighter rhythm so multi-line Start/End look clean */
-.upcoming-table th,
-.upcoming-table td {
-  line-height: 1.3 !important;
-  padding-top: 10px !important;
-  padding-bottom: 10px !important;
-}
-/* === Add right-side breathing room for Actions column === */
-.upcoming-table-td-actions {
-  padding-right: 16px !important; /* adds visual gap between buttons and table edge */
-}
-
-.upcoming-table th:nth-child(8) {
-  padding-right: 16px !important; /* keep header aligned with the body */
-}
-.upcoming-table-td-actions .upcoming-table-actions-vert {
-  align-items: flex-end !important;
-  margin-right: 6px; /* tiny offset for perfect optical balance */
-}
-/* === Center the "Assigned" column content perfectly (dash + names) === */
-
-/* Make the 6th column (Assigned) align middle + center */
-.upcoming-table td:nth-child(6) {
-  text-align: center !important;
-  vertical-align: middle !important;
-}
-
-/* Unassigned dash chip — keep it centered and same height as other badges */
-.upcoming-table td:nth-child(6) .badge-unassigned {
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  height: 36px !important;
-  min-width: 64px !important;
-  padding: 6px 10px !important;
-  line-height: 1.2 !important;
-  margin: 0 auto !important;
-}
-
-/* Assigned multi-name chip — same centering/tidy wrapping */
-.upcoming-table td:nth-child(6) .upcoming-table-assigned-badge-wrap,
-.upcoming-table td:nth-child(6) .badge-assigned {
-  display: inline-flex !important;
-  align-items: center !important;
-  justify-content: center !important;
-  min-height: 36px !important;
-  height: auto !important;
-  line-height: 1.2 !important;
-  margin: 0 auto !important;
-  white-space: normal !important;
-  word-break: break-word !important;
-  max-width: 100% !important;
-}
-/* === MOBILE: header should scroll with the page (not fixed/sticky) === */
-@media (max-width: 700px) {
-  /* kill any fixed/sticky set earlier with !important */
-  html body .topbar,
-  html body header.topbar,
-  html body [class*="topbar"] {
-    position: static !important;   /* not fixed, not sticky */
-    top: auto !important;
-    left: auto !important;
-    right: auto !important;
-    width: auto !important;
-    box-shadow: none !important;
-    border-bottom: 1px solid var(--border, #e5e7eb) !important; /* keep the divider */
-    padding-top: 0 !important;     /* no safe-area padding inside the bar */
-  }
-
-  /* remove the offset we added for fixed headers */
-  body {
-    padding-top: 0 !important;
-  }
-}
-/* === Fix mobile overflow of form inputs inside the card === */
-
-/* 1) Let grid items shrink so they don't spill past the card edges */
-.form-card .grid-auto-fit-160 > * {
-  min-width: 0 !important;
-}
-
-/* If you have other grid wrappers in the form, include them too */
-.form-card .grid-two-cols > *,
-.form-card .grid-auto-fill-220 > * {
-  min-width: 0 !important;
-}
-
-/* 2) Ensure controls never exceed the container width (iOS-safe) */
-.form-card input[type="text"],
-.form-card input[type="email"],
-.form-card input[type="time"],
-.form-card input[type="date"],
-.form-card select,
-.form-card textarea {
-  display: block;
-  box-sizing: border-box;
-  width: 100%;
-  max-width: 100%;
-  /* Safari/iOS occasionally needs this to resolve rounding issues */
-  width: -webkit-fill-available;
-}
-
-/* 3) (Optional) prevent any tiny sub-pixel bleed on rounded cards */
-.form-card {
-  overflow: hidden;
-}
-/* Pills container can wrap already; no change needed */
-
-/* Base pill */
-.pill {
-  display: inline-flex;
-  align-items: center;
-  gap: 8px;
-  padding: 8px 14px;
-  border: 2px solid #e5e7eb;         /* gray-200 */
-  border-radius: 9999px;              /* full */
-  background: #ffffff;
-  color: #111827;                     /* gray-900 */
-  font-weight: 600;
-  line-height: 1;
-  cursor: pointer;
-  transition: background .15s ease, border-color .15s ease, box-shadow .15s ease, color .15s ease;
-  user-select: none;
-}
-
-.pill:hover {
-  border-color: #cbd5e1;              /* gray-300 */
-  box-shadow: 0 1px 2px rgba(0,0,0,.04);
-}
-
-/* Selected/active pill */
-.pill-active {
-  background: #7596dd;                /* gray-900 */
-  color: #ffffff;
-  border-color: #111827;
-  box-shadow: 0 2px 8px rgba(17,24,39,.15);
-}
-
-/* Focus-visible for keyboard users */
-.pill:focus-visible {
-  outline: 3px solid #93c5fd;         /* blue-300 */
-  outline-offset: 2px;
-}
-
-/* Label + checkmark */
-.pill__label {
-  font-size: 14px;
-  text-transform: capitalize;
-}
-
-/* Small check glyph that appears only when selected */
-.pill__check {
-  width: 16px;
-  height: 16px;
-  display: inline-grid;
-  place-items: center;
-  border-radius: 9999px;
-  border: 2px solid currentColor;
-  font-size: 12px;
-  line-height: 1;
-  transform: translateY(-1px);
-  opacity: 0;
-  transition: opacity .15s ease, background .15s ease, color .15s ease, border-color .15s ease;
-}
-
-/* Visible + inverted when active */
-.pill-active .pill__check {
-  opacity: 1;
-  background: #ffffff;
-  color: #111827;
-  border-color: #ffffff;
-}
-
-/* Optional: color accents per job type using data-attrs or class if you want later
-   e.g., .pill[data-jt="lights"].pill-active { background:#f59e0b; border-color:#f59e0b; } */
-/* base pill */
-.pill {
-  color: #000 !important;          /* text color */
-}
-
-/* the span inside */
-.pill .pill__label {
-  color: inherit !important;       /* use the button's color */
-}
-
-/* active/selected pill */
-.pill.pill-active {
-  color: #000 !important;          /* keep text black when selected */
-  /* optional: your existing bg/border can stay */
-}
-
-/* if your gray look is from reduced opacity somewhere */
-.pill, .pill .pill__label {
-  opacity: 1 !important;
-}
-/* ==== Admin Schedule table fixes / overrides ==== */
-
-/* Let the table breathe horizontally */
-.table-wrap {
-  width: 100%;
-  overflow-x: auto;          /* if it ever gets too wide, scroll instead of cut off */
-}
-
-/* Clean, full-width table, no clipping */
-.upcoming-table {
-  width: 100%;
-  border-spacing: 0;
-  border-collapse: collapse;
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
-  background: #fff;
-  overflow: visible;         /* override earlier overflow: hidden that was clipping buttons */
-  margin: 1rem 0;
-}
-
-/* Header + cells */
-.upcoming-table th,
-.upcoming-table td {
-  vertical-align: middle;
-  padding: 12px 16px;
-  line-height: 1.5;
-  border-bottom: 1px solid var(--border-soft);
-}
-
-.upcoming-table th {
-  font-size: 15px;
-  font-weight: 700;
-  background: #f4f6fb;
-}
-
-/* Actions column: give it fixed space + extra right padding */
-.upcoming-table-td-actions {
-  vertical-align: middle !important;
-  text-align: right !important;
-  min-width: 150px;
-  padding-right: 24px;       /* moves buttons away from edge */
-}
-
-/* Stack action buttons neatly */
-.upcoming-table-actions-vert {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  justify-content: center;
-  gap: 6px;
-}
-
-/* Slightly tighten the buttons so they fit nicer */
-.upcoming-table .btn-edit,
-.upcoming-table .btn-delete {
-  min-width: 76px;
-  height: 34px;
-  font-size: 14px;
-  border-radius: 8px;
-  font-weight: 600;
-}
-
-/* ===== Admin upcoming schedule layout tweaks ===== */
-.admin-upcoming-table-card {
-  width: 100%;
-  max-width: 1100px;
-  margin: 22px auto 0;
-  padding: 22px 20px 20px;
-}
-
-.admin-upcoming-table-wrap {
-  width: 100%;
-  max-width: 100%;
-  overflow-x: auto !important;
-  -webkit-overflow-scrolling: touch;
-  padding-bottom: 10px;
-}
-
-.admin-upcoming-table-card .upcoming-table-header {
-  align-items: center;
-  gap: 12px;
-}
-
-.admin-upcoming-table-card .table.table--admin.upcoming-table {
-  width: 100%;
-  margin: 0 auto;
-  table-layout: fixed;
-  min-width: 700px;
-}
-
-/* Let text breathe instead of clipping/ellipses */
-.admin-upcoming-table-card .upcoming-table th,
-.admin-upcoming-table-card .upcoming-table td {
-  white-space: normal;
-  word-break: break-word;
-  overflow: visible;
-  text-overflow: unset;
-  text-align: left;
-}
-
-/* Actions column: roomy, centered buttons that wrap when needed */
-.admin-upcoming-table-card .upcoming-table-td-actions {
-  min-width: 200px;
-  text-align: center !important;
-  padding-right: 8px;
-}
-
-.admin-upcoming-table-card .upcoming-table-actions-vert {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
-  gap: 10px;
-  width: 100%;
-  justify-items: stretch;
-  align-items: stretch;
-}
-
-.admin-upcoming-table-card .upcoming-table-td-actions .btn-edit,
-.admin-upcoming-table-card .upcoming-table-td-actions .btn-delete {
-  flex: 1 1 auto;
-  width: 100%;
-  min-width: 0;
-  justify-content: center;
-}
-
-/* Keep badges tidy and centered in their cells */
-.admin-upcoming-table-card .badge,
-.admin-upcoming-table-card .badge-unassigned,
-.admin-upcoming-table-card .upcoming-table-assigned-badge-wrap {
-  margin: 0 auto;
-}
-
-/* Tablet/desktop refinements */
-@media (min-width: 768px) {
-  .admin-upcoming-table-card .upcoming-table-td-actions {
-    text-align: right !important;
-    padding-right: 16px;
-  }
-
-  .admin-upcoming-table-card .upcoming-table-actions-vert {
-    grid-template-columns: repeat(2, minmax(120px, 1fr));
-    justify-content: flex-end;
-    justify-items: flex-end;
-  }
-}
-
-/* Mobile: keep cards full-width, no sideways scroll */
-@media (max-width: 700px) {
-  .admin-upcoming-table-card {
-    padding: 18px 14px;
-    margin-top: 16px;
-  }
-
-  .admin-upcoming-table-card .table.table--admin.upcoming-table {
-    min-width: 0;
-  }
-
-  .admin-upcoming-table-card .upcoming-table-td-actions {
-    min-width: 0;
-    width: 100%;
-    padding-right: 0;
-  }
-
-  .admin-upcoming-table-card .upcoming-table-actions-vert {
-    grid-template-columns: 1fr;
-    justify-content: flex-start;
-    justify-items: stretch;
-    align-items: stretch;
-  }
-
-  .admin-upcoming-table-card .upcoming-table-td-actions .btn-edit,
-  .admin-upcoming-table-card .upcoming-table-td-actions .btn-delete {
-    flex: 1 1 100%;
-    min-width: 0;
-  }
-}
-/* ==== FINAL ADMIN UPCOMING SCHEDULE TABLE FIX ==== */
-
-/* Card containing upcoming table */
-.admin-upcoming-table-card {
-  width: 100%;
-  max-width: 1100px;
-  margin: 22px auto 0;
-  padding: 20px 18px 18px;
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
-}
-
-/* Wrapper: allow horizontal scroll only if really needed */
-.admin-upcoming-table-wrap {
-  width: 100%;
-  max-width: 100%;
-  overflow-x: auto;
-  -webkit-overflow-scrolling: touch;
-  padding-bottom: 8px;
-}
-
-/* Base table */
-.table.table--admin.upcoming-table {
-  width: 100%;
-  border-collapse: collapse;
-  border-spacing: 0;
-  table-layout: auto;
-  background: #fff;
-}
-
-/* Cells + headers */
-.upcoming-table th,
-.upcoming-table td {
-  padding: 10px 12px;
-  font-size: 14px;
-  line-height: 1.4;
-  border-bottom: 1px solid var(--border-soft);
-  vertical-align: middle;
-  text-align: left;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-}
-
-.upcoming-table th {
-  background: #f4f6fb;
-  font-weight: 700;
-  color: var(--ink-subtle);
-}
-
-/* Row striping */
-.upcoming-table tbody tr.row-alt {
-  background: #f9fafb;
-}
-
-/* Column alignment on desktop */
-.upcoming-table td:nth-child(3),   /* Job */
-.upcoming-table th:nth-child(3) {
-  text-align: center;
-}
-
-.upcoming-table td:nth-child(6),   /* Assigned */
-.upcoming-table th:nth-child(6) {
-  text-align: center;
-}
-
-/* Let address / assigned / notes wrap text */
-.upcoming-table td:nth-child(5),
-.upcoming-table th:nth-child(5),
-.upcoming-table td:nth-child(6),
-.upcoming-table th:nth-child(6),
-.upcoming-table td:nth-child(7),
-.upcoming-table th:nth-child(7) {
-  white-space: normal;
-  word-break: break-word;
-}
-
-/* Notes cell text */
-.upcoming-table-notes,
-.upcoming-table .cell-notes {
-  white-space: normal;
-  line-height: 1.4;
-  font-size: 13px;
-  font-style: italic;
-}
-
-/* Actions column */
-.upcoming-table-td-actions {
-  text-align: right !important;
-  min-width: 150px;
-  padding-right: 20px;
-}
-
-.upcoming-table-actions-vert {
-  display: flex;
-  flex-direction: column;
-  align-items: flex-end;
-  justify-content: center;
-  gap: 6px;
-}
-
-.upcoming-table .btn-edit,
-.upcoming-table .btn-delete {
-  min-width: 80px;
-  height: 34px;
-  font-size: 14px;
-  border-radius: 8px;
-  font-weight: 600;
-}
-
-/* Badges */
-.upcoming-table .badge-job,
-.upcoming-table .badge-assigned,
-.upcoming-table .badge-unassigned {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  padding: 4px 10px;
-  border-radius: 8px;
-  font-weight: 700;
-  font-size: 12px;
-  max-width: 100%;
-}
-
-.upcoming-table .badge-job {
-  background: #eef2ff;
-  border: 1px solid #e0e7ff;
-  text-transform: capitalize;
-}
-
-.upcoming-table .badge-assigned {
-  background: #dcfce7;
-  border: 1px solid #bbf7d0;
-  color: #065f46;
-}
-
-.upcoming-table .badge-unassigned {
-  background: #f3f4f6;
-  border: 1px solid #e5e7eb;
-  color: #6b7280;
-}
-
-.upcoming-table-assigned-badge-wrap {
-  white-space: normal;
-  word-break: break-word;
-  min-width: 0;
-  max-width: 100%;
-  margin: 0 auto;
-}
-
-/* ===== Mobile: turn rows into clean cards ===== */
-@media (max-width: 700px) {
-  .admin-upcoming-table-card {
-    padding: 18px 14px;
-    margin-top: 16px;
-  }
-
-  .table.table--admin.upcoming-table {
-    min-width: 0;
-  }
-
-  .upcoming-table thead {
-    display: none;
-  }
-
-  .upcoming-table,
-  .upcoming-table tbody,
-  .upcoming-table tr,
-  .upcoming-table td {
-    display: block;
-    width: 100%;
-  }
-
-  .upcoming-table tr {
-    margin: 12px 0;
-    border: 1px solid var(--border);
-    border-radius: 14px;
-    padding: 10px 12px;
-    box-shadow: var(--shadow-md);
-    background: #fff;
-  }
-
-  .upcoming-table td {
-    border: 0;
-    padding: 6px 0;
-    white-space: normal;
-    text-align: right;
-  }
-
-  .upcoming-table td::before {
-    content: attr(data-label);
-    display: block;
-    font-size: 12px;
-    font-weight: 600;
-    color: var(--muted);
-    margin-bottom: 2px;
-    text-align: left;
-  }
-
-  .upcoming-table-td-actions {
-    margin-top: 8px;
-    text-align: right !important;
-    min-width: 0;
-    padding-right: 0;
-  }
-
-  .upcoming-table-actions-vert {
-    flex-direction: row;
-    justify-content: flex-end;
-    gap: 8px;
-  }
-
-  .upcoming-table .btn-edit,
-  .upcoming-table .btn-delete {
-    flex: 1 1 auto;
-    min-width: 0;
-  }
-
-  .upcoming-table-assigned-badge-wrap,
-  .upcoming-table .badge-unassigned {
-    width: 100%;
-    justify-content: center;
-  }
-}
-/* ==== FINAL OVERRIDE: Admin upcoming schedule table (no more cut-off buttons) ==== */
-
-/* Let this specific table size columns based on content instead of fixed widths */
-.admin-upcoming-table-card .table.table--admin.upcoming-table {
-  table-layout: auto !important;
-}
-
-/* Default: allow content to show fully (no clipping) */
-.admin-upcoming-table-card .upcoming-table th,
-.admin-upcoming-table-card .upcoming-table td {
-  overflow: visible !important;
-  text-overflow: unset !important;
-  white-space: nowrap !important;   /* keep most columns on one line */
-}
-
-/* Let the text-heavy columns wrap instead so the table doesn’t get insanely wide */
-.admin-upcoming-table-card .upcoming-table th:nth-child(5),
-.admin-upcoming-table-card .upcoming-table td:nth-child(5),   /* Address */
-.admin-upcoming-table-card .upcoming-table th:nth-child(6),
-.admin-upcoming-table-card .upcoming-table td:nth-child(6),   /* Assigned */
-.admin-upcoming-table-card .upcoming-table th:nth-child(7),
-.admin-upcoming-table-card .upcoming-table td:nth-child(7) {  /* Notes */
-  white-space: normal !important;
-  word-break: break-word !important;
-}
-
-/* Actions column: give it enough room and keep everything fully visible */
-.admin-upcoming-table-card .upcoming-table-td-actions {
-  min-width: 220px !important;
-  text-align: right !important;
-  padding-right: 20px !important;
-  overflow: visible !important;
-}
-
-.admin-upcoming-table-card .upcoming-table-actions-vert {
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: flex-end !important;
-  justify-content: center !important;
-  gap: 6px !important;
-  width: auto !important;
-}
-/* === Admin upcoming table: keep "Notes" header on one line === */
-.admin-upcoming-table-card .upcoming-table th:nth-child(7) {
-  white-space: nowrap !important;   /* don't break "Notes" */
-  min-width: 80px;                  /* a little extra room */
-  text-align: left;                 /* match other headers */
-}
-/* =========================================================
-   DESIGN REFRESH – paste this at the VERY BOTTOM of globals.css
-   Keeps all existing class names & layouts, just upgrades the look
-   ========================================================== */
-
-/* ---------- Theme polish ---------- */
-:root {
-  /* Slightly richer neutrals + brand */
-  --bg: #f3f4f8;
-  --card: #ffffff;
-  --ink: #0f172a;
-  --ink-subtle: #334155;
-  --muted: #6b7280;
-
-  --brand: #4f46e5;
-  --brand-weak: #eef2ff;
-  --brand-border: #c7d2fe;
-
-  --border: #e5e7eb;
-  --border-soft: #f1f5f9;
-
-  --success-bg: #dcfce7;
-  --success-ink: #166534;
-  --success-brd: #bbf7d0;
-
-  --danger-bg: #fee2e2;
-  --danger-ink: #b91c1c;
-  --danger-brd: #fecaca;
-
-  --warn-bg: #fffbeb;
-  --warn-ink: #b45309;
-  --warn-brd: #fed7aa;
-
-  --shadow-sm: 0 1px 2px rgba(15, 23, 42, 0.06);
-  --shadow-md: 0 10px 30px rgba(15, 23, 42, 0.10);
-
-  --radius: 12px;
-  --radius-lg: 18px;
-
-  --h1: clamp(1.45rem, 1.2rem + 0.7vw, 1.9rem);
-  --h2: clamp(1.15rem, 1rem + 0.4vw, 1.35rem);
-  --label: 600;
-  --gap: 12px;
-}
-
-/* ---------- Base ---------- */
 
 body {
-  background: radial-gradient(circle at top, #e5e7f5 0, #f3f4f8 38%, #f9fafb 100%);
-  color: var(--ink);
-  line-height: 1.55;
+  font-family: system-ui, -apple-system, BlinkMacSystemFont, "SF Pro Text",
+    "Inter", "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+  font-size: 14px;
+  line-height: 1.5;
+  /* subtle “SaaS” gradient background */
+  background: radial-gradient(circle at top, #ffffff 0, #eef2ff 40%, #e5e7eb 100%);
+  color: #0f172a;
+  -webkit-font-smoothing: antialiased;
+  overflow-x: hidden;
 }
 
 a {
+  color: inherit;
   text-decoration: none;
 }
 
-/* ---------- App shell / top bar ---------- */
+button {
+  font-family: inherit;
+}
+
+img {
+  max-width: 100%;
+  height: auto;
+  display: block;
+}
+
+.fs-12 { font-size: 0.75rem; }
+.fs-16 { font-size: 1rem; }
+
+.maxh-220 { max-height: 220px; }
+.ovf-y-auto { overflow-y: auto; }
+
+.muted {
+  color: #6b7280;
+  font-size: 0.85rem;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.mt-lg { margin-top: 16px; }
+
+/* --------------------------------
+   LAYOUT HELPERS
+-----------------------------------*/
+
+.center {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.full { width: 100%; }
+
+.row {
+  display: flex;
+  flex-direction: row;
+  gap: 8px;
+}
+
+.row.wrap { flex-wrap: wrap; }
+.row.between { justify-content: space-between; align-items: center; }
+.row.center,
+.row.row-center { align-items: center; }
+.align-items-center { align-items: center; }
+
+.gap-sm { gap: 8px; }
+
+/* --------------------------------
+   TOPBAR / SHELL
+-----------------------------------*/
 
 .topbar {
   position: sticky;
   top: 0;
-  z-index: 20;
-  background: rgba(255, 255, 255, 0.92);
+  z-index: 40;
+  background: #ffffff;
+  border-bottom: 1px solid #e5e7eb;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.06);
   backdrop-filter: blur(10px);
-  border-bottom: 1px solid rgba(226, 232, 240, 0.9);
 }
 
 .shell {
-  max-width: 1120px;
+  max-width: 1200px;
   margin: 0 auto;
-  padding: 10px 16px;
+  padding: 8px 16px;
   display: flex;
   align-items: center;
   justify-content: space-between;
-  gap: 14px;
+  gap: 8px;
 }
 
 .brand-wrap {
-  display: inline-flex;
+  display: flex;
   align-items: center;
-  gap: 10px;
+  gap: 8px;
 }
 
 .logo {
-  height: 40px;
-  width: auto;
-  object-fit: contain;
+  width: 32px;
+  height: 32px;
+  border-radius: 9px;
+  object-fit: cover;
+  box-shadow: 0 4px 10px rgba(15, 23, 42, 0.15);
 }
 
 .brand {
-  font-size: 1.05rem;
-  font-weight: 800;
-  letter-spacing: 0.02em;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  font-size: 0.8rem;
   color: #111827;
 }
 
-/* nav pills */
 .nav {
   display: flex;
+  align-items: center;
   gap: 8px;
   flex-wrap: wrap;
-  align-items: center;
 }
 
 .nav-link {
-  padding: 7px 12px;
+  font-size: 0.85rem;
+  padding: 6px 12px;
   border-radius: 999px;
   border: 1px solid transparent;
-  font-size: 0.9rem;
-  font-weight: 600;
   color: #4b5563;
-  background: transparent;
-  transition:
-    background 0.15s ease,
-    border-color 0.15s ease,
-    color 0.15s ease,
-    transform 0.1s ease;
+  cursor: pointer;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease,
+    box-shadow 0.15s ease, transform 0.1s ease;
 }
 
 .nav-link:hover {
-  background: #f3f4ff;
-  border-color: #e0e7ff;
-  color: #111827;
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1d4ed8;
+  box-shadow: 0 4px 12px rgba(37, 99, 235, 0.15);
   transform: translateY(-1px);
 }
 
-.nav-link--active {
-  background: #4f46e5;
-  color: #f9fafb;
-  border-color: #4338ca;
-  box-shadow: 0 8px 18px rgba(79, 70, 229, 0.25);
-}
-
-/* top-right buttons */
-.topbar-btn,
 .signout {
+  padding: 6px 12px;
   border-radius: 999px;
-  padding: 7px 14px;
-  border: 1px solid #e5e7eb;
-  background: #f9fafb;
-  font-size: 0.85rem;
-  font-weight: 600;
+  border: 1px solid #fecaca;
+  background: #fef2f2;
+  color: #b91c1c;
+  cursor: pointer;
+  font-size: 0.8rem;
   display: inline-flex;
   align-items: center;
-  gap: 6px;
-  cursor: pointer;
-  transition:
-    background 0.15s ease,
-    border-color 0.15s ease,
-    box-shadow 0.15s ease,
-    transform 0.1s ease;
+  gap: 4px;
 }
 
-.topbar-btn:hover,
-.signout:hover {
-  background: #ffffff;
-  border-color: #d1d5db;
-  box-shadow: var(--shadow-sm);
-  transform: translateY(-1px);
-}
-
-.topbar-btn:active,
-.signout:active {
-  transform: translateY(0);
-  box-shadow: none;
-}
-
-.topbar-btn[disabled] {
-  opacity: 0.55;
-  cursor: not-allowed;
-}
-
-/* Mobile shell – center everything & stack */
-@media (max-width: 700px) {
+@media (max-width: 768px) {
   .shell {
     flex-direction: column;
-    align-items: center;
-    text-align: center;
+    align-items: flex-start;
     gap: 6px;
   }
 
   .nav {
-    width: 100%;
-    justify-content: center;
-  }
-
-  .brand-wrap {
-    order: 1;
-  }
-
-  .nav {
-    order: 2;
-  }
-
-  .signout,
-  .topbar-btn {
-    order: 3;
+    gap: 6px;
   }
 }
 
-/* ---------- Page container ---------- */
+/* --------------------------------
+   PAGE WRAPPERS / CARDS
+-----------------------------------*/
 
 .page {
-  max-width: 1120px;
-  margin: 22px auto 32px;
-  padding: 20px 18px 24px;
-  background: var(--card);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-md);
-  border: 1px solid rgba(226, 232, 240, 0.85);
+  max-width: 1200px;
+  margin: 0 auto;
+  padding: 18px 16px 24px;
 }
 
 .page--center {
   display: flex;
   flex-direction: column;
-  align-items: center;
+  gap: 16px;
 }
 
 .page__title {
-  margin: 0 0 16px;
-  text-align: center;
-  font-size: var(--h1);
-  font-weight: 800;
-  color: #111827;
+  font-size: 1.4rem;
+  font-weight: 700;
+  color: #020617;
+  margin: 4px 0 12px;
 }
 
-.page__subtitle {
-  margin-top: -8px;
-  margin-bottom: 18px;
-  text-align: center;
-  font-size: 0.95rem;
-  color: var(--muted);
+/* wrapper for auth / forms */
+.wrap {
+  max-width: 900px;
+  margin: 28px auto;
+  padding: 0 16px;
 }
 
-/* Utility layout */
-.row {
+/* base card */
+.card {
+  position: relative;
+  background: #ffffff;
+  border-radius: 20px;
+  border: 1px solid #e5e7eb;
+  box-shadow:
+    0 14px 35px rgba(15, 23, 42, 0.10),
+    0 0 0 1px rgba(148, 163, 184, 0.15);
+  padding: 16px;
+}
+
+/* subtle top “high tech” accent bar on cards */
+.card::before {
+  content: "";
+  position: absolute;
+  inset: 0;
+  border-radius: 20px;
+  border-top: 3px solid transparent;
+  pointer-events: none;
+}
+
+.card--accent::before {
+  border-top-color: #2563eb;
+}
+
+.card--tight {
+  padding: 12px;
+}
+
+.card__header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.card-empty-past,
+.upcoming-table-empty {
+  text-align: center;
+  padding: 16px;
+}
+
+/* auth layout */
+.auth-wrap {
+  min-height: calc(100vh - 56px);
   display: flex;
   align-items: center;
-  gap: var(--gap);
+  justify-content: center;
+  padding: 32px 16px;
 }
 
-.wrap {
-  flex-wrap: wrap;
-}
-
-.between {
-  justify-content: space-between;
-}
-
-.full {
+.auth-card {
   width: 100%;
+  max-width: 420px;
+  background: #ffffff;
+  border-radius: 20px;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 18px 45px rgba(15, 23, 42, 0.12);
+  padding: 20px;
 }
 
-.mt-lg {
-  margin-top: 24px;
+.auth-title {
+  margin: 0 0 12px;
+  font-size: 1.3rem;
 }
 
-/* Mobile page spacing */
-@media (max-width: 768px) {
-  .page {
-    margin: 16px 12px 28px;
-    padding: 16px 14px 20px;
-    border-radius: 16px;
-  }
-}
+/* --------------------------------
+   INPUTS / SELECTS / TEXTAREAS
+-----------------------------------*/
 
-/* ---------- Cards / sections ---------- */
-
-.card,
-.section-card,
-.upcoming-table-card,
-.admin-upcoming-table-card {
-  background: var(--card);
-  border-radius: var(--radius);
-  border: 1px solid var(--border-soft);
-  box-shadow: var(--shadow-sm);
-  padding: 14px 14px 16px;
-  margin-bottom: 14px;
-}
-
-.section-head td {
-  background: #f9fafb;
-}
-
-.section-bar {
-  padding-inline: 14px;
-}
-
-/* ---------- Forms & inputs ---------- */
-
-label {
-  font-size: 0.85rem;
-  font-weight: var(--label);
-  color: var(--ink-subtle);
-}
-
+/* generic look for ALL text/date/time inputs + selects + textareas */
 input[type="text"],
 input[type="email"],
 input[type="password"],
-input[type="number"],
-input[type="time"],
 input[type="date"],
+input[type="time"],
+input[type="number"],
 select,
 textarea {
-  width: 100%;
-  border-radius: 10px;
-  border: 1px solid var(--border);
-  padding: 8px 11px;
-  font-size: 0.92rem;
-  background: #f9fafb;
-  transition:
-    border-color 0.15s ease,
-    box-shadow 0.15s ease,
-    background 0.15s ease;
+  font-family: inherit;
+  font-size: 0.9rem;
+  border-radius: 999px;
+  border: 1px solid #d1d5db;
+  padding: 8px 12px;
+  background: #ffffff;
+  color: #111827;
+  outline: none;
+  appearance: none;
 }
 
+/* keep textarea not fully pill */
+textarea {
+  border-radius: 14px;
+}
+
+/* visible dropdown arrow for selects */
+select {
+  background-image: linear-gradient(45deg, transparent 50%, #6b7280 50%),
+    linear-gradient(135deg, #6b7280 50%, transparent 50%);
+  background-position:
+    calc(100% - 14px) 55%,
+    calc(100% - 9px) 55%;
+  background-size: 5px 5px, 5px 5px;
+  background-repeat: no-repeat;
+  padding-right: 28px;
+}
+
+/* focused state */
 input:focus,
 select:focus,
 textarea:focus {
-  outline: none;
-  border-color: #4f46e5;
-  background: #ffffff;
-  box-shadow: 0 0 0 1px #4f46e5, 0 0 0 4px rgba(79, 70, 229, 0.15);
+  border-color: #2563eb;
+  box-shadow: 0 0 0 1px rgba(37, 99, 235, 0.22);
 }
 
-.field-row {
+/* explicit .input used on many fields */
+.input {
+  width: 100%;
+  border-radius: 999px;
+}
+
+/* auth rows */
+.auth-input-row {
   display: flex;
-  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+.auth-input {
+  flex: 1;
+}
+
+.auth-showpw {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.8rem;
+  color: #6b7280;
+}
+
+.field {
+  margin-bottom: 10px;
+}
+
+.textarea {
+  min-height: 100px;
+  resize: vertical;
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+/* small grid (new-shift times) */
+.grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
   gap: 10px;
 }
 
-.field-row > * {
-  flex: 1 1 180px;
+@media (max-width: 600px) {
+  .grid {
+    grid-template-columns: 1fr;
+  }
 }
 
-/* ---------- Buttons ---------- */
+.inline-check {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
 
-.btn {
+/* --------------------------------
+   BUTTONS / CHIPS / BADGES
+-----------------------------------*/
+
+.btn,
+.btn-primary,
+.topbar-btn,
+.btn-edit,
+.btn-delete,
+.auth-btn.primary,
+.primary {
+  font-size: 0.9rem;
+  border-radius: 999px;
+  padding: 7px 14px;
+  border: 1px solid transparent;
+  cursor: pointer;
   display: inline-flex;
   align-items: center;
   justify-content: center;
-  gap: 6px;
-  min-height: 38px;
-  padding: 0 14px;
-  border-radius: 999px;
-  border: 1px solid transparent;
-  font-size: 0.9rem;
-  font-weight: 700;
-  cursor: pointer;
-  text-decoration: none;
-  background: var(--brand);
-  color: #f9fafb;
-  box-shadow: 0 8px 18px rgba(79, 70, 229, 0.25);
-  transition:
-    background 0.15s ease,
-    box-shadow 0.15s ease,
-    transform 0.1s ease,
-    border-color 0.15s ease;
+  gap: 4px;
+  white-space: nowrap;
+  transition: background 0.15s ease, color 0.15s ease, border-color 0.15s ease,
+    box-shadow 0.15s ease, transform 0.1s ease;
 }
 
-.btn:hover {
-  background: #4338ca;
-  border-color: #3730a3;
+/* main primary */
+.btn-primary,
+.auth-btn.primary,
+.primary {
+  background: linear-gradient(135deg, #2563eb, #1d4ed8);
+  border-color: #1d4ed8;
+  color: #f9fafb;
+  font-weight: 600;
+}
+
+.btn-primary:hover,
+.auth-btn.primary:hover,
+.primary:hover {
+  box-shadow: 0 8px 22px rgba(37, 99, 235, 0.35);
   transform: translateY(-1px);
 }
 
-.btn:active {
-  transform: translateY(0);
-  box-shadow: 0 4px 8px rgba(79, 70, 229, 0.2);
-}
-
-.btn[disabled] {
-  opacity: 0.55;
+.btn-primary:disabled,
+.auth-btn.primary:disabled,
+.primary:disabled {
+  opacity: 0.6;
   cursor: not-allowed;
-  box-shadow: none;
 }
 
-/* destructive */
-.btn-danger {
-  background: #dc2626;
-  border-color: #b91c1c;
-  box-shadow: 0 8px 18px rgba(220, 38, 38, 0.25);
-}
-
-.btn-danger:hover {
-  background: #b91c1c;
-}
-
-/* subtle / secondary */
-.btn-secondary {
-  background: #f9fafb;
+/* neutral pill button */
+.topbar-btn {
+  background: #f3f4f6;
   color: #111827;
-  border-color: var(--border);
-  box-shadow: none;
+  border-color: #d1d5db;
 }
 
-.btn-secondary:hover {
-  background: #ffffff;
+.topbar-btn:hover {
+  background: #e5e7eb;
 }
 
-/* icon-only small buttons */
-.btn-icon {
-  width: 32px;
-  height: 32px;
-  padding: 0;
+/* edit / delete */
+.btn-edit {
+  background: #eff6ff;
+  border-color: #bfdbfe;
+  color: #1d4ed8;
+}
+
+.btn-edit:hover {
+  background: #dbeafe;
+}
+
+.btn-delete {
+  background: #fef2f2;
+  border-color: #fecaca;
+  color: #b91c1c;
+}
+
+.btn-delete:hover {
+  background: #fee2e2;
+}
+
+/* flags */
+.btn-flag {
+  background: #f9fafb;
+  border-color: #e5e7eb;
+  color: #111827;
+}
+
+.btn-flag-on {
+  background: #f97316;
+  border-color: #ea580c;
+  color: #fff7ed;
+}
+
+/* venmo */
+.btn-venmo {
+  margin-left: 6px;
+  font-size: 0.8rem;
+  padding: 3px 8px;
   border-radius: 999px;
+  border: 1px solid #0f766e;
+  background: #14b8a6;
+  color: #ecfeff;
 }
 
-/* button groups in tables */
-.actions {
+/* icon-only */
+.icon-btn {
+  background: transparent;
+  border: 0;
+  padding: 0 4px;
+  cursor: pointer;
+  font-size: 1rem;
+  color: #6b7280;
+}
+
+.chip {
   display: inline-flex;
   align-items: center;
-  gap: 8px;
-  flex-wrap: wrap;
+  gap: 6px;
+  border-radius: 999px;
+  padding: 4px 11px;
+  background: #eff6ff;
+  color: #1d4ed8;
+  font-size: 0.85rem;
+  border: 1px solid #bfdbfe;
 }
 
-/* Mobile: make buttons fit better in cells */
-@media (max-width: 768px) {
-  .btn {
-    min-height: 34px;
-    padding-inline: 10px;
-    font-size: 0.84rem;
-  }
-
-  .actions {
-    gap: 6px;
-    justify-content: flex-end;
-  }
+.chip--xl {
+  font-size: 0.95rem;
+  padding: 6px 14px;
+  font-weight: 600;
 }
 
-/* ---------- Badges ---------- */
+.pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border-radius: 999px;
+  border: 1px solid #e5e7eb;
+  padding: 4px 10px;
+  background: #ffffff;
+  font-size: 0.85rem;
+  color: #111827;
+}
+
+.pill-active {
+  border-color: #2563eb;
+  background: #eff6ff;
+  color: #1d4ed8;
+}
+
+.pill__num { font-weight: 700; }
+
+.pill__label {
+  text-transform: uppercase;
+  font-size: 0.7rem;
+  letter-spacing: 0.08em;
+}
 
 .badge {
   display: inline-flex;
   align-items: center;
-  justify-content: center;
-  padding: 3px 9px;
   border-radius: 999px;
-  font-size: 0.75rem;
-  font-weight: 700;
-  border: 1px solid var(--border);
-  background: #f9fafb;
-  color: #4b5563;
+  padding: 2px 8px;
+  font-size: 0.7rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
 }
 
-.badge-job {
-  background: var(--brand-weak);
-  border-color: var(--brand-border);
-  color: #3730a3;
+/* payment badges */
+.badge-paid {
+  background: #dcfce7;
+  color: #166534;
 }
 
-.badge-assigned {
-  background: var(--success-bg);
-  border-color: var(--success-brd);
-  color: var(--success-ink);
+.badge-unpaid {
+  background: #fee2e2;
+  color: #b91c1c;
 }
 
-.badge-unassigned {
-  background: var(--danger-bg);
-  border-color: var(--danger-brd);
-  color: var(--danger-ink);
+/* misc badges */
+.badge-min {
+  background: #fef3c7;
+  color: #92400e;
 }
 
 .badge-flag {
-  background: var(--warn-bg);
-  border-color: var(--warn-brd);
-  color: var(--warn-ink);
+  background: #fee2e2;
+  color: #b91c1c;
 }
 
-/* ---------- Alerts / status ---------- */
+.badge-job {
+  background: #e0f2fe;
+  color: #1d4ed8;
+}
+
+.badge-assigned {
+  background: #d1fae5;
+  color: #065f46;
+}
+
+.badge-unassigned {
+  background: #f3f4f6;
+  color: #4b5563;
+}
+
+/* --------------------------------
+   ALERTS / TOAST
+-----------------------------------*/
 
 .alert {
   border-radius: 12px;
   padding: 10px 12px;
-  font-size: 0.88rem;
+  margin: 8px 0;
+  font-size: 0.85rem;
+}
+
+.alert.error {
+  background: #fee2e2;
+  border: 1px solid #fecaca;
+  color: #b91c1c;
+}
+
+.alert.ok {
+  background: #dcfce7;
+  border: 1px solid #bbf7d0;
+  color: #166534;
+}
+
+.toast {
+  margin: 8px 0;
+  padding: 8px 12px;
+  border-radius: 999px;
+  background: #e5e7eb;
+  color: #374151;
+  display: inline-flex;
+}
+
+/* --------------------------------
+   INDEX / LOGIN
+-----------------------------------*/
+
+.wrap .card {
+  max-width: 420px;
+  margin: 24px auto;
+}
+
+.title-row {
   display: flex;
-  align-items: flex-start;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 8px;
+}
+
+.title-row .logo {
+  width: 40px;
+  height: 40px;
+  border-radius: 12px;
+}
+
+.title {
+  font-size: 1.4rem;
+  margin: 0;
+  color: #020617;
+}
+
+.tabs {
+  display: inline-flex;
+  border-radius: 999px;
+  background: #f3f4f6;
+  padding: 3px;
+  margin-bottom: 12px;
+}
+
+.tab {
+  border-radius: 999px;
+  border: 0;
+  padding: 5px 10px;
+  font-size: 0.85rem;
+  background: transparent;
+  cursor: pointer;
+  color: #6b7280;
+}
+
+.tab.active {
+  background: #ffffff;
+  color: #111827;
+  box-shadow: 0 1px 4px rgba(15, 23, 42, 0.12);
+}
+
+.label {
+  display: block;
+  margin: 8px 0 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.pwrow {
+  display: flex;
+  align-items: center;
   gap: 8px;
 }
 
-.alert--danger {
-  background: var(--danger-bg);
-  border: 1px solid var(--danger-brd);
-  color: var(--danger-ink);
+.show {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  font-size: 0.8rem;
+  color: #6b7280;
 }
 
-.alert--success {
-  background: var(--success-bg);
-  border: 1px solid var(--success-brd);
-  color: var(--success-ink);
+.btn.primary {
+  width: 100%;
+  margin-top: 12px;
 }
 
-/* ---------- Tables (global) ---------- */
+.actions {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  margin-top: 12px;
+  flex-wrap: wrap;
+}
+
+.link {
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  font-size: 0.8rem;
+  color: #2563eb;
+}
+
+.link:hover { text-decoration: underline; }
+
+.sep { color: #9ca3af; }
+
+/* --------------------------------
+   TOOLBAR / TOTALS
+-----------------------------------*/
+
+.toolbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.toolbar--center { align-items: center; }
+
+.toolbar__left {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.toolbar-range-label {
+  font-size: 0.85rem;
+  color: #6b7280;
+}
+
+.totals {
+  display: flex;
+  gap: 8px;
+  flex-wrap: wrap;
+  margin-bottom: 12px;
+}
+
+.totals--center { justify-content: flex-start; }
+
+@media (max-width: 768px) {
+  .toolbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  .totals--center {
+    justify-content: flex-start;
+  }
+}
+
+/* --------------------------------
+   TABLES (DASHBOARD + ADMIN)
+-----------------------------------*/
+
+.table-wrap {
+  width: 100%;
+  margin-top: 8px;
+}
 
 .table {
   width: 100%;
   border-collapse: collapse;
-  background: var(--card);
-  border-radius: var(--radius);
-  border: 1px solid var(--border);
+  font-size: 0.85rem;
+  background: #ffffff;
+  border-radius: 16px;
   overflow: hidden;
-  box-shadow: var(--shadow-sm);
-  table-layout: auto;
 }
 
 .table th,
 .table td {
-  padding: 10px 10px;
-  border-top: 1px solid var(--border-soft);
-  font-size: 0.9rem;
-  vertical-align: middle;
-}
-
-.table thead th {
-  background: #f8fafc;
-  color: var(--ink-subtle);
-  font-weight: 700;
+  padding: 8px 6px;
+  border-bottom: 1px solid #e5e7eb;
   text-align: left;
+  vertical-align: middle;
+  color: #111827;
 }
 
-.table tbody tr:hover {
-  background: #fdfdfd;
+.table th {
+  font-size: 0.75rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: #6b7280;
+  background: #f9fafb;
 }
 
-/* slightly tighter admin tables */
-.table--admin {
-  font-size: 0.88rem;
-}
-
-/* center mode */
 .table--center th,
 .table--center td {
   text-align: center;
 }
 
-.table--center th:first-child,
-.table--center td:first-child {
-  text-align: left;
+.table--compact th,
+.table--compact td {
+  padding: 6px 4px;
 }
 
-/* striping */
-.table--striped tbody tr:nth-child(even) {
+.table--admin tr:nth-child(even) {
   background: #f9fafb;
 }
 
-/* mobile compression for big tables */
-@media (max-width: 768px) {
-  .table th,
-  .table td {
-    padding: 7px 6px;
-    font-size: 0.8rem;
-  }
-
-  .table--admin {
-    font-size: 0.78rem;
-  }
+/* generic actions cell */
+.actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 4px;
 }
 
-/* ---------- Upcoming / admin schedule tables ---------- */
+.col-hide-md {}
 
-/* main schedule card already handled above */
-.upcoming-table-header {
+/* flagged row */
+.row-flagged {
+  background: #fef2f2 !important;
+}
+
+/* subtotal row */
+.subtotal td {
+  font-weight: 600;
+  background: #f3f4f6;
+}
+
+/* admin section header row */
+.section-head td {
+  background: #020617;
+  color: #f9fafb;
+  border-bottom: none;
+  padding: 0;
+}
+
+.section-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 8px 10px;
+}
+
+.section-bar__left,
+.section-bar__right {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.employee-name {
+  font-weight: 600;
+}
+
+/* summary areas */
+.summary-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
   gap: 10px;
-  margin-bottom: 10px;
+  align-items: center;
 }
 
-.upcoming-table-empty {
-  text-align: center;
-  padding: 18px 10px;
-  color: var(--muted);
-  font-size: 0.9rem;
+.summary-badges {
+  display: flex;
+  align-items: center;
+  gap: 6px;
 }
 
-/* Tighten 8-column layout while staying readable */
-.upcoming-table th:nth-child(1),
-.upcoming-table td:nth-child(1) {
-  white-space: nowrap;
+.meta {
+  font-size: 0.85rem;
+  color: #6b7280;
 }
 
-.upcoming-table th:nth-child(2),
-.upcoming-table td:nth-child(2) {
-  white-space: nowrap;
+/* --------------------------------
+   UPCOMING SCHEDULE TABLE
+-----------------------------------*/
+
+.admin-upcoming-table-card {
+  margin-top: 16px;
 }
 
-.upcoming-table th:nth-child(3),
-.upcoming-table td:nth-child(3) {
-  min-width: 80px;
-}
-
-.upcoming-table th:nth-child(4),
-.upcoming-table td:nth-child(4) {
-  min-width: 120px;
-}
-
-.upcoming-table th:nth-child(5),
-.upcoming-table td:nth-child(5) {
-  min-width: 120px;
-}
-
-.upcoming-table th:nth-child(6),
-.upcoming-table td:nth-child(6) {
-  min-width: 90px;
-  text-align: center;
-}
-
-.upcoming-table th:nth-child(8),
-.upcoming-table td:nth-child(8) {
-  width: 1%;
-  white-space: nowrap;
-}
-
-/* admin wrapper */
 .admin-upcoming-table-wrap {
-  overflow: visible;
+  width: 100%;
 }
 
-.admin-upcoming-table-card .upcoming-table td {
+.upcoming-table-header {
+  margin-bottom: 8px;
+}
+
+.upcoming-table {
+  width: 100%;
+}
+
+.upcoming-table-td {
   vertical-align: middle;
 }
 
-/* mobile: allow wrapping + stacked badges */
-@media (max-width: 768px) {
-  .upcoming-table td:nth-child(4),
-  .upcoming-table td:nth-child(5) {
-    max-width: 140px;
-    word-break: break-word;
-  }
-
-  .upcoming-table-assigned-badge-wrap {
-    display: inline-flex;
-    flex-wrap: wrap;
-    gap: 4px;
-  }
-
-  .upcoming-table-actions-vert {
-    display: flex;
-    flex-direction: column;
-    align-items: flex-end;
-    gap: 4px;
-  }
+.upcoming-table-td-middle {
+  vertical-align: middle;
+  text-align: left;
+  height: 56px;
 }
 
-/* ---------- Totals / summary rows ---------- */
+.upcoming-table-td-top {
+  vertical-align: top;
+  text-align: left;
+  height: 56px;
+}
 
-.totals,
-.totals--center {
+.upcoming-table-td-actions {
+  vertical-align: middle;
+  text-align: right;
+  min-width: 120px;
+  height: 56px;
+  white-space: nowrap;
+}
+
+.upcoming-table-actions-vert {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-end;
+}
+
+/* --------------------------------
+   LOCATION PICKER
+-----------------------------------*/
+
+.location-picker-card {
+  margin-top: 10px;
+}
+
+.location-picker-section {
+  margin-bottom: 8px;
+}
+
+.location-picker-label {
+  display: block;
+  margin-bottom: 4px;
+  font-weight: 600;
+  font-size: 0.85rem;
+  color: #111827;
+}
+
+.location-picker-input {
+  width: 100%;
+}
+
+.location-picker-preds {
+  margin-top: 6px;
+  background: #ffffff;
+}
+
+.location-picker-fields {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px;
+}
+
+.location-picker-field {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.btn-list {
+  width: 100%;
+  text-align: left;
+  border-radius: 8px;
+  border: 0;
+  background: transparent;
+  padding: 6px 8px;
+  cursor: pointer;
+  color: #111827;
+}
+
+.btn-list:hover {
+  background: #eff6ff;
+}
+
+/* --------------------------------
+   FILTERS (ADMIN)
+-----------------------------------*/
+
+.filters {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.filters-row {
   display: flex;
   flex-wrap: wrap;
-  justify-content: space-between;
   gap: 8px;
-  padding: 10px 2px 2px;
-  font-size: 0.9rem;
-  color: var(--ink-subtle);
+  align-items: center;
 }
 
-.totals--center {
-  justify-content: center;
+.inline {
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
 }
 
-/* ---------- Modals ---------- */
+.week-controls,
+.range-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 6px;
+}
+
+/* --------------------------------
+   EDIT / ASSIGN PANELS
+-----------------------------------*/
+
+.edit-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 8px;
+  margin: 12px 0;
+}
+
+.edit-full {
+  grid-column: 1 / -1;
+}
+
+.assign-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
+  gap: 6px;
+  margin: 12px 0;
+}
+
+.edit-panel-past {
+  margin-top: 16px;
+}
+
+.past-controls-row {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  margin-bottom: 12px;
+}
+
+/* --------------------------------
+   MODALS
+-----------------------------------*/
 
 .modal-backdrop {
   position: fixed;
   inset: 0;
-  background: rgba(15, 23, 42, 0.45);
+  background: rgba(15, 23, 42, 0.35);
   display: flex;
   align-items: center;
   justify-content: center;
-  z-index: 40;
+  z-index: 50;
 }
 
 .modal {
-  background: #ffffff;
-  border-radius: 16px;
-  padding: 18px 18px 16px;
+  width: 100%;
   max-width: 420px;
-  width: calc(100% - 32px);
-  box-shadow: var(--shadow-md);
+  background: #ffffff;
+  border-radius: 18px;
+  padding: 16px;
+  box-shadow: 0 24px 55px rgba(15, 23, 42, 0.25);
+  border: 1px solid #e5e7eb;
 }
 
 .modal-header {
@@ -2916,47 +1099,1487 @@ textarea:focus {
 }
 
 .modal-title {
-  font-size: var(--h2);
-  font-weight: 700;
+  font-weight: 600;
 }
 
-.modal-body {
-  font-size: 0.9rem;
-  color: var(--ink-subtle);
-  margin-bottom: 14px;
+.modal-body textarea {
+  width: 100%;
+  min-height: 120px;
+  border-radius: 14px;
 }
 
 .modal-actions {
   display: flex;
   justify-content: flex-end;
   gap: 8px;
+  margin-top: 8px;
 }
 
-/* Mobile: make modals breathe a bit more */
-@media (max-width: 540px) {
-  .modal {
-    padding-inline: 14px;
+/* --------------------------------
+   ADMIN FORM CONTAINER
+-----------------------------------*/
+
+.form-container {
+  max-width: 900px;
+  margin: 16px auto;
+  padding: 0 16px;
+}
+
+.form-card {
+  width: 100%;
+}
+
+.grid-auto-fit-160 {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+  gap: 8px;
+}
+
+/* --------------------------------
+   RESPONSIVE TABLE STACKING
+-----------------------------------*/
+
+@media (max-width: 768px) {
+  .col-hide-md { display: none; }
+
+  .table--stack thead {
+    display: none;
+  }
+
+  .table--stack tbody,
+  .table--stack tr,
+  .table--stack td {
+    display: block;
+    width: 100%;
+  }
+
+  .table--stack {
+    background: transparent;
+    border-radius: 0;
+  }
+
+  .table--stack tr {
+    border-radius: 14px;
+    border: 1px solid #e5e7eb;
+    background: #ffffff;
+    padding: 6px 8px;
+    margin-bottom: 8px;
+  }
+
+  .table--stack td {
+    border-bottom: none;
+    padding: 4px 0;
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .table--stack td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: #6b7280;
+    font-size: 0.8rem;
+  }
+
+  .table--stack td[data-label="Actions"] {
+    justify-content: flex-start;
+  }
+
+  .actions {
+    justify-content: flex-start;
+  }
+
+  .upcoming-table-actions-vert {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+
+  .upcoming-table-td-actions {
+    min-width: 0;
+    text-align: left;
+    height: auto;
   }
 }
 
-/* ---------- Misc utilities ---------- */
+/* --------------------------------
+   SMALL SCREEN TWEAKS
+-----------------------------------*/
 
-.center {
+@media (max-width: 600px) {
+  .page {
+    padding: 12px;
+  }
+
+  .wrap {
+    margin: 18px auto;
+  }
+
+  .card,
+  .auth-card {
+    border-radius: 18px;
+    padding: 14px;
+  }
+
+  .page__title {
+    font-size: 1.2rem;
+  }
+
+  .topbar {
+    font-size: 0.85rem;
+  }
+}
+/* centers the whole header block */
+.center-header {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+}
+
+/* centers the dropdown + button row */
+.toolbar-center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  gap: 12px;
+}
+
+/* keeps the h3 centered */
+.center-text {
   text-align: center;
+  width: 100%;
+}
+.card .filters {
+  display: flex;
+  flex-direction: column;
+  align-items: center;       /* centers everything horizontally */
+  justify-content: center;
+  width: 100%;
+  gap: 1rem;
+}
+.range-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+}
+.week-controls {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+}
+/* Wrap the whole segment and center */
+.tab-switch {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0;
+  margin: 20px auto;
+  padding: 4px;
+  background: #f5f7fa;
+  border-radius: 14px;
+  width: fit-content;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
 }
 
-.muted {
-  color: var(--muted);
+/* Base button styling */
+.tab-btn {
+  padding: 8px 18px;
+  border: none;
+  background: transparent;
+  font-size: 14px;
+  cursor: pointer;
+  border-radius: 10px;
+  transition: all 0.15s ease;
+  color: #555;
 }
 
-.text-right {
-  text-align: right;
+/* Hover behavior */
+.tab-btn:hover {
+  background: #e8ecf2;
 }
 
-.align-items-center {
+/* Active tab */
+.tab-btn.active {
+  background: white;
+  font-weight: 600;
+  color: #111;
+  box-shadow: 0 1px 4px rgba(0,0,0,0.08);
+}
+/* Container for the three tabs */
+.tabs.tabs--center {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  margin: 16px auto 24px;
+  padding: 4px;
+  background: #f5f7fb;
+  border-radius: 999px;
+  width: fit-content;
+  box-shadow: 0 10px 25px rgba(15, 23, 42, 0.12);
+}
+
+/* Base button style */
+.tabs.tabs--center button {
+  border: none;
+  background: transparent;
+  padding: 8px 20px;
+  font-size: 14px;
+  font-weight: 500;
+  color: #4b5563;
+  cursor: pointer;
+  border-radius: 999px;
+  transition:
+    background 0.18s ease,
+    color 0.18s ease,
+    box-shadow 0.18s ease,
+    transform 0.08s ease;
+  outline: none;
+}
+
+/* Hover state */
+.tabs.tabs--center button:hover {
+  background: #e4e8f3;
+}
+
+/* Active tab (the selected one) */
+.tabs.tabs--center button.active {
+  background: linear-gradient(135deg, #2563eb, #4f46e5);
+  color: #ffffff;
+  box-shadow: 0 6px 16px rgba(37, 99, 235, 0.45);
+}
+
+/* Click feedback */
+.tabs.tabs--center button:active {
+  transform: translateY(1px);
+}
+/* Center the entire summary bar */
+.summary-grid {
+  display: flex;
+  align-items: center;
+  justify-content: center;      /* centers all children */
+  flex-wrap: wrap;
+  gap: 1.25rem 2rem;            /* tighter vertical + horizontal spacing */
+  text-align: center;
+  padding: 12px 0;
+}
+
+/* Ensure the unpaid badge stays clean and pill-like */
+.chip.chip--xl {
+  background: #e7f0ff;
+  color: #1d4ed8;
+  font-weight: 600;
+  padding: 10px 18px;
+  border-radius: 14px;
+  font-size: 15px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+}
+
+/* Group the badges and their text neatly */
+.summary-badges {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+}
+
+/* Make the MIN and FLAG badges consistent */
+.badge-min {
+  background: #fef3c7;
+  color: #92400e;
+  border-radius: 8px;
+  padding: 4px 8px;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+.badge-flag {
+  background: #fee2e2;
+  color: #991b1b;
+  border-radius: 8px;
+  padding: 4px 8px;
+  font-weight: 600;
+  font-size: 12px;
+}
+
+/* The muted descriptor text */
+.summary-grid .muted {
+  color: #6b7280;
+  font-size: 13px;
+}
+/* Remove any old dark strip & let the inner bar style itself */
+.section-head td {
+  padding: 0;
+  background: transparent;
+  border: none;
+}
+
+/* Employee header card above each group of shifts */
+.section-bar {
+  margin: 0.75rem 0;
+  padding: 1rem 1.5rem;
+  border-radius: 18px;
+  background: #ffffff;
+  box-shadow: 0 10px 30px rgba(15, 23, 42, 0.08);
+
+  /* 3-column grid: left / center / right */
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr);
+  align-items: center;
+  column-gap: 1.25rem;
+}
+
+/* LEFT: name */
+.section-bar__left {
+  justify-self: start;
+}
+.section-bar__name {
+  font-size: 1.02rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+/* CENTER: action buttons */
+.section-bar__center {
+  display: flex;
+  gap: 0.6rem;
+  flex-wrap: wrap;
+  justify-content: center;
+  justify-self: center;
+}
+
+.section-action-btn {
+  border: none;
+  border-radius: 999px;
+  padding: 0.45rem 1rem;
+  font-size: 0.82rem;
+  font-weight: 500;
+  background: #eef2ff;
+  color: #1f2937;
+  cursor: pointer;
+  transition: background 0.15s, box-shadow 0.15s, transform 0.1s;
+}
+.section-action-btn:hover:not(:disabled) {
+  background: #e0e7ff;
+  box-shadow: 0 4px 10px rgba(79, 70, 229, 0.25);
+  transform: translateY(-1px);
+}
+.section-action-btn:disabled {
+  opacity: 0.45;
+}
+
+/* RIGHT: unpaid + badges */
+.section-bar__right {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  justify-self: end;
+}
+
+.section-pill {
+  border-radius: 999px;
+  padding: 0.25rem 0.75rem;
+  font-size: 0.75rem;
+  font-weight: 500;
+  background: #f3f4ff;
+  color: #111827;
+}
+
+/* Keep MIN / FLAG consistent */
+.section-bar__right .badge-min,
+.section-bar__right .badge-flag {
+  font-size: 0.72rem;
+}
+
+/* Mobile: stack cleanly */
+@media (max-width: 640px) {
+  .section-bar {
+    grid-template-columns: 1fr;
+    row-gap: 0.6rem;
+    text-align: center;
+  }
+
+  .section-bar__left,
+  .section-bar__center,
+  .section-bar__right {
+    justify-self: center;
+    justify-content: center;
+  }
+
+  .section-bar__right {
+    justify-content: center;
+  }
+}
+/* DESKTOP ONLY – Make employee header card stand out more */
+@media (min-width: 768px) {
+  .section-bar {
+    background: #ffffff; /* still white but separated */
+    border: 1px solid rgba(0, 0, 0, 0.06);  /* subtle border */
+    box-shadow: 0 12px 28px rgba(0, 0, 0, 0.08); /* stronger shadow */
+    margin-top: 1.25rem;
+    margin-bottom: 1.25rem;
+    padding: 1.25rem 1.75rem;
+    border-radius: 20px;
+    backdrop-filter: blur(4px); /* subtle glass effect */
+  }
+}
+/* Center the date/week filter card on mobile */
+@media (max-width: 640px) {
+  .filters,
+  .filters-row {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: center !important;
+    text-align: center !important;
+    width: 100%;
+  }
+
+  .filters-row > * {
+    margin: 6px 0; /* small spacing between items */
+  }
+
+  .range-controls,
+  .week-controls {
+    justify-content: center !important;
+    width: 100%;
+  }
+
+  .range-controls input {
+    text-align: center;
+  }
+}
+/* --------------------------------
+   ADMIN SCHEDULE TABLE – DESKTOP + MOBILE
+-----------------------------------*/
+
+/* Keep the table inside the viewport and let columns size cleanly */
+.admin-upcoming-table-wrap {
+  width: 100%;
+}
+
+/* Make columns predictable and let content wrap instead of pushing sideways */
+.upcoming-table {
+  width: 100%;
+  table-layout: fixed;
+}
+
+.upcoming-table th,
+.upcoming-table td {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* Column width balance for desktop */
+@media (min-width: 769px) {
+  .upcoming-table th:nth-child(1),
+  .upcoming-table td:nth-child(1) {
+    width: 20%; /* When */
+  }
+
+  .upcoming-table th:nth-child(2),
+  .upcoming-table td:nth-child(2) {
+    width: 10%; /* Job */
+  }
+
+  .upcoming-table th:nth-child(3),
+  .upcoming-table td:nth-child(3) {
+    width: 40%; /* Location + notes */
+  }
+
+  .upcoming-table th:nth-child(4),
+  .upcoming-table td:nth-child(4) {
+    width: 20%; /* Assigned */
+  }
+
+  .upcoming-table th:nth-child(5),
+  .upcoming-table td:nth-child(5) {
+    width: 10%; /* Actions */
+  }
+}
+
+/* Let the actions wrap so they don't cause horizontal scroll */
+.upcoming-table-td-actions {
+  white-space: normal; /* override the nowrap */
+}
+
+/* On narrow screens, keep buttons readable and wrapping instead of overflowing */
+@media (max-width: 768px) {
+  .upcoming-table-actions-vert {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: flex-start;
+    gap: 4px;
+  }
+
+  .upcoming-table-td-actions {
+    min-width: 0;
+    text-align: left;
+    height: auto;
+  }
+}
+/* --------------------------------
+   ADMIN SCHEDULE TABLE – DESKTOP + MOBILE
+-----------------------------------*/
+
+/* Keep the table inside the viewport and let columns size cleanly */
+.admin-upcoming-table-wrap {
+  width: 100%;
+}
+
+/* Make columns predictable and let content wrap instead of pushing sideways */
+.upcoming-table {
+  width: 100%;
+  table-layout: fixed;
+}
+
+.upcoming-table th,
+.upcoming-table td {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* Column width balance for desktop */
+@media (min-width: 769px) {
+  .upcoming-table th:nth-child(1),
+  .upcoming-table td:nth-child(1) {
+    width: 20%; /* When */
+  }
+
+  .upcoming-table th:nth-child(2),
+  .upcoming-table td:nth-child(2) {
+    width: 10%; /* Job */
+  }
+
+  .upcoming-table th:nth-child(3),
+  .upcoming-table td:nth-child(3) {
+    width: 40%; /* Location + notes */
+  }
+
+  .upcoming-table th:nth-child(4),
+  .upcoming-table td:nth-child(4) {
+    width: 20%; /* Assigned */
+  }
+
+  .upcoming-table th:nth-child(5),
+  .upcoming-table td:nth-child(5) {
+    width: 10%; /* Actions */
+  }
+}
+
+/* Let the actions wrap so they don't cause horizontal scroll */
+.upcoming-table-td-actions {
+  white-space: normal; /* override any nowrap */
+}
+
+/* On narrow screens, keep buttons readable and wrapping instead of overflowing */
+@media (max-width: 768px) {
+  .upcoming-table-actions-vert {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: flex-start;
+    gap: 4px;
+  }
+
+  .upcoming-table-td-actions {
+    min-width: 0;
+    text-align: left;
+    height: auto;
+  }
+}
+/* --------------------------------
+   ADMIN SCHEDULE TABLE – FINAL LAYOUT
+-----------------------------------*/
+
+/* Card width + centering for the schedule table */
+.admin-upcoming-table-card {
+  max-width: 1100px;
+  margin: 16px auto 0;
+}
+
+/* Make the admin table feel tight and clean */
+.table.table--admin {
+  border-radius: 18px;
+  overflow: hidden;
+}
+
+/* Keep table inside viewport and let columns wrap nicely */
+.admin-upcoming-table-wrap {
+  width: 100%;
+}
+
+.upcoming-table {
+  width: 100%;
+  table-layout: fixed;
+}
+
+.upcoming-table th,
+.upcoming-table td {
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* Slightly tighter rows for compact look */
+.table--compact th,
+.table--compact td {
+  padding: 6px 6px;
+}
+
+/* Column width balance for desktop */
+@media (min-width: 900px) {
+  .upcoming-table th:nth-child(1),
+  .upcoming-table td:nth-child(1) {
+    width: 18%; /* When */
+  }
+
+  .upcoming-table th:nth-child(2),
+  .upcoming-table td:nth-child(2) {
+    width: 10%; /* Job */
+  }
+
+  .upcoming-table th:nth-child(3),
+  .upcoming-table td:nth-child(3) {
+    width: 42%; /* Location + address + notes */
+  }
+
+  .upcoming-table th:nth-child(4),
+  .upcoming-table td:nth-child(4) {
+    width: 18%; /* Assigned */
+  }
+
+  .upcoming-table th:nth-child(5),
+  .upcoming-table td:nth-child(5) {
+    width: 12%; /* Actions */
+  }
+}
+
+/* Let actions wrap so they never force horizontal scroll */
+.upcoming-table-td-actions {
+  white-space: normal;      /* override any nowrap */
+}
+
+/* Vertical actions on desktop, but not massive */
+.upcoming-table-actions-vert {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-end;
+}
+
+/* MOBILE TUNING: shrink fonts + let buttons wrap instead of overflowing */
+@media (max-width: 768px) {
+  .upcoming-table th,
+  .upcoming-table td {
+    font-size: 0.78rem;
+    padding: 4px 4px;
+  }
+
+  .upcoming-table-actions-vert {
+    flex-direction: row;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    justify-content: flex-start;
+    gap: 4px;
+  }
+
+  .upcoming-table-td-actions {
+    min-width: 0;
+    text-align: left;
+    height: auto;
+  }
+
+  .btn-edit,
+  .btn-delete {
+    padding: 4px 8px;
+    font-size: 0.78rem;
+  }
+}
+/* --------------------------------
+   ADMIN SCHEDULE – STACKED LAYOUT + TABLE TWEAKS
+   (ONLY affects /admin-schedule)
+-----------------------------------*/
+
+/* Center and tighten the form + table cards */
+.page--admin .form-container {
+  max-width: 1100px;
+  margin: 12px auto;
+  padding: 0 16px;
+}
+
+.admin-upcoming-table-card {
+  max-width: 1100px;
+  margin: 12px auto 0;
+}
+
+/* Make the upcoming table fill the card nicely */
+.admin-upcoming-table-wrap {
+  width: 100%;
+}
+
+.upcoming-table {
+  width: 100%;
+  table-layout: fixed;           /* keeps columns from getting goofy */
+}
+
+/* Tighter rows + consistent text size */
+.upcoming-table th,
+.upcoming-table td {
+  padding: 6px 8px;
+  font-size: 0.85rem;
+  vertical-align: middle;
+}
+
+/* Alternate row shading so it doesn’t look like one big block */
+.upcoming-table tbody tr:nth-child(even) {
+  background: #f9fafb;
+}
+
+/* Desktop: balance the column widths */
+@media (min-width: 900px) {
+  /* WHEN */
+  .upcoming-table th:nth-child(1),
+  .upcoming-table td:nth-child(1) {
+    width: 18%;
+  }
+
+  /* JOB */
+  .upcoming-table th:nth-child(2),
+  .upcoming-table td:nth-child(2) {
+    width: 10%;
+  }
+
+  /* LOCATION (name + address + notes) */
+  .upcoming-table th:nth-child(3),
+  .upcoming-table td:nth-child(3) {
+    width: 42%;
+  }
+
+  /* ASSIGNED */
+  .upcoming-table th:nth-child(4),
+  .upcoming-table td:nth-child(4) {
+    width: 20%;
+  }
+
+  /* ACTIONS */
+  .upcoming-table th:nth-child(5),
+  .upcoming-table td:nth-child(5) {
+    width: 10%;
+  }
+}
+
+/* Actions column: don’t let it blow out the width */
+.upcoming-table-td-actions {
+  white-space: normal;        /* allow wrapping */
+}
+
+/* Vertical stack of buttons on desktop */
+.upcoming-table-actions-vert {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  align-items: flex-end;
+}
+
+/* MOBILE CLEANUP – keep everything inside screen, no horizontal scroll */
+@media (max-width: 768px) {
+  .upcoming-table th,
+  .upcoming-table td {
+    font-size: 0.8rem;
+    padding: 4px 4px;
+  }
+
+  .upcoming-table-actions-vert {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+    align-items: flex-start;
+    gap: 4px;
+  }
+
+  .upcoming-table-td-actions {
+    min-width: 0;
+    text-align: left;
+    height: auto;
+  }
+
+  .btn-edit,
+  .btn-delete {
+    padding: 4px 8px;
+    font-size: 0.78rem;
+  }
+}
+/* --------------------------------
+   ADMIN SCHEDULE FORM SPACING
+-----------------------------------*/
+
+.page--admin .form-card {
+  padding: 20px 24px;
+  display: flex;
+  flex-direction: column;
+  gap: 16px;                    /* space between sections */
+}
+
+.page--admin .form-card label {
+  display: block;
+  margin-bottom: 4px;
+  font-size: 0.85rem;
+  font-weight: 600;
+  color: #111827;
+}
+
+.page--admin .form-card .grid-auto-fit-160 {
+  gap: 12px 16px;               /* more space between date/time inputs */
+}
+
+.page--admin .form-card textarea {
+  min-height: 80px;
+}
+
+/* buttons row under the form */
+.page--admin .form-card .form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin-top: 8px;
+}
+
+/* keep it comfy on phones */
+@media (max-width: 640px) {
+  .page--admin .form-card {
+    padding: 16px 18px;
+    gap: 14px;
+  }
+
+  .page--admin .form-card .grid-auto-fit-160 {
+    grid-template-columns: 1fr;
+  }
+}
+/* --------------------------------
+   ADMIN UPCOMING TABLE HEADERS
+-----------------------------------*/
+
+.upcoming-th {
+  text-align: center;              /* center everything in the header cell */
+}
+
+.upcoming-th .col-title {
+  display: block;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.upcoming-th .col-sub {
+  display: block;
+  margin-top: 2px;
+  font-size: 0.7rem;
+  font-weight: 400;
+  color: #9ca3af;
+  text-transform: none;            /* keep description normal case */
+  letter-spacing: 0;
+}
+/* Center contents under WHEN / JOB / LOCATION / ASSIGNED headers */
+.upcoming-col-when,
+.upcoming-col-job,
+.upcoming-col-location,
+.upcoming-col-assigned {
+  text-align: center !important;
+  vertical-align: middle !important;
+}
+
+/* Make WHEN cell stack nicely & centered */
+.upcoming-col-when .upcoming-table-cell-main {
+  display: flex;
+  flex-direction: column;
   align-items: center;
 }
 
-.ovf-y-auto {
-  overflow-y: auto;
+/* Location text centered but not stretched weird */
+.upcoming-col-location .upcoming-table-cell-main {
+  text-align: center;
+}
+
+/* Assigned – keep pills and dashes tight and centered */
+.upcoming-col-assigned .assigned-pill,
+.upcoming-col-assigned .assigned-empty {
+  display: inline-block;
+}
+
+/* if you want the dash a bit lighter */
+.assigned-empty {
+  font-size: 0.9rem;
+  color: #9ca3af;
+}
+/* --- FORCE TRUE CENTERING OF THE 4 DATA COLUMNS --- */
+
+/* Center the column headers themselves */
+.upcoming-table th {
+  text-align: center !important;
+}
+
+/* Center each column cell under its header */
+.upcoming-table td {
+  text-align: center !important;
+  vertical-align: middle !important;
+}
+
+/* EXCEPTION: keep ACTIONS column right aligned */
+.upcoming-table td:last-child,
+.upcoming-table th:last-child {
+  text-align: right !important;
+}
+
+/* Make LOCATION block centered properly */
+.upcoming-table td .upcoming-table-cell-main {
+  margin: 0 auto;
+  text-align: center !important;
+}
+
+/* Remove width bias — let columns center properly */
+.upcoming-table {
+  table-layout: auto !important;
+}
+
+/* Ensure table is centered within its container */
+.admin-upcoming-table-wrap table {
+  margin-left: auto;
+  margin-right: auto;
+}
+@media (max-width: 768px) {
+  .table--stack thead {
+    display: none;
+  }
+
+  .table--stack tbody,
+  .table--stack tr,
+  .table--stack td {
+    display: block;
+    width: 100%;
+  }
+
+  .table--stack tr {
+    border-radius: 14px;
+    border: 1px solid #e5e7eb;
+    background: #ffffff;
+    padding: 6px 8px;
+    margin-bottom: 8px;
+  }
+
+  .table--stack td {
+    border-bottom: none;
+    padding: 4px 0;
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .table--stack td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: #6b7280;
+    font-size: 0.8rem;
+  }
+
+  .table--stack td[data-label="Actions"] {
+    justify-content: flex-start;
+  }
+
+  .actions {
+    justify-content: flex-start;
+  }
+
+  .upcoming-table-actions-vert {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+
+  .upcoming-table-td-actions {
+    min-width: 0;
+    text-align: left;
+    height: auto;
+  }
+}
+@media (max-width: 768px) {
+  .table--stack thead {
+    display: none;
+  }
+
+  .table--stack tbody,
+  .table--stack tr,
+  .table--stack td {
+    display: block;
+    width: 100%;
+  }
+
+  .table--stack tr {
+    border-radius: 14px;
+    border: 1px solid #e5e7eb;
+    background: #ffffff;
+    padding: 6px 8px;
+    margin-bottom: 8px;
+  }
+
+  .table--stack td {
+    border-bottom: none;
+    padding: 4px 0;
+    display: flex;
+    justify-content: space-between;
+    gap: 8px;
+  }
+
+  .table--stack td::before {
+    content: attr(data-label);
+    font-weight: 600;
+    color: #6b7280;
+    font-size: 0.8rem;
+  }
+
+  .table--stack td[data-label="Actions"] {
+    justify-content: flex-start;
+  }
+
+  .actions {
+    justify-content: flex-start;
+  }
+
+  .upcoming-table-actions-vert {
+    flex-direction: row;
+    flex-wrap: wrap;
+    justify-content: flex-start;
+  }
+
+  .upcoming-table-td-actions {
+    min-width: 0;
+    text-align: left;
+    height: auto;
+  }
+}
+/* ===== ADMIN SCHEDULE LAYOUT & TABLE TUNING ===== */
+
+/* make sure table itself never forces horizontal scroll */
+.admin-upcoming-table-card {
+  max-width: 1100px;
+  margin: 1.5rem auto 0;
+}
+
+.admin-upcoming-table-wrap {
+  width: 100%;
+  overflow-x: visible;
+}
+
+.table.table--admin {
+  width: 100%;
+  table-layout: fixed; /* columns shrink on small screens */
+  border-collapse: collapse;
+}
+
+.table.table--admin th,
+.table.table--admin td {
+  white-space: normal;
+}
+
+/* center all table headers and body cells */
+.admin-upcoming-table-card .upcoming-table th,
+.admin-upcoming-table-card .upcoming-table td {
+  text-align: center;
+}
+
+/* keep the “content block” in the middle of each cell */
+.upcoming-table-td-middle {
+  text-align: center;
+}
+.upcoming-table-td-middle .upcoming-table-cell-main {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+}
+
+/* actions vertical stack */
+.upcoming-table-td-actions {
+  text-align: center;
+}
+.upcoming-table-actions-vert {
+  display: inline-flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+/* ---- MOBILE TWEAKS ---- */
+@media (max-width: 768px) {
+  /* stack layout: form then table, full width */
+  .admin-schedule-layout {
+    display: block;
+    gap: 1.5rem;
+  }
+
+  .form-container,
+  .admin-upcoming-table-card {
+    width: 100%;
+    max-width: 100%;
+    margin-inline: auto;
+  }
+
+  .admin-upcoming-table-wrap {
+    overflow-x: hidden; /* no horizontal scroll */
+  }
+
+  .table.table--admin {
+    min-width: 0;
+  }
+
+  .table.table--admin th,
+  .table.table--admin td {
+    padding: 6px 4px;      /* tighter padding so columns fit */
+    font-size: 0.8rem;
+  }
+
+  .upcoming-table-actions-vert button {
+    font-size: 0.75rem;
+    padding: 4px 8px;
+  }
+
+  /* keep “When / Job / Location / Assigned / Actions” on-screen */
+  .upcoming-table thead th {
+    letter-spacing: 0.05em;
+  }
+}
+/* ===== MOBILE: MAKE UPCOMING TABLE FIT WITHOUT CUT-OFF ===== */
+@media (max-width: 768px) {
+  /* Let the card use almost full width */
+  .admin-upcoming-table-card {
+    padding-left: 8px;
+    padding-right: 8px;
+  }
+
+  .admin-upcoming-table-wrap {
+    width: 100%;
+    margin: 0 auto;
+    overflow-x: visible; /* no clipping */
+  }
+
+  .table.table--admin.upcoming-table {
+    width: 100%;
+    table-layout: fixed;   /* force columns to share the width */
+    border-collapse: collapse;
+  }
+
+  /* Tighten padding + font so 5 columns fit */
+  .table.table--admin.upcoming-table th,
+  .table.table--admin.upcoming-table td {
+    padding: 6px 4px;
+    font-size: 12px;
+  }
+
+  /* Column width distribution (When / Job / Location / Assigned / Actions) */
+  .table.table--admin.upcoming-table th:nth-child(1),
+  .table.table--admin.upcoming-table td:nth-child(1) {
+    width: 18%;
+  }
+
+  .table.table--admin.upcoming-table th:nth-child(2),
+  .table.table--admin.upcoming-table td:nth-child(2) {
+    width: 14%;
+  }
+
+  .table.table--admin.upcoming-table th:nth-child(3),
+  .table.table--admin.upcoming-table td:nth-child(3) {
+    width: 34%; /* Location (wraps vertically) */
+  }
+
+  .table.table--admin.upcoming-table th:nth-child(4),
+  .table.table--admin.upcoming-table td:nth-child(4) {
+    width: 14%;
+  }
+
+  .table.table--admin.upcoming-table th:nth-child(5),
+  .table.table--admin.upcoming-table td:nth-child(5) {
+    width: 20%;
+  }
+
+  /* Make the action buttons a bit more compact */
+  .upcoming-table-actions-vert {
+    gap: 4px;
+  }
+
+  .upcoming-table-actions-vert button {
+    padding: 4px 8px;
+    font-size: 11px;
+    white-space: nowrap;
+  }
+}
+/* --- MOBILE TABLE ZOOM FIX --- */
+@media (max-width: 768px) {
+  .admin-upcoming-table-wrap {
+    transform: scale(0.90);          /* zoom table out slightly */
+    transform-origin: top center;    /* keep it centered */
+    width: 106%;                     /* counter-scale to keep alignment */
+  }
+
+  .table.table--admin.upcoming-table {
+    width: 100%;
+  }
+}
+/* Nudge the mobile table left slightly */
+@media (max-width: 768px) {
+  .admin-upcoming-table-wrap {
+    margin-left: -22px;   /* adjust this number until it's perfectly centered */
+    width: calc(100% + 10px);
+  }
+}
+/* ===== Admin Schedule – mobile form layout ===== */
+@media (max-width: 768px) {
+  /* make the whole layout single-column and centered */
+  .admin-schedule-layout {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 20px;
+  }
+
+  .form-container {
+    width: 100%;
+  }
+
+  .form-card {
+    max-width: 680px;        /* keeps it nicely centered */
+    margin: 0 auto 16px;     /* center on mobile */
+    padding: 10px 18px 10px; /* a bit tighter side padding */
+  }
+
+  /* stack date / time fields so they don't feel squished */
+  .form-card .grid-auto-fit-160 {
+    display: grid;
+    grid-template-columns: 1fr;
+    column-gap: 0;
+    row-gap: 12px;
+  }
+
+  /* tidy up labels + inputs vertically */
+  .form-card label {
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  .form-card input,
+  .form-card textarea,
+  .form-card select {
+    width: 100%;
+  }
+
+  /* keep the Start Now + title from feeling crowded */
+  .form-card .row.between {
+    align-items: flex-start;
+  }
+}
+/* Match form width to the Upcoming Shifts table */
+.form-card {
+  max-width: 760px;     /* same as the table card */
+  margin-left: auto;
+  margin-right: auto;
+  padding: 24px 20px;   /* adjust padding to match table's inner width */
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .form-card {
+    max-width: 94%;      /* same responsive width as the table */
+    padding: 18px 16px;  /* match table padding on mobile */
+  }
+}
+/* Match form width to the Upcoming Shifts table */
+.form-card {
+  max-width: 760px;     /* same as the table card */
+  margin-left: auto;
+  margin-right: auto;
+  padding: 24px 20px;   /* adjust padding to match table's inner width */
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .form-card {
+    max-width: 94%;      /* same responsive width as the table */
+    padding: 18px 16px;  /* match table padding on mobile */
+  }
+}
+/* Match form width to the Upcoming Shifts table */
+.form-card {
+  max-width: 760px;     /* same as the table card */
+  margin-left: auto;
+  margin-right: auto;
+  padding: 24px 20px;   /* adjust padding to match table's inner width */
+  box-sizing: border-box;
+}
+
+@media (max-width: 768px) {
+  .form-card {
+    max-width: 94%;      /* same responsive width as the table */
+    padding: 18px 16px;  /* match table padding on mobile */
+  }
+}
+/* ---------- NAV: MOBILE CENTERING ---------- */
+@media (max-width: 768px) {
+  .topbar .shell {
+    flex-direction: column;      /* stack logo + nav */
+    align-items: center;         /* center everything */
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .brand-wrap {
+    justify-content: center;
+    width: 100%;
+  }
+
+  .nav {
+    width: 100%;
+    justify-content: center;     /* center nav links */
+    flex-wrap: wrap;             /* wrap if they don't fit in one row */
+    gap: 8px 16px;
+  }
+
+  .nav-link {
+    padding-inline: 6px;         /* small tweak so they fit better */
+  }
+
+  .signout {
+    margin-left: 0;              /* don’t push it to the right */
+  }
+}
+/* ===============================
+   DASHBOARD – MOBILE LAYOUT
+   =============================== */
+@media (max-width: 768px) {
+  /* Overall page spacing */
+  .page--dashboard {
+    padding-inline: 12px;
+  }
+
+  .page--dashboard .page__title {
+    text-align: center;
+    margin-bottom: 12px;
+  }
+
+  /* Toolbar: stack + center everything */
+  .page--dashboard .toolbar.full {
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  .page--dashboard .toolbar__left {
+    width: 100%;
+    justify-content: center;
+    text-align: center;
+    gap: 6px;
+  }
+
+  .page--dashboard .toolbar__left .topbar-btn,
+  .page--dashboard #range-mode {
+    margin: 0;
+  }
+
+  .page--dashboard .toolbar-range-label {
+    width: 100%;
+    text-align: center;
+    margin-top: 4px;
+  }
+
+  /* "+ Log Shift" button full-width but not huge */
+  .page--dashboard .btn-primary {
+    width: 100%;
+    max-width: 320px;
+    text-align: center;
+    justify-content: center;
+  }
+
+  /* Totals chips: one per row, centered */
+  .page--dashboard .totals.totals--center {
+    flex-direction: column;
+    align-items: center;
+    gap: 8px;
+  }
+
+  .page--dashboard .totals.totals--center .chip--xl {
+    width: 100%;
+    max-width: 360px;
+    justify-content: space-between;
+  }
+
+  /* Table: centered and easy to read */
+  .page--dashboard .table-wrap {
+    width: 100%;
+    margin-top: 16px;
+  }
+
+  .page--dashboard .table-wrap .table {
+    width: 100%;
+    margin: 0 auto;
+  }
+
+  /* Optional: keep cells from hugging the edges */
+  .page--dashboard .table.table--stack td,
+  .page--dashboard .table.table--stack th {
+    padding-inline: 8px;
+  }
+}
+/* Make all date navigation buttons identical */
+.date-nav-btn,
+.week-btn,
+.topbar-btn,
+.range-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+
+  padding: 8px 14px !important;      /* identical padding */
+  min-height: 40px !important;       /* same height */
+  font-size: 15px !important;        /* same text size */
+  
+  border-radius: 16px !important;    /* identical rounded edges */
+  border: 1px solid #d1d5db !important; /* consistent border */
+  background: #ffffff !important;
+  color: #111827 !important;
+
+  white-space: nowrap;
+}
+
+/* Mobile spacing fix */
+@media (max-width: 768px) {
+  .date-nav-row,
+  .week-selector-row,
+  .range-controls {
+    display: flex;
+    justify-content: center;
+    gap: 10px;                /* identical spacing between buttons */
+    flex-wrap: wrap;
+  }
+
+  .date-nav-btn,
+  .week-btn,
+  .topbar-btn,
+  .range-btn {
+    padding: 6px 12px !important;   /* slightly smaller for mobile */
+    min-height: 36px !important;
+    font-size: 14px !important;
+  }
+}
+@media (max-width: 768px) {
+  .topbar-btn {
+    padding: 6px 10px !important;
+    font-size: 12px !important;
+  }
+
+  .date-range-controls,
+  .row.between {
+    gap: 6px !important;
+  }
 }

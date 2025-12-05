@@ -7,7 +7,6 @@ type ShiftType = 'Setup' | 'Breakdown' | 'Shop';
 
 /** Combine a local date (YYYY-MM-DD) and time (HH:MM) into a JS Date in local tz */
 function combineLocal(date: string, time: string): Date {
-  // Construct at midnight local, then set hours/minutes to avoid DST issues
   const d = new Date(`${date}T00:00:00`);
   const [hh, mm] = time.split(':').map(Number);
   d.setHours(hh ?? 0, mm ?? 0, 0, 0);
@@ -28,8 +27,13 @@ export default function NewShift() {
 
   useEffect(() => {
     (async () => {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) { r.replace('/'); return; }
+      const {
+        data: { user },
+      } = await supabase.auth.getUser();
+      if (!user) {
+        r.replace('/');
+        return;
+      }
       setUserId(user.id);
     })();
   }, [r]);
@@ -39,34 +43,29 @@ export default function NewShift() {
     if (!userId) return;
 
     try {
-      if (!date || !tin || !tout) {
+      if (!date || !tin || !tout)
         throw new Error('Date, Time In and Time Out are required.');
-      }
 
-      // Build local Date objects
       let timeIn = combineLocal(date, tin);
       let timeOut = combineLocal(date, tout);
 
-      // If out <= in, treat as overnight (roll to next day)
-      if (timeOut <= timeIn) {
-        timeOut.setDate(timeOut.getDate() + 1);
-      }
+      if (timeOut <= timeIn) timeOut.setDate(timeOut.getDate() + 1);
 
-      // (Optional sanity check: max 18 hours)
       const hours = (timeOut.getTime() - timeIn.getTime()) / 36e5;
-      if (hours <= 0 || hours > 18) {
+      if (hours <= 0 || hours > 18)
         throw new Error('Please double-check your times (shift length seems off).');
-      }
 
       setSaving(true);
+
       const { error } = await supabase.from('shifts').insert({
         user_id: userId,
-        shift_date: date,            // start date (keep as your canonical day)
+        shift_date: date,
         shift_type: type,
         time_in: timeIn.toISOString(),
         time_out: timeOut.toISOString(),
         notes,
       });
+
       if (error) throw error;
 
       r.push('/dashboard');
@@ -78,35 +77,41 @@ export default function NewShift() {
   }
 
   return (
-    <main className="wrap">
-      <section className="card">
-        <h1>Log Shift</h1>
+    <main className="wrap newshift-page">
+      <section className="card card--tight full newshift-card">
+        <header className="newshift-header">
+          <div>
+            <h1 className="newshift-title">Log Shift</h1>
+            <p className="newshift-subtitle">Enter your shift details below.</p>
+          </div>
+        </header>
 
-        <div className="field">
-          <label>Date</label>
-          <input
-            className="input"
-            type="date"
-            value={date}
-            onChange={(e) => setDate(e.target.value)}
-          />
-        </div>
+        {/* Date / Type / Time In / Time Out */}
+        <div className="newshift-grid">
+          <div className="field newshift-field">
+            <label>Date</label>
+            <input
+              className="input"
+              type="date"
+              value={date}
+              onChange={(e) => setDate(e.target.value)}
+            />
+          </div>
 
-        <div className="field">
-          <label>Shift Type</label>
-          <select
-            className="input select"
-            value={type}
-            onChange={(e) => setType(e.target.value as ShiftType)}
-          >
-            <option>Setup</option>
-            <option>Breakdown</option>
-            <option>Shop</option>
-          </select>
-        </div>
+          <div className="field newshift-field">
+            <label>Shift Type</label>
+            <select
+              className="input select"
+              value={type}
+              onChange={(e) => setType(e.target.value as ShiftType)}
+            >
+              <option>Setup</option>
+              <option>Breakdown</option>
+              <option>Shop</option>
+            </select>
+          </div>
 
-        <div className="grid">
-          <div className="field">
+          <div className="field newshift-field">
             <label>Time In</label>
             <input
               className="input"
@@ -115,7 +120,8 @@ export default function NewShift() {
               onChange={(e) => setTin(e.target.value)}
             />
           </div>
-          <div className="field">
+
+          <div className="field newshift-field">
             <label>Time Out</label>
             <input
               className="input"
@@ -126,7 +132,8 @@ export default function NewShift() {
           </div>
         </div>
 
-        <div className="field">
+        {/* Notes */}
+        <div className="field newshift-field newshift-notes">
           <label>Notes (optional)</label>
           <textarea
             className="input textarea"
@@ -136,106 +143,132 @@ export default function NewShift() {
           />
         </div>
 
-        {err && <p className="alert">{err}</p>}
+        {err && <p className="alert newshift-alert">{err}</p>}
 
-        <button className="primary" onClick={submit} disabled={saving}>
-          {saving ? 'Saving…' : 'Save'}
+        <button
+          className="btn-primary newshift-submit"
+          onClick={submit}
+          disabled={saving}
+        >
+          {saving ? 'Saving…' : 'Save Shift'}
         </button>
       </section>
 
       <style jsx>{`
-        /* Container */
-        .wrap {
-          max-width: 720px;
-          margin: 24px auto;
-          padding: 0 16px;
-        }
-        .card {
-          background: #fff;
-          border: 1px solid #edf2f7;
-          border-radius: 16px;
-          box-shadow: 0 10px 30px rgba(0,0,0,.04);
-          padding: 20px;
-          font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial, sans-serif;
-        }
-        h1 {
-          margin: 0 0 16px;
-          font-size: clamp(22px, 3.4vw, 32px);
+        /* Center the whole card on the page on ALL screen sizes */
+        .newshift-page {
+          display: flex;
+          justify-content: center;
+          padding: 24px 16px 32px;
         }
 
-        /* Fields */
-        .field { margin-bottom: 12px; }
-        label {
-          display: block;
-          margin: 0 0 6px;
-          font-weight: 600;
-          color: #1f2937;
-        }
-        .input {
+        .newshift-card {
           width: 100%;
-          box-sizing: border-box;
-          height: 48px;
-          padding: 12px 14px;
-          border: 1px solid #d1d5db;
-          border-radius: 12px;
-          background: #fff;
-          font-size: 16px;
-          line-height: 1.2;
-          -webkit-appearance: none;
-          appearance: none;
-        }
-        .input:focus {
-          outline: none;
-          border-color: #6366f1;
-          box-shadow: 0 0 0 3px rgba(99,102,241,.15);
-        }
-        .textarea {
-          height: 120px;
-          resize: vertical;
-          padding-top: 10px;
-          padding-bottom: 10px;
+          max-width: 760px;
+          margin: 0 auto;
+          padding: 24px 24px 28px;
         }
 
-        .select {
-          padding-right: 36px;
-          background-image:
-            linear-gradient(45deg, transparent 50%, #6b7280 50%),
-            linear-gradient(135deg, #6b7280 50%, transparent 50%);
-          background-position:
-            calc(100% - 18px) 50%,
-            calc(100% - 12px) 50%;
-          background-size: 6px 6px, 6px 6px;
-          background-repeat: no-repeat;
+        .newshift-header {
+          display: flex;
+          justify-content: space-between;
+          align-items: baseline;
+          margin-bottom: 20px;
+          gap: 12px;
         }
 
-        .grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
-
-        @media (max-width: 560px) {
-          .wrap { margin: 16px auto; }
-          .card { padding: 16px; border-radius: 14px; }
-          .grid { grid-template-columns: 1fr; }  /* stack time fields */
-          .input { height: 50px; }
-        }
-
-        .primary {
-          width: 100%;
-          height: 52px;
-          border: 0;
-          border-radius: 12px;
-          background: #2563eb;
-          color: #fff;
+        .newshift-title {
+          margin: 0;
+          font-size: 1.6rem;
           font-weight: 700;
-          cursor: pointer;
         }
-        .primary:disabled { opacity: .6; cursor: not-allowed; }
 
-        .alert {
-          color: #b91c1c;
-          background: #fee2e2;
-          border: 1px solid #fecaca;
-          padding: 10px 12px;
-          border-radius: 10px;
-          margin-bottom: 10px;
+        .newshift-subtitle {
+          margin: 4px 0 0;
+          font-size: 0.95rem;
+          opacity: 0.7;
+        }
+
+        .newshift-grid {
+          display: grid;
+          grid-template-columns: repeat(2, minmax(0, 1fr));
+          gap: 16px 24px;
+          align-items: flex-end;
+        }
+
+        .newshift-field {
+          width: 100%;
+        }
+
+        .newshift-field label {
+          display: block;
+          margin-bottom: 6px;
+          font-size: 0.9rem;
+          font-weight: 500;
+        }
+
+        .newshift-notes {
+          margin-top: 18px;
+        }
+
+        .newshift-notes textarea {
+          min-height: 80px;
+          resize: vertical;
+        }
+
+        .newshift-alert {
+          margin-top: 12px;
+        }
+
+        .newshift-submit {
+          margin-top: 24px;
+          width: 100%;
+          font-size: 1.05rem;
+          padding: 14px 0;
+        }
+
+        /* ---------- MOBILE ---------- */
+        @media (max-width: 768px) {
+          .newshift-page {
+            padding: 20px 12px 28px;
+          }
+
+          .newshift-card {
+            max-width: 100%;
+            padding: 20px 16px 24px;
+          }
+
+          .newshift-title {
+            font-size: 1.4rem;
+          }
+
+          .newshift-subtitle {
+            font-size: 0.9rem;
+          }
+
+          .newshift-grid {
+            grid-template-columns: 1fr;
+            gap: 14px;
+            margin-top: 6px;
+          }
+
+          .newshift-card :global(.input),
+          .newshift-card :global(.select) {
+            width: 100%;
+            font-size: 1rem;
+            padding-top: 12px;
+            padding-bottom: 12px;
+          }
+
+          .newshift-notes textarea {
+            min-height: 70px;
+          }
+
+          .newshift-submit {
+            font-size: 1.05rem;
+            padding: 14px 0;
+            margin-top: 20px;
+          }
         }
       `}</style>
     </main>
