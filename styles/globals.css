@@ -2785,3 +2785,62 @@ textarea:focus {
     justify-content: center;
   }
 }
+/* ===== UPCOMING TABLE – ACTIONS UNDER ROW ON MOBILE ===== */
+
+/* mobile actions row is hidden by default on desktop */
+.upcoming-row-actions-mobile {
+  display: none;
+}
+
+@media (max-width: 768px) {
+  /* shrink table a bit & keep it inside the card */
+  .admin-upcoming-table-card .admin-upcoming-table-wrap {
+    width: 100%;
+    margin: 0 auto;
+    overflow-x: hidden; /* no side-scroll */
+  }
+
+  .admin-upcoming-table-card .upcoming-table {
+    width: 100%;
+    table-layout: fixed;
+  }
+
+  .admin-upcoming-table-card .upcoming-table th,
+  .admin-upcoming-table-card .upcoming-table td {
+    font-size: 12px;
+    padding: 4px 4px;
+    word-break: normal;
+    overflow-wrap: normal;
+  }
+
+  /* hide the desktop Actions column */
+  .admin-upcoming-table-card .upcoming-actions-desktop,
+  .admin-upcoming-table-card thead th:last-child {
+    display: none;
+  }
+
+  /* show the bottom actions row for each shift */
+  .upcoming-row-actions-mobile {
+    display: table-row;
+  }
+
+  .upcoming-row-actions-mobile td {
+    padding-top: 4px;
+    border-top: none;
+    text-align: center;
+  }
+
+  .upcoming-row-actions-mobile-inner {
+    display: flex;
+    flex-wrap: wrap;
+    justify-content: center;
+    gap: 4px;
+  }
+
+  .upcoming-row-actions-mobile-inner .btn-edit,
+  .upcoming-row-actions-mobile-inner .btn-delete {
+    font-size: 11px;
+    padding: 4px 8px;
+    white-space: nowrap;
+  }
+}

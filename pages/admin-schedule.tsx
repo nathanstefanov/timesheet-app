@@ -1,6 +1,6 @@
 // pages/admin-schedule.tsx
 import Link from 'next/link';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useEffect, useMemo, useRef, useState, Fragment } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
 
@@ -957,88 +957,126 @@ export default function AdminSchedule() {
                         : '—';
 
                     return (
-                      <tr
-                        key={r.id}
-                        id={`shift-row-${r.id}`} // <-- used for scroll back
-                        className={i % 2 === 1 ? 'row-alt' : ''}
-                      >
-                        {/* WHEN */}
-                        <td className="upcoming-table-td upcoming-table-td-middle upcoming-col-when">
-                          <div className="upcoming-table-cell-main">
-                            <div>{fmtDate(r.start_time)}</div>
-                            {r.end_time && (
-                              <div className="muted fs-12">
-                                Ends {fmtTimeOnly(r.end_time)}
-                              </div>
+                      <Fragment key={r.id}>
+                        {/* MAIN ROW */}
+                        <tr
+                          id={`shift-row-${r.id}`}
+                          className={i % 2 === 1 ? 'row-alt' : ''}
+                        >
+                          {/* WHEN */}
+                          <td className="upcoming-table-td upcoming-table-td-middle upcoming-col-when">
+                            <div className="upcoming-table-cell-main">
+                              <div>{fmtDate(r.start_time)}</div>
+                              {r.end_time && (
+                                <div className="muted fs-12">
+                                  Ends {fmtTimeOnly(r.end_time)}
+                                </div>
+                              )}
+                            </div>
+                          </td>
+
+                          {/* JOB */}
+                          <td className="upcoming-table-td upcoming-table-td-middle upcoming-col-job">
+                            <span className="badge badge-job">{r.job_type}</span>
+                          </td>
+
+                          {/* LOCATION */}
+                          <td className="upcoming-table-td upcoming-table-td-middle upcoming-col-location">
+                            <div className="upcoming-table-cell-main">
+                              <div>{r.location_name}</div>
+                              {r.address && (
+                                <div className="muted fs-12">{r.address}</div>
+                              )}
+                              {r.notes && (
+                                <div className="muted fs-12">
+                                  Notes: {r.notes}
+                                </div>
+                              )}
+                            </div>
+                          </td>
+
+                          {/* ASSIGNED */}
+                          <td className="upcoming-table-td upcoming-table-td-middle upcoming-col-assigned">
+                            {emps.length > 0 ? (
+                              <span className="badge badge-assigned upcoming-table-assigned-badge-wrap">
+                                {assignedLabel}
+                              </span>
+                            ) : (
+                              <span className="badge badge-unassigned">—</span>
                             )}
-                          </div>
-                        </td>
+                          </td>
 
-                        {/* JOB */}
-                        <td className="upcoming-table-td upcoming-table-td-middle upcoming-col-job">
-                          <span className="badge badge-job">{r.job_type}</span>
-                        </td>
+                          {/* DESKTOP ACTIONS */}
+                          <td className="upcoming-table-td upcoming-table-td-actions upcoming-actions-desktop">
+                            <div className="upcoming-table-actions-vert">
+                              <button
+                                type="button"
+                                className="btn-edit"
+                                onClick={() => openEdit(r)}
+                              >
+                                Edit
+                              </button>
+                              <button
+                                type="button"
+                                className="btn-edit"
+                                onClick={() => openAssign(r)}
+                              >
+                                Assign
+                              </button>
+                              <button
+                                type="button"
+                                className="btn-edit"
+                                onClick={() => prefillFormFromShift(r)}
+                              >
+                                Duplicate
+                              </button>
+                              <button
+                                type="button"
+                                className="btn-delete"
+                                onClick={() => deleteRow(r.id)}
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
 
-                        {/* LOCATION */}
-                        <td className="upcoming-table-td upcoming-table-td-middle upcoming-col-location">
-                          <div className="upcoming-table-cell-main">
-                            <div>{r.location_name}</div>
-                            {r.address && (
-                              <div className="muted fs-12">{r.address}</div>
-                            )}
-                            {r.notes && (
-                              <div className="muted fs-12">
-                                Notes: {r.notes}
-                              </div>
-                            )}
-                          </div>
-                        </td>
-
-                        {/* ASSIGNED */}
-                        <td className="upcoming-table-td upcoming-table-td-middle upcoming-col-assigned">
-                          {emps.length > 0 ? (
-                            <span className="badge badge-assigned upcoming-table-assigned-badge-wrap">
-                              {assignedLabel}
-                            </span>
-                          ) : (
-                            <span className="badge badge-unassigned">—</span>
-                          )}
-                        </td>
-
-                        {/* ACTIONS */}
-                        <td className="upcoming-table-td upcoming-table-td-actions">
-                          <div className="upcoming-table-actions-vert">
-                            <button
-                              type="button"
-                              className="btn-edit"
-                              onClick={() => openEdit(r)}
-                            >
-                              Edit
-                            </button>
-                            <button
-                              type="button"
-                              className="btn-edit"
-                              onClick={() => openAssign(r)}
-                            >
-                              Assign
-                            </button>
-                            <button
-                              type="button"
-                              className="btn-edit"
-                              onClick={() => prefillFormFromShift(r)}
-                            >
-                              Duplicate
-                            </button>
-                            <button
-                              type="button"
-                              className="btn-delete"
-                              onClick={() => deleteRow(r.id)}
-                            >
-                              Delete
-                            </button>
-                          </div>
-                        </td>
-                      </tr>
+                        {/* MOBILE ACTIONS ROW */}
+                        <tr className="upcoming-row-actions-mobile">
+                          <td colSpan={5}>
+                            <div className="upcoming-row-actions-mobile-inner">
+                              <button
+                                type="button"
+                                className="btn-edit"
+                                onClick={() => openEdit(r)}
+                              >
+                                Edit
+                              </button>
+                              <button
+                                type="button"
+                                className="btn-edit"
+                                onClick={() => openAssign(r)}
+                              >
+                                Assign
+                              </button>
+                              <button
+                                type="button"
+                                className="btn-edit"
+                                onClick={() => prefillFormFromShift(r)}
+                              >
+                                Duplicate
+                              </button>
+                              <button
+                                type="button"
+                                className="btn-delete"
+                                onClick={() => deleteRow(r.id)}
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      </Fragment>
                     );
                   })}
                 </tbody>
