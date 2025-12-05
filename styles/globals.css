@@ -2316,25 +2316,6 @@ textarea:focus {
     white-space: nowrap;
   }
 }
-/* --- MOBILE TABLE ZOOM FIX --- */
-@media (max-width: 768px) {
-  .admin-upcoming-table-wrap {
-    transform: scale(0.90);          /* zoom table out slightly */
-    transform-origin: top center;    /* keep it centered */
-    width: 106%;                     /* counter-scale to keep alignment */
-  }
-
-  .table.table--admin.upcoming-table {
-    width: 100%;
-  }
-}
-/* Nudge the mobile table left slightly */
-@media (max-width: 768px) {
-  .admin-upcoming-table-wrap {
-    margin-left: -22px;   /* adjust this number until it's perfectly centered */
-    width: calc(100% + 10px);
-  }
-}
 /* ===== Admin Schedule – mobile form layout ===== */
 @media (max-width: 768px) {
   /* make the whole layout single-column and centered */
@@ -2581,5 +2562,52 @@ textarea:focus {
   .date-range-controls,
   .row.between {
     gap: 6px !important;
+  }
+}
+/* ===== FINAL MOBILE FIT FOR UPCOMING SHIFTS TABLE ===== */
+@media (max-width: 768px) {
+  /* use full width of the card, no extra padding pushing it in */
+  .page--admin .admin-upcoming-table-card {
+    padding-left: 4px;
+    padding-right: 4px;
+    margin-top: 12px;
+  }
+
+  /* slightly scale the contents down, but KEEP width at 100% so no scroll */
+  .page--admin .admin-upcoming-table-wrap {
+    width: 100%;
+    overflow-x: visible;
+    transform: scale(0.92);          /* tad smaller */
+    transform-origin: top center;    /* shrink towards the center */
+  }
+
+  .page--admin .table.table--admin.upcoming-table {
+    width: 100%;
+    table-layout: fixed;             /* share width across 5 columns */
+    border-collapse: collapse;
+  }
+
+  /* tighten text + padding so columns fit comfortably */
+  .page--admin .table.table--admin.upcoming-table th,
+  .page--admin .table.table--admin.upcoming-table td {
+    padding: 4px 3px;
+    font-size: 11px;
+    white-space: normal;
+    word-wrap: break-word;
+    overflow-wrap: break-word;
+  }
+
+  /* make action buttons compact so Actions column doesn’t blow out */
+  .page--admin .upcoming-table-actions-vert {
+    flex-direction: row;
+    flex-wrap: wrap;
+    gap: 4px;
+    justify-content: center;
+  }
+
+  .page--admin .upcoming-table-actions-vert button {
+    padding: 3px 7px;
+    font-size: 11px;
+    white-space: nowrap;
   }
 }
