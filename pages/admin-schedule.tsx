@@ -319,6 +319,22 @@ export default function AdminSchedule() {
 
   const [, setTick] = useState(0);
 
+  // which row opened the edit/assign panel (for scroll back)
+  const [editingSourceId, setEditingSourceId] = useState<string | null>(null);
+  const [assignSourceId, setAssignSourceId] = useState<string | null>(null);
+
+  // helper: scroll back to a row by id
+  function scrollToShiftRow(id: string | null) {
+    if (!id) return;
+    if (typeof document === 'undefined') return;
+    setTimeout(() => {
+      const row = document.getElementById(`shift-row-${id}`);
+      if (row) {
+        row.scrollIntoView({ behavior: 'smooth', block: 'center' });
+      }
+    }, 50);
+  }
+
   // ---------- AUTH ----------
   useEffect(() => {
     let alive = true;
@@ -542,9 +558,10 @@ export default function AdminSchedule() {
     }
   }
 
-  // ---------- OPEN EDIT (with scroll) ----------
+  // ---------- OPEN EDIT ----------
   function openEdit(row: SRow) {
     setEdit({ ...row });
+    setEditingSourceId(row.id);
   }
 
   // when edit panel is set, scroll to it
@@ -584,6 +601,7 @@ export default function AdminSchedule() {
 
   async function saveEdit() {
     if (!edit?.id) return;
+    const shiftId = edit.id; // remember which row
     setSaving(true);
     try {
       const body: any = {
@@ -612,6 +630,7 @@ export default function AdminSchedule() {
 
       setEdit(null);
       await loadRows();
+      scrollToShiftRow(shiftId);
     } catch (e: any) {
       alert(e.message || 'Failed to save');
     } finally {
@@ -628,9 +647,10 @@ export default function AdminSchedule() {
     await loadRows();
   }
 
-  // ---------- OPEN ASSIGN (with scroll) ----------
+  // ---------- OPEN ASSIGN ----------
   async function openAssign(row: SRow) {
     setAssignShift(row);
+    setAssignSourceId(row.id);
     setSearch('');
 
     // reset lists immediately for clean UI
@@ -665,11 +685,13 @@ export default function AdminSchedule() {
   async function saveAssignments() {
     if (!assignShift?.id) return;
 
+    const shiftId = assignShift.id;
+
     const add = assignees.filter((x) => !currentAssignees.includes(x));
     const remove = currentAssignees.filter((x) => !assignees.includes(x));
 
     if (add.length) {
-      const r = await fetch(`/api/schedule/shifts/${assignShift.id}/assign`, {
+      const r = await fetch(`/api/schedule/shifts/${shiftId}/assign`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ employee_ids: add }),
@@ -678,7 +700,7 @@ export default function AdminSchedule() {
     }
 
     if (remove.length) {
-      const r = await fetch(`/api/schedule/shifts/${assignShift.id}/assign`, {
+      const r = await fetch(`/api/schedule/shifts/${shiftId}/assign`, {
         method: 'DELETE',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ employee_ids: remove }),
@@ -689,8 +711,9 @@ export default function AdminSchedule() {
     setAssignShift(null);
     setAssignedMap((prev) => ({
       ...prev,
-      [assignShift!.id]: employees.filter((e) => assignees.includes(e.id)),
+      [shiftId]: employees.filter((e) => assignees.includes(e.id)),
     }));
+    scrollToShiftRow(shiftId);
   }
 
   // ---------- RENDER GUARD ----------
@@ -887,11 +910,6 @@ export default function AdminSchedule() {
           </div>
         </div>
 
-        {/* if you have an extra table here, keep your existing markup */}
-        {/* <div className="table-wrapper">
-          <table> ... </table>
-        </div> */}
-
         {/* UPCOMING TABLE */}
         <div className="card card--tight full admin-upcoming-table-card">
           <div className="upcoming-table-header row between wrap align-items-center">
@@ -939,7 +957,11 @@ export default function AdminSchedule() {
                         : '—';
 
                     return (
-                      <tr key={r.id} className={i % 2 === 1 ? 'row-alt' : ''}>
+                      <tr
+                        key={r.id}
+                        id={`shift-row-${r.id}`} // <-- used for scroll back
+                        className={i % 2 === 1 ? 'row-alt' : ''}
+                      >
                         {/* WHEN */}
                         <td className="upcoming-table-td upcoming-table-td-middle upcoming-col-when">
                           <div className="upcoming-table-cell-main">
@@ -1034,7 +1056,11 @@ export default function AdminSchedule() {
             <button
               type="button"
               className="topbar-btn"
-              onClick={() => setEdit(null)}
+              onClick={() => {
+                const id = editingSourceId;
+                setEdit(null);
+                scrollToShiftRow(id);
+              }}
             >
               Close
             </button>
@@ -1138,7 +1164,11 @@ export default function AdminSchedule() {
             <button
               type="button"
               className="topbar-btn"
-              onClick={() => setAssignShift(null)}
+              onClick={() => {
+                const id = assignSourceId;
+                setAssignShift(null);
+                scrollToShiftRow(id);
+              }}
             >
               Close
             </button>
