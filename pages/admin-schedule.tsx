@@ -542,9 +542,19 @@ export default function AdminSchedule() {
     }
   }
 
+  // ---------- OPEN EDIT (with scroll) ----------
   function openEdit(row: SRow) {
     setEdit({ ...row });
   }
+
+  // when edit panel is set, scroll to it
+  useEffect(() => {
+    if (!edit) return;
+    const el = document.getElementById('edit-panel');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [edit]);
 
   function prefillFormFromShift(row: SRow) {
     const start = row.start_time ? new Date(row.start_time) : new Date();
@@ -618,9 +628,14 @@ export default function AdminSchedule() {
     await loadRows();
   }
 
+  // ---------- OPEN ASSIGN (with scroll) ----------
   async function openAssign(row: SRow) {
     setAssignShift(row);
     setSearch('');
+
+    // reset lists immediately for clean UI
+    setCurrentAssignees([]);
+    setAssignees([]);
 
     const { data } = await supabase
       .from('schedule_assignments')
@@ -631,6 +646,15 @@ export default function AdminSchedule() {
     setCurrentAssignees(ids);
     setAssignees(ids);
   }
+
+  // when assign panel is set, scroll to it
+  useEffect(() => {
+    if (!assignShift) return;
+    const el = document.getElementById('assign-panel');
+    if (el) {
+      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+  }, [assignShift]);
 
   function toggleEmp(id: string) {
     setAssignees((prev) =>
@@ -863,9 +887,10 @@ export default function AdminSchedule() {
           </div>
         </div>
 
-<div className="table-wrapper">
-  <table> ... </table>
-</div>
+        {/* if you have an extra table here, keep your existing markup */}
+        {/* <div className="table-wrapper">
+          <table> ... </table>
+        </div> */}
 
         {/* UPCOMING TABLE */}
         <div className="card card--tight full admin-upcoming-table-card">
