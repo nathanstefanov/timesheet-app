@@ -2668,3 +2668,17 @@ textarea:focus {
     font-size: 11px;
   }
 }
+/* === Fix JOB badge wrapping on mobile === */
+@media (max-width: 768px) {
+  /* don't break letters in the JOB column */
+  .admin-upcoming-table-wrap .upcoming-table td:nth-child(2),
+  .admin-upcoming-table-wrap .upcoming-table th:nth-child(2) {
+    word-break: normal;
+  }
+
+  /* keep the badge itself on one line */
+  .admin-upcoming-table-wrap .badge-job {
+    white-space: nowrap;
+    word-break: keep-all;
+  }
+}
