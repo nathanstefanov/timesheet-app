@@ -1,7 +1,11 @@
+// pages/api/schedule/me.ts
 import type { NextApiRequest, NextApiResponse } from 'next';
 import { supabaseAdmin } from '../../../lib/supabaseAdmin';
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+export default async function handler(
+  req: NextApiRequest,
+  res: NextApiResponse
+) {
   try {
     const auth = req.headers.authorization || '';
     const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
@@ -20,13 +24,16 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
       .eq('employee_id', userId);
 
     if (aErr) return res.status(500).json({ error: aErr.message });
+
     const ids = (assigns ?? []).map((r: any) => r.schedule_shift_id);
     if (ids.length === 0) return res.status(200).json([]);
 
-    // Load shifts
+    // Load shifts INCLUDING notes
     const { data: shifts, error: sErr } = await supabaseAdmin
       .from('schedule_shifts')
-      .select('id, start_time, end_time, job_type, location_name, address, status')
+      .select(
+        'id, start_time, end_time, job_type, location_name, address, status, notes'
+      )
       .in('id', ids)
       .order('start_time', { ascending: true });
 
@@ -46,7 +53,18 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
           full_name: r.profiles?.full_name ?? null,
         }));
 
-        return { ...sh, mates };
+        // make sure notes is passed through
+        return {
+          id: sh.id,
+          start_time: sh.start_time,
+          end_time: sh.end_time,
+          job_type: sh.job_type,
+          location_name: sh.location_name,
+          address: sh.address,
+          status: sh.status,
+          notes: sh.notes ?? null,
+          mates,
+        };
       })
     );
 

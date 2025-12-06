@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { supabase } from '../../lib/supabaseClient';
 
 type Mate = { id: string; full_name?: string | null };
+
 type Shift = {
   id: string;
   start_time: string | null;
@@ -11,6 +12,7 @@ type Shift = {
   location_name?: string | null;
   address?: string | null;
   mates?: Mate[];
+  notes?: string | null; // ✅ notes
 };
 
 // Detects Apple devices and builds correct map link
@@ -42,7 +44,7 @@ export default function MySchedule() {
 
   const [, setTick] = useState(0);
   useEffect(() => {
-    const id = setInterval(() => setTick(t => t + 1), 60_000);
+    const id = setInterval(() => setTick((t) => t + 1), 60_000);
     return () => clearInterval(id);
   }, []);
 
@@ -129,14 +131,15 @@ export default function MySchedule() {
 
   const filtered = useMemo(() => {
     const text = q.trim().toLowerCase();
-    return rows.filter(r => {
+    return rows.filter((r) => {
       if (typeFilter !== 'all' && r.job_type !== typeFilter) return false;
       if (!text) return true;
       const hay = [
         r.location_name ?? '',
         r.address ?? '',
         r.job_type ?? '',
-        ...(r.mates || []).map(m => m.full_name ?? ''),
+        r.notes ?? '',
+        ...(r.mates || []).map((m) => m.full_name ?? ''),
       ]
         .join(' ')
         .toLowerCase();
@@ -149,7 +152,7 @@ export default function MySchedule() {
     const u: Shift[] = [];
     const p: Shift[] = [];
 
-    filtered.forEach(s => {
+    filtered.forEach((s) => {
       const sMs = s.start_time ? Date.parse(s.start_time) : 0;
       const eMs = s.end_time ? Date.parse(s.end_time) : 0;
       const isPast = eMs ? eMs < now : sMs < now;
@@ -159,12 +162,12 @@ export default function MySchedule() {
     u.sort(
       (a, b) =>
         (Date.parse(a.start_time ?? '') || 0) -
-        (Date.parse(b.start_time ?? '') || 0)
+        (Date.parse(b.start_time ?? '') || 0),
     );
     p.sort(
       (a, b) =>
         (Date.parse(b.end_time ?? '') || 0) -
-        (Date.parse(a.end_time ?? '') || 0)
+        (Date.parse(a.end_time ?? '') || 0),
     );
 
     return { upcoming: u, past: p };
@@ -172,14 +175,14 @@ export default function MySchedule() {
 
   const upcomingGroups = useMemo(() => {
     const map = new Map<string, Shift[]>();
-    upcoming.forEach(s => {
+    upcoming.forEach((s) => {
       const key = s.start_time ? new Date(s.start_time).toDateString() : 'TBD';
       if (!map.has(key)) map.set(key, []);
       map.get(key)!.push(s);
     });
 
     return Array.from(map.entries()).sort(
-      (a, b) => (Date.parse(a[0]) || 0) - (Date.parse(b[0]) || 0)
+      (a, b) => (Date.parse(a[0]) || 0) - (Date.parse(b[0]) || 0),
     );
   }, [upcoming]);
 
@@ -189,8 +192,8 @@ export default function MySchedule() {
 
     if (me) list.push(me);
     if (mates) {
-      mates.forEach(m => {
-        if (!list.some(x => x.id === m.id)) list.push(m);
+      mates.forEach((m) => {
+        if (!list.some((x) => x.id === m.id)) list.push(m);
       });
     }
 
@@ -200,12 +203,12 @@ export default function MySchedule() {
 
     return (
       <div className="row wrap gap-sm teammates-row">
-        {list.map(m => {
+        {list.map((m) => {
           const name = m.full_name || 'Teammate';
           const initials = name
             .split(' ')
             .filter(Boolean)
-            .map(p => p[0].toUpperCase() + '.')
+            .map((p) => p[0].toUpperCase() + '.')
             .join('');
 
           return (
@@ -226,39 +229,55 @@ export default function MySchedule() {
     return (
       <div className="card shift-card">
         <div className="shift-card-job">
-          <JobBadgeXL text={s.job_type ?? undefined} />
+          <div className="row wrap gap-md shift-card-job">
+            <span className="shift-type-pill">
+              {s.job_type ? s.job_type.toUpperCase() : ''}
+            </span>
+          </div>
         </div>
 
-        <div className="row wrap gap-md shift-card-datetime">
-          <strong className="shift-card-day">{dayShort}</strong>
-          <span className="muted shift-card-time">
-            {start}
-            {end ? ` – ${end}` : ''}
-          </span>
-        </div>
+        {/* everything lined up inside this column */}
+        <div className="shift-card-main">
+          <div className="row wrap gap-md shift-card-datetime">
+            <strong className="shift-card-day">{dayShort}</strong>
+            <span className="muted shift-card-time">
+              {start}
+              {end ? ` – ${end}` : ''}
+            </span>
+          </div>
 
-        <div className="row wrap gap-md shift-card-location">
-          {s.address ? (
-            <a
-              href={getMapLink(s.address)}
-              target="_blank"
-              rel="noopener noreferrer"
-              className="shift-card-location-link"
-            >
-              <strong className="shift-card-location-name">
-                {s.location_name || 'Location'}
-              </strong>
-              <div className="muted shift-card-location-address">
-                {s.address}
-              </div>
-            </a>
-          ) : (
-            <strong>{s.location_name || 'Location TBD'}</strong>
+          <div className="row wrap gap-md shift-card-location">
+            {s.address ? (
+              <a
+                href={getMapLink(s.address)}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="shift-card-location-link"
+              >
+                <strong className="shift-card-location-name">
+                  {s.location_name || 'Location'}
+                </strong>
+                <div className="muted shift-card-location-address">
+                  {s.address}
+                </div>
+              </a>
+            ) : (
+              <strong>{s.location_name || 'Location TBD'}</strong>
+            )}
+          </div>
+
+          {s.notes && (
+            <div className="row wrap gap-md shift-card-notes">
+              <span className="shift-card-notes-label">
+                <strong>Notes:</strong>
+              </span>
+              <span className="shift-card-notes-text">{s.notes}</span>
+            </div>
           )}
-        </div>
 
-        <div className="shift-card-teammates">
-          <Teammates mates={s.mates} me={me} />
+          <div className="shift-card-teammates">
+            <Teammates mates={s.mates} me={me} />
+          </div>
         </div>
       </div>
     );
@@ -275,12 +294,12 @@ export default function MySchedule() {
             className="me-schedule-search"
             placeholder="Search location, address, teammates…"
             value={q}
-            onChange={e => setQ(e.target.value)}
+            onChange={(e) => setQ(e.target.value)}
           />
           <select
             className="me-schedule-filter"
             value={typeFilter}
-            onChange={e => setTypeFilter(e.target.value as any)}
+            onChange={(e) => setTypeFilter(e.target.value as any)}
           >
             <option value="all">All types</option>
             <option value="setup">Setup</option>
@@ -319,16 +338,14 @@ export default function MySchedule() {
               <div key={dayKey} className="card me-schedule-group-card">
                 <div className="row between wrap me-schedule-group-header">
                   <strong>
-                    {dayKey === 'TBD'
-                      ? 'Date TBD'
-                      : fmtDateLong(dayKey)}
+                    {dayKey === 'TBD' ? 'Date TBD' : fmtDateLong(dayKey)}
                   </strong>
                   <span className="muted">
                     {list.length} shift{list.length > 1 ? 's' : ''}
                   </span>
                 </div>
                 <div className="me-schedule-group-grid">
-                  {list.map(s => (
+                  {list.map((s) => (
                     <ShiftCard key={s.id} s={s} me={me} />
                   ))}
                 </div>
@@ -348,7 +365,7 @@ export default function MySchedule() {
             }}
             onClick={() => {
               if (past.length === 0) return;
-              setShowPast(prev => !prev);
+              setShowPast((prev) => !prev);
             }}
           >
             <div className="section-bar__left me-schedule-past-header">
@@ -371,7 +388,7 @@ export default function MySchedule() {
 
           {showPast && past.length > 0 && (
             <div className="me-schedule-past-grid">
-              {past.map(s => (
+              {past.map((s) => (
                 <ShiftCard key={s.id} s={s} me={me} />
               ))}
             </div>
@@ -485,17 +502,20 @@ export default function MySchedule() {
         }
 
         .shift-card {
-          padding: 16px;
-          text-align: center;
+          padding: 16px 20px;
         }
 
         .shift-card-job {
           margin-bottom: 6px;
         }
 
+        .shift-card-main {
+          text-align: left;
+          padding-left: 2px; /* tiny indent for everything, including notes */
+        }
+
         .shift-card-datetime {
           margin-top: 4px;
-          justify-content: center;
           gap: 8px;
         }
 
@@ -509,12 +529,10 @@ export default function MySchedule() {
 
         .shift-card-location {
           margin-top: 8px;
-          justify-content: center;
         }
 
         .shift-card-location-link {
           text-decoration: none;
-          text-align: center;
         }
 
         .shift-card-location-name {
@@ -523,15 +541,20 @@ export default function MySchedule() {
 
         .shift-card-location-address {
           max-width: 320px;
-          margin: 2px auto 0;
+          margin: 2px 0 0;
+        }
+
+        .shift-card-notes {
+          margin-top: 10px;
+          font-size: 13px;
         }
 
         .shift-card-teammates {
-          margin-top: 12px;
+          margin-top: 14px;
         }
 
         .teammates-row {
-          justify-content: center;
+          justify-content: flex-start;
         }
 
         .teammate-pill {

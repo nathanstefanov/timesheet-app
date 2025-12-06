@@ -31,6 +31,22 @@ const combineLocalDateTime = (date: string, time: string | undefined) => {
   return `${date}T${t}`;
 };
 
+// ---- NEW: helper to get initials for an employee ----
+const getEmpInitials = (e: Emp) => {
+  const name = e.full_name?.trim();
+  if (name) {
+    return name
+      .split(/\s+/)
+      .map((part) => part[0]?.toUpperCase() ?? '')
+      .join('');
+  }
+
+  const email = e.email?.trim();
+  if (email) return email[0]?.toUpperCase() ?? '';
+
+  return e.id.slice(0, 2).toUpperCase();
+};
+
 declare global {
   interface Window {
     google?: any;
@@ -944,7 +960,8 @@ export default function AdminSchedule() {
                 <tbody>
                   {upcoming.map((r, i) => {
                     const emps = assignedMap[r.id] || [];
-                    const assignedLabel =
+
+                    const assignedLabelFull =
                       emps.length > 0
                         ? emps
                             .map(
@@ -954,6 +971,11 @@ export default function AdminSchedule() {
                                 e.id.slice(0, 8),
                             )
                             .join(', ')
+                        : '—';
+
+                    const assignedLabelInitials =
+                      emps.length > 0
+                        ? emps.map((e) => getEmpInitials(e)).join(', ')
                         : '—';
 
                     return (
@@ -999,7 +1021,12 @@ export default function AdminSchedule() {
                           <td className="upcoming-table-td upcoming-table-td-middle upcoming-col-assigned">
                             {emps.length > 0 ? (
                               <span className="badge badge-assigned upcoming-table-assigned-badge-wrap">
-                                {assignedLabel}
+                                <span className="assigned-label-full">
+                                  {assignedLabelFull}
+                                </span>
+                                <span className="assigned-label-initials">
+                                  {assignedLabelInitials}
+                                </span>
                               </span>
                             ) : (
                               <span className="badge badge-unassigned">—</span>

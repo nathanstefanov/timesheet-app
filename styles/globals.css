@@ -592,8 +592,8 @@ textarea:focus {
 }
 
 .badge-assigned {
-  background: #d1fae5;
-  color: #065f46;
+  background: #e0f2fe;
+  color: #1d4ed8;
 }
 
 .badge-unassigned {
@@ -2843,4 +2843,45 @@ textarea:focus {
     padding: 4px 8px;
     white-space: nowrap;
   }
+}
+.shift-type-pill {
+  display: inline-flex;
+  padding: 4px 12px;
+  font-size: 16px;
+  font-weight: 800;   /* 👈 BOLD */
+  color: #3b3a3a;
+  background: #f2f2f2;
+  border-radius: 999px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+  margin-left: 0px;
+}
+.shift-card-location-name {
+  color: #007aff; /* Apple Maps-style blue */
+  font-weight: 600;
+}
+.assigned-label-full {
+  display: inline;
+}
+.assigned-label-initials {
+  display: none;
+}
+
+@media (max-width: 640px) {
+  .assigned-label-full {
+    display: none;
+  }
+  .assigned-label-initials {
+    display: inline;
+  }
+}
+@media (max-width: 768px) {
+  .badge.badge-assigned {
+    padding: 10px 12px !important;   /* more vertical + horizontal padding */
+  }
+}
+/* Bigger, comfier ASSIGNED pill */
+.badge.badge-assigned {
+  padding: 6px 14px;      /* desktop & general */
+  font-size: 0.75rem;
 }
