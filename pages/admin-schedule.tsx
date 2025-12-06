@@ -9,6 +9,14 @@ type Emp = { id: string; full_name?: string | null; email?: string | null };
 type JobType = 'setup' | 'lights' | 'breakdown' | 'other';
 const JOB_TYPES: JobType[] = ['setup', 'lights', 'breakdown', 'other'];
 
+// Map internal job_type to display label
+const JOB_LABELS: Record<JobType, string> = {
+  setup: 'Setup',
+  lights: 'Lights',
+  breakdown: 'Breakdown',
+  other: 'Shop', // 👈 show “Shop” in UI
+};
+
 type SRow = {
   id: string;
   start_time: string | null;
@@ -871,9 +879,7 @@ export default function AdminSchedule() {
                     }`}
                     onClick={() => setForm({ ...form, job_type: jt })}
                   >
-                    <span className="pill__label">
-                      {jt[0].toUpperCase() + jt.slice(1)}
-                    </span>
+                    <span className="pill__label">{JOB_LABELS[jt]}</span>
                   </button>
                 ))}
               </div>
@@ -978,6 +984,10 @@ export default function AdminSchedule() {
                         ? emps.map((e) => getEmpInitials(e)).join(', ')
                         : '—';
 
+                    const jobLabel = r.job_type
+                      ? JOB_LABELS[r.job_type]
+                      : '—';
+
                     return (
                       <Fragment key={r.id}>
                         {/* MAIN ROW */}
@@ -999,7 +1009,7 @@ export default function AdminSchedule() {
 
                           {/* JOB */}
                           <td className="upcoming-table-td upcoming-table-td-middle upcoming-col-job">
-                            <span className="badge badge-job">{r.job_type}</span>
+                            <span className="badge badge-job">{jobLabel}</span>
                           </td>
 
                           {/* LOCATION */}
@@ -1192,7 +1202,7 @@ export default function AdminSchedule() {
                 <option value="setup">Setup</option>
                 <option value="lights">Lights</option>
                 <option value="breakdown">Breakdown</option>
-                <option value="other">Other</option>
+                <option value="other">Shop</option> {/* 👈 label changed */}
               </select>
             </div>
 

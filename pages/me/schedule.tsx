@@ -4,15 +4,25 @@ import { supabase } from '../../lib/supabaseClient';
 
 type Mate = { id: string; full_name?: string | null };
 
+type JobType = 'setup' | 'lights' | 'breakdown' | 'other';
+
 type Shift = {
   id: string;
   start_time: string | null;
   end_time: string | null;
-  job_type?: 'setup' | 'Lights' | 'breakdown' | 'other' | null;
+  job_type?: JobType | null;
   location_name?: string | null;
   address?: string | null;
   mates?: Mate[];
   notes?: string | null; // ✅ notes
+};
+
+// Map internal job_type to display label
+const JOB_LABELS: Record<JobType, string> = {
+  setup: 'Setup',
+  lights: 'Lights',
+  breakdown: 'Breakdown',
+  other: 'Shop', // 👈 show Shop instead of "other"
 };
 
 // Detects Apple devices and builds correct map link
@@ -38,7 +48,7 @@ export default function MySchedule() {
 
   const [q, setQ] = useState('');
   const [typeFilter, setTypeFilter] =
-    useState<'all' | 'setup' | 'Lights' | 'breakdown' | 'other'>('all');
+    useState<'all' | JobType>('all');
 
   const [showPast, setShowPast] = useState(false);
 
@@ -226,12 +236,14 @@ export default function MySchedule() {
     const start = fmtTime(s.start_time);
     const end = fmtTime(s.end_time);
 
+    const jobLabel = s.job_type ? JOB_LABELS[s.job_type] : '';
+
     return (
       <div className="card shift-card">
         <div className="shift-card-job">
           <div className="row wrap gap-md shift-card-job">
             <span className="shift-type-pill">
-              {s.job_type ? s.job_type.toUpperCase() : ''}
+              {jobLabel ? jobLabel.toUpperCase() : ''}
             </span>
           </div>
         </div>
@@ -303,9 +315,9 @@ export default function MySchedule() {
           >
             <option value="all">All types</option>
             <option value="setup">Setup</option>
-            <option value="Lights">Lights</option>
+            <option value="lights">Lights</option>
             <option value="breakdown">Breakdown</option>
-            <option value="other">Other</option>
+            <option value="other">Shop</option> {/* 👈 label shows Shop */}
           </select>
           <button className="topbar-btn me-schedule-refresh" onClick={load}>
             Refresh
