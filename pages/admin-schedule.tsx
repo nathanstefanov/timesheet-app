@@ -4,7 +4,11 @@ import { useEffect, useMemo, useRef, useState, Fragment } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
 
-type Emp = { id: string; full_name?: string | null; email?: string | null };
+type Emp = {
+  id: string;
+  full_name?: string | null;
+  // email removed because profiles.email doesn't exist anymore
+  };
 
 type JobType = 'setup' | 'lights' | 'breakdown' | 'other';
 const JOB_TYPES: JobType[] = ['setup', 'lights', 'breakdown', 'other'];
@@ -464,7 +468,7 @@ export default function AdminSchedule() {
       if (!(me && me.role === 'admin')) return;
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, full_name, email')
+        .select('id, full_name')          // ✅ no email
         .order('full_name');
       if (!error) setEmployees((data as Emp[]) || []);
     })();
