@@ -7,8 +7,7 @@ import { supabase } from '../lib/supabaseClient';
 type Emp = {
   id: string;
   full_name?: string | null;
-  // email removed because profiles.email doesn't exist anymore
-  };
+};
 
 type JobType = 'setup' | 'lights' | 'breakdown' | 'other';
 const JOB_TYPES: JobType[] = ['setup', 'lights', 'breakdown', 'other'];
@@ -18,7 +17,7 @@ const JOB_LABELS: Record<JobType, string> = {
   setup: 'Setup',
   lights: 'Lights',
   breakdown: 'Breakdown',
-  other: 'Shop', // 👈 show “Shop” in UI
+  other: 'Shop', // show “Shop” in UI
 };
 
 type SRow = {
@@ -43,18 +42,18 @@ const combineLocalDateTime = (date: string, time: string | undefined) => {
   return `${date}T${t}`;
 };
 
-// ---- NEW: helper to get initials for an employee ----
+// ---- helper to get initials for an employee (no email) ----
 const getEmpInitials = (e: Emp) => {
   const name = e.full_name?.trim();
   if (name) {
-    return name
-      .split(/\s+/)
-      .map((part) => part[0]?.toUpperCase() ?? '')
-      .join('');
-  }
+    const parts = name.split(/\s+/).filter(Boolean);
 
-  const email = e.email?.trim();
-  if (email) return email[0]?.toUpperCase() ?? '';
+    if (parts.length >= 2) {
+      return (parts[0][0] + parts[1][0]).toUpperCase();
+    }
+
+    return name[0].toUpperCase();
+  }
 
   return e.id.slice(0, 2).toUpperCase();
 };
@@ -468,7 +467,7 @@ export default function AdminSchedule() {
       if (!(me && me.role === 'admin')) return;
       const { data, error } = await supabase
         .from('profiles')
-        .select('id, full_name')          // ✅ no email
+        .select('id, full_name')
         .order('full_name');
       if (!error) setEmployees((data as Emp[]) || []);
     })();
@@ -503,7 +502,7 @@ export default function AdminSchedule() {
       }
       const { data, error } = await supabase
         .from('schedule_assignments')
-        .select('schedule_shift_id, profiles:employee_id ( id, full_name, email )')
+        .select('schedule_shift_id, profiles:employee_id ( id, full_name )')
         .in('schedule_shift_id', ids);
       if (error) return;
 
@@ -629,7 +628,7 @@ export default function AdminSchedule() {
 
   async function saveEdit() {
     if (!edit?.id) return;
-    const shiftId = edit.id; // remember which row
+    const shiftId = edit.id;
     setSaving(true);
     try {
       const body: any = {
@@ -977,7 +976,6 @@ export default function AdminSchedule() {
                             .map(
                               (e) =>
                                 e.full_name ||
-                                e.email ||
                                 e.id.slice(0, 8),
                             )
                             .join(', ')
@@ -1206,7 +1204,7 @@ export default function AdminSchedule() {
                 <option value="setup">Setup</option>
                 <option value="lights">Lights</option>
                 <option value="breakdown">Breakdown</option>
-                <option value="other">Shop</option> {/* 👈 label changed */}
+                <option value="other">Shop</option>
               </select>
             </div>
 
@@ -1255,7 +1253,7 @@ export default function AdminSchedule() {
 
           <input
             className="mt-sm"
-            placeholder="Search name or email…"
+            placeholder="Search name or ID…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
           />
@@ -1263,7 +1261,7 @@ export default function AdminSchedule() {
           <div className="assign-grid mt-md">
             {employees
               .filter((e) =>
-                [e.full_name ?? '', e.email ?? '', e.id].some((v) =>
+                [e.full_name ?? '', e.id].some((v) =>
                   v?.toLowerCase().includes(search.toLowerCase()),
                 ),
               )
@@ -1274,7 +1272,7 @@ export default function AdminSchedule() {
                     checked={assignees.includes(e.id)}
                     onChange={() => toggleEmp(e.id)}
                   />
-                  <span>{e.full_name || e.email || e.id.slice(0, 8)}</span>
+                  <span>{e.full_name || e.id.slice(0, 8)}</span>
                 </label>
               ))}
           </div>
