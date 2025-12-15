@@ -12,12 +12,11 @@ type Emp = {
 type JobType = 'setup' | 'lights' | 'breakdown' | 'other';
 const JOB_TYPES: JobType[] = ['setup', 'lights', 'breakdown', 'other'];
 
-// Map internal job_type to display label
 const JOB_LABELS: Record<JobType, string> = {
   setup: 'Setup',
   lights: 'Lights',
   breakdown: 'Breakdown',
-  other: 'Shop', // show “Shop” in UI
+  other: 'Shop',
 };
 
 type SRow = {
@@ -32,6 +31,8 @@ type SRow = {
 
 type Profile = { id: string; role: 'admin' | 'employee' } | null;
 
+// ---------------- DATE/TIME HELPERS ----------------
+
 const toLocalInput = (d: Date) =>
   new Date(d.getTime() - d.getTimezoneOffset() * 60000)
     .toISOString()
@@ -42,29 +43,23 @@ const combineLocalDateTime = (date: string, time: string | undefined) => {
   return `${date}T${t}`;
 };
 
-// ---- helper to get initials for an employee (no email) ----
 const getEmpInitials = (e: Emp) => {
   const name = e.full_name?.trim();
   if (name) {
     const parts = name.split(/\s+/).filter(Boolean);
-
-    if (parts.length >= 2) {
-      return (parts[0][0] + parts[1][0]).toUpperCase();
-    }
-
+    if (parts.length >= 2) return (parts[0][0] + parts[1][0]).toUpperCase();
     return name[0].toUpperCase();
   }
-
   return e.id.slice(0, 2).toUpperCase();
 };
+
+// ---------------- GOOGLE MAPS LOADER ----------------
 
 declare global {
   interface Window {
     google?: any;
   }
 }
-
-// ---------------- GOOGLE MAPS LOADER ----------------
 
 const loadGoogleMaps = (() => {
   let promise: Promise<any> | null = null;
@@ -75,18 +70,13 @@ const loadGoogleMaps = (() => {
 
     if (!promise) {
       const key = process.env.NEXT_PUBLIC_GOOGLE_MAPS_API_KEY;
-      if (!key)
-        return Promise.reject(
-          new Error('Missing NEXT_PUBLIC_GOOGLE_MAPS_API_KEY'),
-        );
+      if (!key) return Promise.reject(new Error('Missing NEXT_PUBLIC_GOOGLE_MAPS_API_KEY'));
 
       promise = (async () => {
         try {
           const mod = await import('@googlemaps/js-api-loader');
           const Loader =
-            (mod as any).Loader ??
-            (mod as any).default?.Loader ??
-            (mod as any).default;
+            (mod as any).Loader ?? (mod as any).default?.Loader ?? (mod as any).default;
           if (!Loader) throw new Error('Could not load @googlemaps/js-api-loader');
 
           const loader = new Loader({
@@ -94,6 +84,7 @@ const loadGoogleMaps = (() => {
             libraries: ['places'],
             version: 'weekly',
           });
+
           await loader.load();
           return window.google?.maps;
         } catch {
@@ -103,89 +94,96 @@ const loadGoogleMaps = (() => {
           const s = document.createElement('script');
           s.id = id;
           s.src = `https://maps.googleapis.com/maps/api/js?key=${encodeURIComponent(
-            key,
+            key
           )}&libraries=places&v=weekly`;
           s.async = true;
+
           await new Promise<void>((resolve, reject) => {
-            s.onerror = () =>
-              reject(new Error('Failed to load Google Maps JS API'));
+            s.onerror = () => reject(new Error('Failed to load Google Maps JS API'));
             s.onload = () => resolve();
             document.head.appendChild(s);
           });
+
           return window.google?.maps;
         }
       })();
     }
+
     return promise;
   };
 })();
 
-// ---------------- LOCATION PICKER ----------------
+// ---------------- LOCATION PICKER (EDITABLE) ----------------
 
 function LocationPicker({
-  valueName,
-  valueAddr,
+  label,
+  name,
+  address,
+  onChangeName,
+  onChangeAddress,
   onSelect,
 }: {
-  valueName: string;
-  valueAddr: string;
+  label?: string;
+  name: string;
+  address: string;
+  onChangeName: (v: string) => void;
+  onChangeAddress: (v: string) => void;
   onSelect: (payload: { name: string; address: string }) => void;
 }) {
   const [ready, setReady] = useState(false);
   const [q, setQ] = useState('');
-  const [preds, setPreds] = useState<
-    Array<{ description: string; place_id: string }>
-  >([]);
+  const [preds, setPreds] = useState<Array<{ description: string; place_id: string }>>([]);
   const [errorText, setErrorText] = useState<string | null>(null);
+
   const svcRef = useRef<any>(null);
   const detailsSvcRef = useRef<any>(null);
 
   useEffect(() => {
     let cancelled = false;
+
     (async () => {
       try {
         await loadGoogleMaps();
         if (cancelled) return;
 
         if ((window as any).google?.maps?.places) {
-          svcRef.current =
-            new (window as any).google.maps.places.AutocompleteService();
+          svcRef.current = new (window as any).google.maps.places.AutocompleteService();
           const dummy = document.createElement('div');
-          detailsSvcRef.current =
-            new (window as any).google.maps.places.PlacesService(dummy);
+          detailsSvcRef.current = new (window as any).google.maps.places.PlacesService(dummy);
           setReady(true);
-        } else if ((window as any).google?.maps?.importLibrary) {
-          try {
-            const placesModule = await (window as any).google.maps.importLibrary(
-              'places',
-            );
-            const AutoCtor =
-              (placesModule as any)?.AutocompleteService ??
-              (window as any).google?.maps?.places?.AutocompleteService;
-            const PlacesCtor =
-              (placesModule as any)?.PlacesService ??
-              (window as any).google?.maps?.places?.PlacesService;
-            if (AutoCtor && PlacesCtor) {
-              svcRef.current = new AutoCtor();
-              const dummy = document.createElement('div');
-              detailsSvcRef.current = new PlacesCtor(dummy);
-              setReady(true);
-            } else {
-              setErrorText('Google Places constructors unavailable.');
-              setReady(false);
-            }
-          } catch (ex: any) {
-            setErrorText(ex?.message || 'Failed to load Places library.');
-            setReady(false);
-          }
-        } else {
-          setErrorText('Google Places API not available.');
-          setReady(false);
+          return;
         }
+
+        if ((window as any).google?.maps?.importLibrary) {
+          const placesModule = await (window as any).google.maps.importLibrary('places');
+          const AutoCtor =
+            (placesModule as any)?.AutocompleteService ??
+            (window as any).google?.maps?.places?.AutocompleteService;
+          const PlacesCtor =
+            (placesModule as any)?.PlacesService ??
+            (window as any).google?.maps?.places?.PlacesService;
+
+          if (AutoCtor && PlacesCtor) {
+            svcRef.current = new AutoCtor();
+            const dummy = document.createElement('div');
+            detailsSvcRef.current = new PlacesCtor(dummy);
+            setReady(true);
+            return;
+          }
+
+          setErrorText('Google Places constructors unavailable.');
+          setReady(false);
+          return;
+        }
+
+        setErrorText('Google Places API not available.');
+        setReady(false);
       } catch (err: any) {
         setErrorText(err?.message || 'Could not initialize Google Places.');
+        setReady(false);
       }
     })();
+
     return () => {
       cancelled = true;
     };
@@ -196,31 +194,34 @@ function LocationPicker({
       setPreds([]);
       return;
     }
+
     const handle = setTimeout(() => {
-      svcRef.current.getPlacePredictions(
-        {
-          input: q.trim(),
-          componentRestrictions: { country: 'us' },
-          types: ['establishment', 'geocode'],
-        },
-        (res: any, status: any) => {
-          if (
-            status !== window.google.maps.places.PlacesServiceStatus.OK ||
-            !res
-          ) {
-            setPreds([]);
-            return;
+      try {
+        svcRef.current.getPlacePredictions(
+          {
+            input: q.trim(),
+            componentRestrictions: { country: 'us' },
+            types: ['establishment', 'geocode'],
+          },
+          (res: any, status: any) => {
+            if (status !== window.google.maps.places.PlacesServiceStatus.OK || !res) {
+              setPreds([]);
+              return;
+            }
+
+            // If you truly only want IL, keep this filter. Otherwise remove it.
+            const ilOnly = res
+              .filter((p: any) => p.description?.includes(', IL'))
+              .map((p: any) => ({ description: p.description, place_id: p.place_id }));
+
+            setPreds(ilOnly);
           }
-          const ilOnly = res
-            .filter((p: any) => p.description?.includes(', IL'))
-            .map((p: any) => ({
-              description: p.description,
-              place_id: p.place_id,
-            }));
-          setPreds(ilOnly);
-        },
-      );
+        );
+      } catch {
+        setPreds([]);
+      }
     }, 150);
+
     return () => clearTimeout(handle);
   }, [q, ready]);
 
@@ -228,22 +229,26 @@ function LocationPicker({
     detailsSvcRef.current.getDetails(
       { placeId, fields: ['name', 'formatted_address'] },
       (place: any, status: any) => {
-        if (
-          status !== window.google.maps.places.PlacesServiceStatus.OK ||
-          !place
-        )
-          return;
-        const name = place.name || '';
-        const addr = place.formatted_address || '';
-        onSelect({ name, address: addr });
-        setQ(name || addr);
+        if (status !== window.google.maps.places.PlacesServiceStatus.OK || !place) return;
+
+        const pickedName = (place.name || '').toString();
+        const pickedAddr = (place.formatted_address || '').toString();
+
+        // Auto-fill both, but still editable afterward
+        onSelect({ name: pickedName, address: pickedAddr });
+        onChangeName(pickedName);
+        onChangeAddress(pickedAddr);
+
+        setQ(pickedName || pickedAddr);
         setPreds([]);
-      },
+      }
     );
   }
 
   return (
     <div className="location-picker-card card p-18">
+      {label && <div className="mb-sm"><strong>{label}</strong></div>}
+
       <div className="location-picker-section">
         <label className="location-picker-label">Search Location</label>
         <input
@@ -253,10 +258,9 @@ function LocationPicker({
           value={q}
           onChange={(e) => setQ(e.target.value)}
         />
-        {!ready && !errorText && (
-          <div className="muted fs-12">Loading Places…</div>
-        )}
+        {!ready && !errorText && <div className="muted fs-12">Loading Places…</div>}
         {errorText && <div className="alert error fs-12">{errorText}</div>}
+
         {preds.length > 0 && (
           <div className="card p-6 maxh-220 ovf-y-auto location-picker-preds">
             {preds.map((p) => (
@@ -276,11 +280,22 @@ function LocationPicker({
       <div className="location-picker-fields">
         <div className="location-picker-field">
           <label className="location-picker-label">Location Name</label>
-          <input className="location-picker-input" value={valueName} readOnly />
+          <input
+            className="location-picker-input"
+            value={name}
+            onChange={(e) => onChangeName(e.target.value)}
+            placeholder="e.g., Country Club"
+          />
         </div>
+
         <div className="location-picker-field">
           <label className="location-picker-label">Address</label>
-          <input className="location-picker-input" value={valueAddr} readOnly />
+          <input
+            className="location-picker-input"
+            value={address}
+            onChange={(e) => onChangeAddress(e.target.value)}
+            placeholder="Street, City, State"
+          />
         </div>
       </div>
     </div>
@@ -294,6 +309,7 @@ function RedirectTo({ to }: { to: string }) {
   useEffect(() => {
     router.replace(to);
   }, [router, to]);
+
   return (
     <main className="page page--center">
       <p>Redirecting…</p>
@@ -308,6 +324,7 @@ function RedirectTo({ to }: { to: string }) {
 
 export default function AdminSchedule() {
   const router = useRouter();
+
   const [me, setMe] = useState<Profile>(null);
   const [checking, setChecking] = useState(true);
 
@@ -346,19 +363,15 @@ export default function AdminSchedule() {
 
   const [, setTick] = useState(0);
 
-  // which row opened the edit/assign panel (for scroll back)
   const [editingSourceId, setEditingSourceId] = useState<string | null>(null);
   const [assignSourceId, setAssignSourceId] = useState<string | null>(null);
 
-  // helper: scroll back to a row by id
   function scrollToShiftRow(id: string | null) {
     if (!id) return;
     if (typeof document === 'undefined') return;
     setTimeout(() => {
       const row = document.getElementById(`shift-row-${id}`);
-      if (row) {
-        row.scrollIntoView({ behavior: 'smooth', block: 'center' });
-      }
+      if (row) row.scrollIntoView({ behavior: 'smooth', block: 'center' });
     }, 50);
   }
 
@@ -370,6 +383,7 @@ export default function AdminSchedule() {
       const {
         data: { session },
       } = await supabase.auth.getSession();
+
       if (!alive) return;
 
       if (!session?.user) {
@@ -386,6 +400,7 @@ export default function AdminSchedule() {
         .single();
 
       if (!alive) return;
+
       if (error || !data) {
         setMe(null);
         setChecking(false);
@@ -395,6 +410,7 @@ export default function AdminSchedule() {
 
       setMe(data as any);
       setChecking(false);
+
       if ((data as any).role !== 'admin') {
         router.replace('/dashboard?msg=not_admin');
       }
@@ -421,10 +437,7 @@ export default function AdminSchedule() {
 
   const fmtDate = (s?: string | null) =>
     s
-      ? new Date(s).toLocaleString(undefined, {
-          dateStyle: 'short',
-          timeStyle: 'short',
-        })
+      ? new Date(s).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' })
       : '';
 
   const fmtTimeOnly = (s?: string | null) =>
@@ -459,6 +472,7 @@ export default function AdminSchedule() {
 
   useEffect(() => {
     if (me?.role === 'admin') loadRows();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [me]);
 
   // ---------- EMPLOYEES ----------
@@ -484,26 +498,25 @@ export default function AdminSchedule() {
         if (!isNaN(s)) return s >= now;
         return false;
       })
-      .sort(
-        (a, b) =>
-          (Date.parse(a.start_time ?? '') || 0) -
-          (Date.parse(b.start_time ?? '') || 0),
-      );
+      .sort((a, b) => (Date.parse(a.start_time ?? '') || 0) - (Date.parse(b.start_time ?? '') || 0));
   }, [rows]);
 
   // ---------- LOAD ASSIGNMENTS ----------
   useEffect(() => {
     (async () => {
       if (!(me && me.role === 'admin')) return;
+
       const ids = upcoming.map((r) => r.id);
       if (ids.length === 0) {
         setAssignedMap({});
         return;
       }
+
       const { data, error } = await supabase
         .from('schedule_assignments')
         .select('schedule_shift_id, profiles:employee_id ( id, full_name )')
         .in('schedule_shift_id', ids);
+
       if (error) return;
 
       const map: Record<string, Emp[]> = {};
@@ -575,6 +588,7 @@ export default function AdminSchedule() {
         job_type: 'setup',
         notes: '',
       });
+
       setFormError(null);
       setDuplicateFrom(null);
       await loadRows();
@@ -591,13 +605,10 @@ export default function AdminSchedule() {
     setEditingSourceId(row.id);
   }
 
-  // when edit panel is set, scroll to it
   useEffect(() => {
     if (!edit) return;
     const el = document.getElementById('edit-panel');
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, [edit]);
 
   function prefillFormFromShift(row: SRow) {
@@ -619,16 +630,21 @@ export default function AdminSchedule() {
       end_time: '',
       location_name: row.location_name ?? '',
       address: row.address ?? '',
-      job_type: 'setup',
+      job_type: (row.job_type as JobType) || 'setup',
       notes: row.notes ?? '',
     });
 
     setDuplicateFrom(row);
+
+    setTimeout(() => {
+      document.querySelector('.form-container')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 0);
   }
 
   async function saveEdit() {
     if (!edit?.id) return;
     const shiftId = edit.id;
+
     setSaving(true);
     try {
       const body: any = {
@@ -640,13 +656,14 @@ export default function AdminSchedule() {
         notes: edit.notes ?? undefined,
       };
 
-      if (body.start_time && !body.start_time.endsWith?.('Z'))
+      if (body.start_time && !body.start_time.endsWith?.('Z')) {
         body.start_time = new Date(body.start_time).toISOString();
-
-      if (body.end_time && !body.end_time.endsWith?.('Z'))
+      }
+      if (body.end_time && !body.end_time.endsWith?.('Z')) {
         body.end_time = new Date(body.end_time).toISOString();
+      }
 
-      const r = await fetch(`/api/schedule/shifts/${edit.id}`, {
+      const r = await fetch(`/api/schedule/shifts/${shiftId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(body),
@@ -670,7 +687,6 @@ export default function AdminSchedule() {
     const r = await fetch(`/api/schedule/shifts/${id}`, { method: 'DELETE' });
     const j: any = await parseMaybeJson(r);
     if (!r.ok) return alert(j?.error || j?.raw || `HTTP ${r.status}`);
-
     await loadRows();
   }
 
@@ -680,7 +696,6 @@ export default function AdminSchedule() {
     setAssignSourceId(row.id);
     setSearch('');
 
-    // reset lists immediately for clean UI
     setCurrentAssignees([]);
     setAssignees([]);
 
@@ -689,24 +704,19 @@ export default function AdminSchedule() {
       .select('employee_id')
       .eq('schedule_shift_id', row.id);
 
-    const ids = (data || []).map((r: any) => r.employee_id);
+    const ids = (data || []).map((r: any) => r.employee_id as string);
     setCurrentAssignees(ids);
     setAssignees(ids);
   }
 
-  // when assign panel is set, scroll to it
   useEffect(() => {
     if (!assignShift) return;
     const el = document.getElementById('assign-panel');
-    if (el) {
-      el.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }
+    if (el) el.scrollIntoView({ behavior: 'smooth', block: 'start' });
   }, [assignShift]);
 
   function toggleEmp(id: string) {
-    setAssignees((prev) =>
-      prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id],
-    );
+    setAssignees((prev) => (prev.includes(id) ? prev.filter((x) => x !== id) : [...prev, id]));
   }
 
   async function saveAssignments() {
@@ -723,7 +733,8 @@ export default function AdminSchedule() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ employee_ids: add }),
       });
-      if (!r.ok) return alert('Failed to add assignments');
+      const j: any = await parseMaybeJson(r);
+      if (!r.ok) return alert(j?.error || j?.raw || 'Failed to add assignments');
     }
 
     if (remove.length) {
@@ -732,14 +743,19 @@ export default function AdminSchedule() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ employee_ids: remove }),
       });
-      if (!r.ok) return alert('Failed to remove assignments');
+      const j: any = await parseMaybeJson(r);
+      if (!r.ok) return alert(j?.error || j?.raw || 'Failed to remove assignments');
     }
 
     setAssignShift(null);
+
     setAssignedMap((prev) => ({
       ...prev,
       [shiftId]: employees.filter((e) => assignees.includes(e.id)),
     }));
+
+    setCurrentAssignees(assignees);
+
     scrollToShiftRow(shiftId);
   }
 
@@ -760,7 +776,6 @@ export default function AdminSchedule() {
   // ---------- MAIN UI ----------
   return (
     <main className="page page--center page--admin">
-      {/* HEADER CARD */}
       <div className="card card--tight full">
         <div className="toolbar toolbar--center">
           <div className="toolbar__left">
@@ -782,7 +797,6 @@ export default function AdminSchedule() {
 
       {err && <div className="alert error">{err}</div>}
 
-      {/* MAIN GRID: FORM + TABLE */}
       <div className="admin-schedule-layout">
         {/* FORM */}
         <div className="form-container">
@@ -790,9 +804,7 @@ export default function AdminSchedule() {
             <div className="row between wrap align-items-center mb-md">
               <strong className="fs-16">
                 {duplicateFrom
-                  ? `Create Scheduled Shift (duplicating ${
-                      duplicateFrom.location_name || 'shift'
-                    })`
+                  ? `Create Scheduled Shift (duplicating ${duplicateFrom.location_name || 'shift'})`
                   : 'Create Scheduled Shift'}
               </strong>
 
@@ -822,9 +834,7 @@ export default function AdminSchedule() {
                 <input
                   type="date"
                   value={form.start_date}
-                  onChange={(e) =>
-                    setForm({ ...form, start_date: e.target.value })
-                  }
+                  onChange={(e) => setForm({ ...form, start_date: e.target.value })}
                 />
               </div>
 
@@ -833,9 +843,7 @@ export default function AdminSchedule() {
                 <input
                   type="time"
                   value={form.start_time}
-                  onChange={(e) =>
-                    setForm({ ...form, start_time: e.target.value })
-                  }
+                  onChange={(e) => setForm({ ...form, start_time: e.target.value })}
                 />
               </div>
 
@@ -844,9 +852,7 @@ export default function AdminSchedule() {
                 <input
                   type="date"
                   value={form.end_date}
-                  onChange={(e) =>
-                    setForm({ ...form, end_date: e.target.value })
-                  }
+                  onChange={(e) => setForm({ ...form, end_date: e.target.value })}
                 />
               </div>
 
@@ -855,19 +861,19 @@ export default function AdminSchedule() {
                 <input
                   type="time"
                   value={form.end_time}
-                  onChange={(e) =>
-                    setForm({ ...form, end_time: e.target.value })
-                  }
+                  onChange={(e) => setForm({ ...form, end_time: e.target.value })}
                 />
               </div>
             </div>
 
+            {/* CREATE: editable + Google search */}
             <LocationPicker
-              valueName={form.location_name}
-              valueAddr={form.address}
-              onSelect={({ name, address }) =>
-                setForm((f) => ({ ...f, location_name: name, address }))
-              }
+              label="Location"
+              name={form.location_name}
+              address={form.address}
+              onChangeName={(v) => setForm((f) => ({ ...f, location_name: v }))}
+              onChangeAddress={(v) => setForm((f) => ({ ...f, address: v }))}
+              onSelect={({ name, address }) => setForm((f) => ({ ...f, location_name: name, address }))}
             />
 
             <div className="mt-md">
@@ -877,9 +883,7 @@ export default function AdminSchedule() {
                   <button
                     key={jt}
                     type="button"
-                    className={`pill ${
-                      form.job_type === jt ? 'pill-active' : ''
-                    }`}
+                    className={`pill ${form.job_type === jt ? 'pill-active' : ''}`}
                     onClick={() => setForm({ ...form, job_type: jt })}
                   >
                     <span className="pill__label">{JOB_LABELS[jt]}</span>
@@ -972,94 +976,55 @@ export default function AdminSchedule() {
 
                     const assignedLabelFull =
                       emps.length > 0
-                        ? emps
-                            .map(
-                              (e) =>
-                                e.full_name ||
-                                e.id.slice(0, 8),
-                            )
-                            .join(', ')
+                        ? emps.map((e) => e.full_name || e.id.slice(0, 8)).join(', ')
                         : '—';
 
                     const assignedLabelInitials =
-                      emps.length > 0
-                        ? emps.map((e) => getEmpInitials(e)).join(', ')
-                        : '—';
+                      emps.length > 0 ? emps.map((e) => getEmpInitials(e)).join(', ') : '—';
 
-                    const jobLabel = r.job_type
-                      ? JOB_LABELS[r.job_type]
-                      : '—';
+                    const jobLabel = r.job_type ? JOB_LABELS[r.job_type] : '—';
 
                     return (
                       <Fragment key={r.id}>
-                        {/* MAIN ROW */}
-                        <tr
-                          id={`shift-row-${r.id}`}
-                          className={i % 2 === 1 ? 'row-alt' : ''}
-                        >
-                          {/* WHEN */}
+                        <tr id={`shift-row-${r.id}`} className={i % 2 === 1 ? 'row-alt' : ''}>
                           <td className="upcoming-table-td upcoming-table-td-middle upcoming-col-when">
                             <div className="upcoming-table-cell-main">
                               <div>{fmtDate(r.start_time)}</div>
                               {r.end_time && (
-                                <div className="muted fs-12">
-                                  Ends {fmtTimeOnly(r.end_time)}
-                                </div>
+                                <div className="muted fs-12">Ends {fmtTimeOnly(r.end_time)}</div>
                               )}
                             </div>
                           </td>
 
-                          {/* JOB */}
                           <td className="upcoming-table-td upcoming-table-td-middle upcoming-col-job">
                             <span className="badge badge-job">{jobLabel}</span>
                           </td>
 
-                          {/* LOCATION */}
                           <td className="upcoming-table-td upcoming-table-td-middle upcoming-col-location">
                             <div className="upcoming-table-cell-main">
                               <div>{r.location_name}</div>
-                              {r.address && (
-                                <div className="muted fs-12">{r.address}</div>
-                              )}
-                              {r.notes && (
-                                <div className="muted fs-12">
-                                  Notes: {r.notes}
-                                </div>
-                              )}
+                              {r.address && <div className="muted fs-12">{r.address}</div>}
+                              {r.notes && <div className="muted fs-12">Notes: {r.notes}</div>}
                             </div>
                           </td>
 
-                          {/* ASSIGNED */}
                           <td className="upcoming-table-td upcoming-table-td-middle upcoming-col-assigned">
                             {emps.length > 0 ? (
                               <span className="badge badge-assigned upcoming-table-assigned-badge-wrap">
-                                <span className="assigned-label-full">
-                                  {assignedLabelFull}
-                                </span>
-                                <span className="assigned-label-initials">
-                                  {assignedLabelInitials}
-                                </span>
+                                <span className="assigned-label-full">{assignedLabelFull}</span>
+                                <span className="assigned-label-initials">{assignedLabelInitials}</span>
                               </span>
                             ) : (
                               <span className="badge badge-unassigned">—</span>
                             )}
                           </td>
 
-                          {/* DESKTOP ACTIONS */}
                           <td className="upcoming-table-td upcoming-table-td-actions upcoming-actions-desktop">
                             <div className="upcoming-table-actions-vert">
-                              <button
-                                type="button"
-                                className="btn-edit"
-                                onClick={() => openEdit(r)}
-                              >
+                              <button type="button" className="btn-edit" onClick={() => openEdit(r)}>
                                 Edit
                               </button>
-                              <button
-                                type="button"
-                                className="btn-edit"
-                                onClick={() => openAssign(r)}
-                              >
+                              <button type="button" className="btn-edit" onClick={() => openAssign(r)}>
                                 Assign
                               </button>
                               <button
@@ -1069,33 +1034,20 @@ export default function AdminSchedule() {
                               >
                                 Duplicate
                               </button>
-                              <button
-                                type="button"
-                                className="btn-delete"
-                                onClick={() => deleteRow(r.id)}
-                              >
+                              <button type="button" className="btn-delete" onClick={() => deleteRow(r.id)}>
                                 Delete
                               </button>
                             </div>
                           </td>
                         </tr>
 
-                        {/* MOBILE ACTIONS ROW */}
                         <tr className="upcoming-row-actions-mobile">
                           <td colSpan={5}>
                             <div className="upcoming-row-actions-mobile-inner">
-                              <button
-                                type="button"
-                                className="btn-edit"
-                                onClick={() => openEdit(r)}
-                              >
+                              <button type="button" className="btn-edit" onClick={() => openEdit(r)}>
                                 Edit
                               </button>
-                              <button
-                                type="button"
-                                className="btn-edit"
-                                onClick={() => openAssign(r)}
-                              >
+                              <button type="button" className="btn-edit" onClick={() => openAssign(r)}>
                                 Assign
                               </button>
                               <button
@@ -1105,11 +1057,7 @@ export default function AdminSchedule() {
                               >
                                 Duplicate
                               </button>
-                              <button
-                                type="button"
-                                className="btn-delete"
-                                onClick={() => deleteRow(r.id)}
-                              >
+                              <button type="button" className="btn-delete" onClick={() => deleteRow(r.id)}>
                                 Delete
                               </button>
                             </div>
@@ -1148,12 +1096,8 @@ export default function AdminSchedule() {
               <label>Start</label>
               <input
                 type="datetime-local"
-                value={
-                  edit.start_time ? toLocalInput(new Date(edit.start_time)) : ''
-                }
-                onChange={(e) =>
-                  setEdit({ ...edit, start_time: e.target.value })
-                }
+                value={edit.start_time ? toLocalInput(new Date(edit.start_time)) : ''}
+                onChange={(e) => setEdit({ ...edit, start_time: e.target.value })}
               />
             </div>
 
@@ -1161,31 +1105,21 @@ export default function AdminSchedule() {
               <label>End (optional)</label>
               <input
                 type="datetime-local"
-                value={
-                  edit.end_time ? toLocalInput(new Date(edit.end_time)) : ''
-                }
-                onChange={(e) =>
-                  setEdit({ ...edit, end_time: e.target.value })
-                }
+                value={edit.end_time ? toLocalInput(new Date(edit.end_time)) : ''}
+                onChange={(e) => setEdit({ ...edit, end_time: e.target.value })}
               />
             </div>
 
-            <div>
-              <label>Location Name</label>
-              <input
-                value={edit.location_name ?? ''}
-                onChange={(e) =>
-                  setEdit({ ...edit, location_name: e.target.value })
-                }
-              />
-            </div>
-
-            <div>
-              <label>Address</label>
-              <input
-                value={edit.address ?? ''}
-                onChange={(e) =>
-                  setEdit({ ...edit, address: e.target.value })
+            <div className="edit-full">
+              {/* EDIT: editable + Google search */}
+              <LocationPicker
+                label="Location"
+                name={edit.location_name ?? ''}
+                address={edit.address ?? ''}
+                onChangeName={(v) => setEdit((prev) => (prev ? { ...prev, location_name: v } : prev))}
+                onChangeAddress={(v) => setEdit((prev) => (prev ? { ...prev, address: v } : prev))}
+                onSelect={({ name, address }) =>
+                  setEdit((prev) => (prev ? { ...prev, location_name: name, address } : prev))
                 }
               />
             </div>
@@ -1194,12 +1128,7 @@ export default function AdminSchedule() {
               <label>Job Type</label>
               <select
                 value={edit.job_type ?? 'setup'}
-                onChange={(e) =>
-                  setEdit({
-                    ...edit,
-                    job_type: e.target.value as JobType,
-                  })
-                }
+                onChange={(e) => setEdit({ ...edit, job_type: e.target.value as JobType })}
               >
                 <option value="setup">Setup</option>
                 <option value="lights">Lights</option>
@@ -1212,19 +1141,12 @@ export default function AdminSchedule() {
               <label>Notes</label>
               <textarea
                 value={edit.notes ?? ''}
-                onChange={(e) =>
-                  setEdit({ ...edit, notes: e.target.value })
-                }
+                onChange={(e) => setEdit({ ...edit, notes: e.target.value })}
               />
             </div>
           </div>
 
-          <button
-            type="button"
-            className="btn-primary mt-md"
-            onClick={saveEdit}
-            disabled={saving}
-          >
+          <button type="button" className="btn-primary mt-md" onClick={saveEdit} disabled={saving}>
             {saving ? 'Saving…' : 'Save Changes'}
           </button>
         </div>
@@ -1235,8 +1157,7 @@ export default function AdminSchedule() {
         <div id="assign-panel" className="card card--tight full mt-lg">
           <div className="row between wrap align-items-center mb-md">
             <strong>
-              Assign Employees — {assignShift.location_name || 'Shift'} (
-              {fmtDate(assignShift.start_time)})
+              Assign Employees — {assignShift.location_name || 'Shift'} ({fmtDate(assignShift.start_time)})
             </strong>
             <button
               type="button"
@@ -1261,9 +1182,7 @@ export default function AdminSchedule() {
           <div className="assign-grid mt-md">
             {employees
               .filter((e) =>
-                [e.full_name ?? '', e.id].some((v) =>
-                  v?.toLowerCase().includes(search.toLowerCase()),
-                ),
+                [e.full_name ?? '', e.id].some((v) => v?.toLowerCase().includes(search.toLowerCase()))
               )
               .map((e) => (
                 <label key={e.id} className="inline-check card">
@@ -1277,11 +1196,7 @@ export default function AdminSchedule() {
               ))}
           </div>
 
-          <button
-            type="button"
-            className="btn-primary mt-md"
-            onClick={saveAssignments}
-          >
+          <button type="button" className="btn-primary mt-md" onClick={saveAssignments}>
             Save Assignments
           </button>
         </div>
