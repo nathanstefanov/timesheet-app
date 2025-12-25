@@ -210,7 +210,6 @@ export default function NewShift() {
                           <span className="log-shift-label-required">*</span>
                         </label>
                         <div className="log-shift-input-wrapper">
-                          <span className="log-shift-input-icon">📅</span>
                           <input
                             className="log-shift-input"
                             type="date"
@@ -227,7 +226,6 @@ export default function NewShift() {
                           <span className="log-shift-label-required">*</span>
                         </label>
                         <div className="log-shift-input-wrapper">
-                          <span className="log-shift-input-icon">🔧</span>
                           <select
                             className="log-shift-select"
                             value={type}
@@ -248,7 +246,6 @@ export default function NewShift() {
                           <span className="log-shift-label-required">*</span>
                         </label>
                         <div className="log-shift-input-wrapper">
-                          <span className="log-shift-input-icon">🕐</span>
                           <input
                             className="log-shift-input"
                             type="time"
@@ -265,7 +262,6 @@ export default function NewShift() {
                           <span className="log-shift-label-required">*</span>
                         </label>
                         <div className="log-shift-input-wrapper">
-                          <span className="log-shift-input-icon">🕐</span>
                           <input
                             className="log-shift-input"
                             type="time"
