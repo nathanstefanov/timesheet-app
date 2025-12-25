@@ -37,7 +37,7 @@ type Shift = {
 
 export default function Dashboard() {
   const router = useRouter();
-  const [user, setUser] = useState<{ id: string; full_name?: string } | null>(null);
+  const [user, setUser] = useState<{ id: string; full_name?: string; role?: string } | null>(null);
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [loading, setLoading] = useState(true);
   const [mode, setMode] = useState<Mode>('week');
@@ -59,11 +59,11 @@ export default function Dashboard() {
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('id, full_name')
+        .select('id, full_name, role')
         .eq('id', session.user.id)
         .single();
 
-      setUser({ id: session.user.id, full_name: profile?.full_name });
+      setUser({ id: session.user.id, full_name: profile?.full_name, role: profile?.role });
     })();
   }, []);
 
@@ -207,6 +207,20 @@ export default function Dashboard() {
                 <span>Log Shift</span>
               </a>
             </div>
+
+            {user?.role === 'admin' && (
+              <div className="sidebar-nav-section">
+                <div className="sidebar-nav-label">Admin</div>
+                <a href="/admin" className="sidebar-nav-item">
+                  <span className="sidebar-nav-icon">📊</span>
+                  <span>Admin Dashboard</span>
+                </a>
+                <a href="/admin-schedule" className="sidebar-nav-item">
+                  <span className="sidebar-nav-icon">📅</span>
+                  <span>Schedule</span>
+                </a>
+              </div>
+            )}
           </nav>
 
           <div className="sidebar-footer">
@@ -216,7 +230,7 @@ export default function Dashboard() {
               </div>
               <div className="sidebar-user-info">
                 <div className="sidebar-user-name">{user?.full_name || 'User'}</div>
-                <div className="sidebar-user-role">Employee</div>
+                <div className="sidebar-user-role">{user?.role === 'admin' ? 'Administrator' : 'Employee'}</div>
               </div>
             </div>
             <button className="sidebar-logout" onClick={handleLogout}>

@@ -16,6 +16,7 @@ export default function NewShift() {
   const r = useRouter();
   const [userId, setUserId] = useState<string | null>(null);
   const [userName, setUserName] = useState<string>('');
+  const [userRole, setUserRole] = useState<string>('employee');
 
   const [date, setDate] = useState('');
   const [type, setType] = useState<ShiftType>('Setup');
@@ -37,12 +38,13 @@ export default function NewShift() {
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('id, full_name')
+        .select('id, full_name, role')
         .eq('id', user.id)
         .single();
 
       setUserId(user.id);
       setUserName(profile?.full_name || 'User');
+      setUserRole(profile?.role || 'employee');
     })();
   }, [r]);
 
@@ -121,6 +123,20 @@ export default function NewShift() {
                 <span>Log Shift</span>
               </a>
             </div>
+
+            {userRole === 'admin' && (
+              <div className="sidebar-nav-section">
+                <div className="sidebar-nav-label">Admin</div>
+                <a href="/admin" className="sidebar-nav-item">
+                  <span className="sidebar-nav-icon">📊</span>
+                  <span>Admin Dashboard</span>
+                </a>
+                <a href="/admin-schedule" className="sidebar-nav-item">
+                  <span className="sidebar-nav-icon">📅</span>
+                  <span>Schedule</span>
+                </a>
+              </div>
+            )}
           </nav>
 
           <div className="sidebar-footer">
@@ -130,7 +146,7 @@ export default function NewShift() {
               </div>
               <div className="sidebar-user-info">
                 <div className="sidebar-user-name">{userName}</div>
-                <div className="sidebar-user-role">Employee</div>
+                <div className="sidebar-user-role">{userRole === 'admin' ? 'Administrator' : 'Employee'}</div>
               </div>
             </div>
             <button className="sidebar-logout" onClick={handleLogout}>
