@@ -459,7 +459,7 @@ export default function Admin() {
               <div className="sidebar-nav-label">Main</div>
               <a href="/admin" className="sidebar-nav-item active">
                 <span className="sidebar-nav-icon">📊</span>
-                <span>Dashboard</span>
+                <span>Admin Dashboard</span>
               </a>
               <a href="/dashboard" className="sidebar-nav-item">
                 <span className="sidebar-nav-icon">👤</span>
@@ -469,21 +469,21 @@ export default function Admin() {
                 <span className="sidebar-nav-icon">➕</span>
                 <span>Log Shift</span>
               </a>
+              <a href="/me/schedule" className="sidebar-nav-item">
+                <span className="sidebar-nav-icon">📅</span>
+                <span>My Schedule</span>
+              </a>
             </div>
 
             <div className="sidebar-nav-section">
-              <div className="sidebar-nav-label">Management</div>
-              <a href="#" className="sidebar-nav-item">
-                <span className="sidebar-nav-icon">👥</span>
-                <span>Employees</span>
+              <div className="sidebar-nav-label">Admin</div>
+              <a href="/admin-schedule" className="sidebar-nav-item">
+                <span className="sidebar-nav-icon">📅</span>
+                <span>Schedule</span>
               </a>
-              <a href="#" className="sidebar-nav-item">
-                <span className="sidebar-nav-icon">💰</span>
-                <span>Payroll</span>
-              </a>
-              <a href="#" className="sidebar-nav-item">
-                <span className="sidebar-nav-icon">📈</span>
-                <span>Reports</span>
+              <a href="/admin-schedule-past" className="sidebar-nav-item">
+                <span className="sidebar-nav-icon">📋</span>
+                <span>Past Schedule</span>
               </a>
             </div>
           </nav>

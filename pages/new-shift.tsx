@@ -122,6 +122,10 @@ export default function NewShift() {
                 <span className="sidebar-nav-icon">➕</span>
                 <span>Log Shift</span>
               </a>
+              <a href="/me/schedule" className="sidebar-nav-item">
+                <span className="sidebar-nav-icon">📅</span>
+                <span>My Schedule</span>
+              </a>
             </div>
 
             {userRole === 'admin' && (
