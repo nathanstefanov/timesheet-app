@@ -5810,7 +5810,7 @@ textarea:focus {
   display: none;
   position: fixed;
   top: 12px;
-  left: 12px;
+  right: 12px;
   z-index: 99999;
   width: 42px;
   height: 42px;
@@ -5912,9 +5912,9 @@ textarea:focus {
 
   /* HEADER adjustments - add top padding for hamburger button */
   .app-header {
-    padding-top: 100px !important;
+    padding-top: 70px !important;
     padding-left: var(--space-md) !important;
-    padding-right: var(--space-md) !important;
+    padding-right: 70px !important;
     padding-bottom: var(--space-md) !important;
     z-index: 10 !important;
     position: relative;
