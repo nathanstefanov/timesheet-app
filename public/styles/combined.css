@@ -5874,15 +5874,18 @@ textarea:focus {
 
   /* SIDEBAR - Convert to mobile hamburger or hide */
   .app-sidebar {
-    position: fixed;
-    left: -280px;
+    position: fixed !important;
+    left: -280px !important;
+    top: 0 !important;
+    width: 280px !important;
+    height: 100vh !important;
     transition: left 0.3s ease;
-    z-index: 1000;
+    z-index: 1000 !important;
   }
 
   /* Sidebar open state */
   .app-sidebar.mobile-open {
-    left: 0;
+    left: 0 !important;
   }
 
   /* Show overlay when sidebar is open */
