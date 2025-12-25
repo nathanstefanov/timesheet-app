@@ -182,7 +182,6 @@ export default function Dashboard() {
     <>
       <Head>
         <title>My Shifts - Timesheet</title>
-        <link rel="stylesheet" href="/styles/new-saas-design.css" />
       </Head>
 
       <div className="app-container">

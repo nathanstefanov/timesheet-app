@@ -441,7 +441,6 @@ export default function Admin() {
     <>
       <Head>
         <title>Admin Dashboard - Timesheet</title>
-        <link rel="stylesheet" href="/styles/new-saas-design.css" />
       </Head>
 
       <div className="app-container">

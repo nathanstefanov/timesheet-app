@@ -5,7 +5,6 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
 import Head from 'next/head';
-// Note: globals.css is loaded conditionally per page to avoid conflicts
 
 type Profile = { id: string; full_name?: string | null; role: 'employee' | 'admin' };
 
@@ -102,8 +101,8 @@ export default function App({ Component, pageProps }: AppProps) {
       <Head>
         <title>Timesheet</title>
         <link rel="icon" href={LOGO_DATA_URL} />
-        {/* Load globals.css only for old topbar pages */}
-        {!useNewDesign && <link rel="stylesheet" href="/styles/globals.css" />}
+        {/* Load combined CSS for all pages - contains both old and new styles */}
+        <link rel="stylesheet" href="/styles/combined.css" />
       </Head>
 
       {!useNewDesign && (

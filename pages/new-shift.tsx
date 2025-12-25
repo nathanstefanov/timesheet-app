@@ -98,7 +98,6 @@ export default function NewShift() {
     <>
       <Head>
         <title>Log New Shift - Timesheet</title>
-        <link rel="stylesheet" href="/styles/new-saas-design.css" />
       </Head>
 
       <div className="app-container">
