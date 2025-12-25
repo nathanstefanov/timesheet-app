@@ -468,7 +468,6 @@ export default function Admin() {
     <>
       <Head>
         <title>Admin Dashboard - Timesheet</title>
-        <link rel="stylesheet" href="/styles/admin-improvements.css" />
       </Head>
       <main className="page page--center page--admin">
         <h1 className="page__title">Admin Dashboard</h1>
