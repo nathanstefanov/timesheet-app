@@ -3,6 +3,7 @@ import Link from 'next/link';
 import { useEffect, useMemo, useRef, useState, Fragment } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
+import { get, post, patch, del, ApiError } from '../lib/api';
 
 type Emp = {
   id: string;
@@ -459,11 +460,13 @@ export default function AdminSchedule() {
     setLoading(true);
     setErr(null);
     try {
-      const r = await fetch('/api/schedule/shifts');
-      const j: any = await parseMaybeJson(r);
-      if (!r.ok) throw new Error(j?.error || j?.raw || `HTTP ${r.status}`);
-      setRows(Array.isArray(j) ? j : []);
+      const data = await get<SRow[]>('/api/schedule/shifts');
+      setRows(Array.isArray(data) ? data : []);
     } catch (e: any) {
+      if (e instanceof ApiError && e.statusCode === 401) {
+        router.push('/login');
+        return;
+      }
       setErr(e.message || 'Failed to load schedule');
     } finally {
       setLoading(false);
@@ -564,17 +567,9 @@ export default function AdminSchedule() {
         address: form.address || undefined,
         job_type: form.job_type,
         notes: form.notes || undefined,
-        created_by: (me as any).id,
       };
 
-      const r = await fetch('/api/schedule/shifts', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-
-      const j: any = await parseMaybeJson(r);
-      if (!r.ok) throw new Error(j?.error || j?.raw || `HTTP ${r.status}`);
+      await post('/api/schedule/shifts', body);
 
       const now = new Date();
       const d = toLocalInput(now);
@@ -663,14 +658,7 @@ export default function AdminSchedule() {
         body.end_time = new Date(body.end_time).toISOString();
       }
 
-      const r = await fetch(`/api/schedule/shifts/${shiftId}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-
-      const j: any = await parseMaybeJson(r);
-      if (!r.ok) throw new Error(j?.error || j?.raw || `HTTP ${r.status}`);
+      await patch(`/api/schedule/shifts/${shiftId}`, body);
 
       setEdit(null);
       await loadRows();
@@ -684,10 +672,12 @@ export default function AdminSchedule() {
 
   async function deleteRow(id: string) {
     if (!confirm('Delete this scheduled shift?')) return;
-    const r = await fetch(`/api/schedule/shifts/${id}`, { method: 'DELETE' });
-    const j: any = await parseMaybeJson(r);
-    if (!r.ok) return alert(j?.error || j?.raw || `HTTP ${r.status}`);
-    await loadRows();
+    try {
+      await del(`/api/schedule/shifts/${id}`);
+      await loadRows();
+    } catch (e: any) {
+      alert(e.message || 'Failed to delete');
+    }
   }
 
   // ---------- OPEN ASSIGN ----------
@@ -727,24 +717,16 @@ export default function AdminSchedule() {
     const add = assignees.filter((x) => !currentAssignees.includes(x));
     const remove = currentAssignees.filter((x) => !assignees.includes(x));
 
-    if (add.length) {
-      const r = await fetch(`/api/schedule/shifts/${shiftId}/assign`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ employee_ids: add }),
-      });
-      const j: any = await parseMaybeJson(r);
-      if (!r.ok) return alert(j?.error || j?.raw || 'Failed to add assignments');
-    }
+    try {
+      if (add.length) {
+        await post(`/api/schedule/shifts/${shiftId}/assign`, { employee_ids: add });
+      }
 
-    if (remove.length) {
-      const r = await fetch(`/api/schedule/shifts/${shiftId}/assign`, {
-        method: 'DELETE',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ employee_ids: remove }),
-      });
-      const j: any = await parseMaybeJson(r);
-      if (!r.ok) return alert(j?.error || j?.raw || 'Failed to remove assignments');
+      if (remove.length) {
+        await del(`/api/schedule/shifts/${shiftId}/assign`, { employee_ids: remove });
+      }
+    } catch (e: any) {
+      return alert(e.message || 'Failed to update assignments');
     }
 
     setAssignShift(null);

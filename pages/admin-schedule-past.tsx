@@ -1,7 +1,9 @@
 // pages/admin-schedule-past.tsx
 import Link from 'next/link';
 import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
+import { get, patch, del, ApiError } from '../lib/api';
 
 type Row = {
   id: string;
@@ -15,6 +17,7 @@ type Row = {
 type Emp = { id: string; full_name?: string | null; email?: string | null };
 
 export default function AdminSchedulePast() {
+  const router = useRouter();
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
@@ -48,11 +51,13 @@ export default function AdminSchedulePast() {
     setLoading(true);
     setErr(null);
     try {
-      const r = await fetch('/api/schedule/shifts');
-      const j: any = await parseMaybeJson(r);
-      if (!r.ok) throw new Error(j?.error || j?.raw || `HTTP ${r.status}`);
-      setRows(Array.isArray(j) ? j : []);
+      const data = await get<Row[]>('/api/schedule/shifts');
+      setRows(Array.isArray(data) ? data : []);
     } catch (e: any) {
+      if (e instanceof ApiError && e.statusCode === 401) {
+        router.push('/login');
+        return;
+      }
       setErr(e.message || 'Failed to load');
     } finally {
       setLoading(false);
@@ -142,13 +147,7 @@ export default function AdminSchedulePast() {
         body.end_time = new Date(body.end_time).toISOString();
       }
 
-      const r = await fetch(`/api/schedule/shifts/${edit.id}`, {
-        method: 'PATCH',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(body),
-      });
-      const j: any = await parseMaybeJson(r);
-      if (!r.ok) throw new Error(j?.error || j?.raw || `HTTP ${r.status}`);
+      await patch(`/api/schedule/shifts/${edit.id}`, body);
       setEdit(null);
       await loadRows();
       alert('Shift updated.');
@@ -161,11 +160,13 @@ export default function AdminSchedulePast() {
 
   async function deleteRow(id: string) {
     if (!confirm('Delete this past shift?')) return;
-    const r = await fetch(`/api/schedule/shifts/${id}`, { method: 'DELETE' });
-    const j: any = await parseMaybeJson(r);
-    if (!r.ok) return alert(j?.error || j?.raw || `HTTP ${r.status}`);
-    await loadRows();
-    alert('Shift deleted.');
+    try {
+      await del(`/api/schedule/shifts/${id}`);
+      await loadRows();
+      alert('Shift deleted.');
+    } catch (e: any) {
+      alert(e.message || 'Failed to delete');
+    }
   }
 
   async function deleteAllPast() {
@@ -181,9 +182,7 @@ export default function AdminSchedulePast() {
       for (let i = 0; i < past.length; i += batchSize) {
         const slice = past.slice(i, i + batchSize);
         await Promise.all(
-          slice.map((s) =>
-            fetch(`/api/schedule/shifts/${s.id}`, { method: 'DELETE' })
-          )
+          slice.map((s) => del(`/api/schedule/shifts/${s.id}`))
         );
       }
       await loadRows();

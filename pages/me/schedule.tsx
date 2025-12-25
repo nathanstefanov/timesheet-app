@@ -1,6 +1,8 @@
 // pages/me/schedule.tsx
 import { useEffect, useMemo, useState } from 'react';
+import { useRouter } from 'next/router';
 import { supabase } from '../../lib/supabaseClient';
+import { get, ApiError } from '../../lib/api';
 
 type Mate = { id: string; full_name?: string | null };
 
@@ -41,6 +43,7 @@ function getMapLink(address: string) {
 }
 
 export default function MySchedule() {
+  const router = useRouter();
   const [rows, setRows] = useState<Shift[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
@@ -88,21 +91,11 @@ export default function MySchedule() {
     return <span className="badge job-badge-xl">{label}</span>;
   };
 
-  async function parseMaybeJson(r: Response) {
-    const ct = r.headers.get('content-type') || '';
-    if (ct.includes('application/json')) {
-      try {
-        return await r.json();
-      } catch {}
-    }
-    const raw = await r.text();
-    return { raw };
-  }
-
   async function load() {
     setLoading(true);
     setErr(null);
     try {
+      // Get current user profile
       const { data } = await supabase.auth.getSession();
       const session = data.session;
 
@@ -118,18 +111,20 @@ export default function MySchedule() {
         }
       }
 
-      const r = await fetch('/api/schedule/me', {
-        headers: session?.access_token
-          ? { Authorization: `Bearer ${session.access_token}` }
-          : {},
-      });
-
-      const j: any = await parseMaybeJson(r);
-      if (!r.ok) throw new Error(j?.error || j?.raw);
-
-      setRows(Array.isArray(j) ? j : []);
+      // Fetch schedule using authenticated API helper
+      const scheduleData = await get<Shift[]>('/api/schedule/me');
+      setRows(Array.isArray(scheduleData) ? scheduleData : []);
     } catch (e: any) {
-      setErr(e.message || 'Failed to load schedule');
+      if (e instanceof ApiError) {
+        if (e.statusCode === 401) {
+          // Redirect to login if not authenticated
+          router.push('/login');
+          return;
+        }
+        setErr(e.message);
+      } else {
+        setErr(e.message || 'Failed to load schedule');
+      }
     } finally {
       setLoading(false);
     }
