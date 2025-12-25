@@ -2,6 +2,7 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
+import Head from 'next/head';
 
 type Tab = 'unpaid' | 'paid' | 'all';
 type SortBy = 'name' | 'hours' | 'pay' | 'unpaid';
@@ -464,24 +465,50 @@ export default function Admin() {
   }
 
   return (
-    <main className="page page--center page--admin">
-      <h1 className="page__title">Admin Dashboard</h1>
+    <>
+      <Head>
+        <title>Admin Dashboard - Timesheet</title>
+        <link rel="stylesheet" href="/styles/admin-improvements.css" />
+      </Head>
+      <main className="page page--center page--admin">
+        <h1 className="page__title">Admin Dashboard</h1>
       {err && (
         <div className="alert error" role="alert">
           Error: {err}
         </div>
       )}
 
-      {/* Summary */}
-      <div className="card card--tight full">
-        <div className="summary-grid">
-          <span className="chip chip--xl">
-            Total Unpaid: ${unpaidTotal.toFixed(2)}
-          </span>
-          <span className="meta">
-            Employees with Unpaid: {totals.filter(t => t.unpaid > 0).length}
-          </span>
+      {/* Summary Stats */}
+      <div className="summary-bar">
+        <div className="summary-bar__item">
+          <div className="summary-bar__label">Total Unpaid</div>
+          <div className="summary-bar__value summary-bar__value--warning">
+            ${unpaidTotal.toFixed(2)}
+          </div>
+        </div>
+        <div className="summary-bar__item">
+          <div className="summary-bar__label">Employees w/ Unpaid</div>
+          <div className="summary-bar__value summary-bar__value--primary">
+            {totals.filter(t => t.unpaid > 0).length}
+          </div>
+        </div>
+        <div className="summary-bar__item">
+          <div className="summary-bar__label">Total Shifts</div>
+          <div className="summary-bar__value">
+            {shifts.length}
+          </div>
+        </div>
+        <div className="summary-bar__item">
+          <div className="summary-bar__label">Total Hours</div>
+          <div className="summary-bar__value">
+            {shifts.reduce((sum, s) => sum + (s.hours_worked || 0), 0).toFixed(1)}
+          </div>
+        </div>
+      </div>
 
+      {/* Info Badges */}
+      <div className="card card--tight full">
+        <div className="summary-grid" style={{ display: 'flex', gap: '2rem', justifyContent: 'center', padding: '1rem' }}>
           <div className="summary-badges">
             <span className="badge badge-min">MIN $50</span>
             <span className="muted">Breakdown boosted to minimum</span>
@@ -994,7 +1021,8 @@ export default function Admin() {
           </div>
         </div>
       )}
-    </main>
+      </main>
+    </>
   );
 }
 
