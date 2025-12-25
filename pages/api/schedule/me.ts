@@ -1,21 +1,14 @@
 // pages/api/schedule/me.ts
-import type { NextApiRequest, NextApiResponse } from 'next';
+import type { NextApiResponse } from 'next';
 import { supabaseAdmin } from '../../../lib/supabaseAdmin';
+import { withAuth, type AuthenticatedRequest } from '../../../lib/middleware';
 
-export default async function handler(
-  req: NextApiRequest,
+async function handler(
+  req: AuthenticatedRequest,
   res: NextApiResponse
 ) {
   try {
-    const auth = req.headers.authorization || '';
-    const token = auth.startsWith('Bearer ') ? auth.slice(7) : null;
-
-    let userId: string | null = null;
-    if (token) {
-      const { data, error } = await supabaseAdmin.auth.getUser(token);
-      if (!error) userId = data.user?.id ?? null;
-    }
-    if (!userId) return res.status(200).json([]);
+    const userId = req.user.id;
 
     // Find my schedule shift ids
     const { data: assigns, error: aErr } = await supabaseAdmin
@@ -73,3 +66,5 @@ export default async function handler(
     return res.status(500).json({ error: e.message || 'Unexpected error' });
   }
 }
+
+export default withAuth(handler, { requireAuth: true });

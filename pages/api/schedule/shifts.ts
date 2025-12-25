@@ -1,6 +1,7 @@
-import type { NextApiRequest, NextApiResponse } from 'next';
+import type { NextApiResponse } from 'next';
 import { z } from 'zod';
 import { supabaseAdmin } from '../../../lib/supabaseAdmin';
+import { requireAdmin, type AuthenticatedRequest } from '../../../lib/middleware';
 
 const CreateSchema = z.object({
 	start_time: z.string().datetime(),
@@ -10,11 +11,9 @@ const CreateSchema = z.object({
 	job_type: z.enum(['setup','lights','breakdown','other']).optional(),
 	notes: z.string().max(1000).optional(),
 	status: z.enum(['draft','confirmed','changed']).optional(),
-	created_by: z.string().uuid()
 });
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
-	if (req.method === 'OPTIONS') return res.status(200).end();
+async function handler(req: AuthenticatedRequest, res: NextApiResponse) {
 
 	if (req.method === 'POST') {
 		const parsed = CreateSchema.safeParse(req.body);
@@ -22,7 +21,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
 		const {
 			start_time, end_time, location_name, address,
-			job_type, notes, status, created_by
+			job_type, notes, status
 		} = parsed.data;
 
 		if (end_time && new Date(end_time) <= new Date(start_time)) {
@@ -39,7 +38,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 				job_type: job_type ?? 'setup',
 				notes: notes ?? null,
 				status: status ?? 'draft',
-				created_by
+				created_by: req.user.id
 			}])
 			.select()
 			.single();
@@ -61,3 +60,5 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 	res.setHeader('Allow', ['GET','POST','OPTIONS']);
 	return res.status(405).json({ error: 'Method Not Allowed' });
 }
+
+export default requireAdmin(handler);

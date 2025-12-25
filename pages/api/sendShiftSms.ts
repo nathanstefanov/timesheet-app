@@ -1,20 +1,16 @@
 // pages/api/sendShiftSms.ts
-import type { NextApiRequest, NextApiResponse } from 'next';
-import { createClient } from '@supabase/supabase-js';
+import type { NextApiResponse } from 'next';
 import Twilio from 'twilio';
-
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
+import { requireAdmin, type AuthenticatedRequest } from '../../lib/middleware';
+import { supabaseAdmin } from '../../lib/supabaseAdmin';
 
 const twilio = Twilio(
   process.env.TWILIO_ACCOUNT_SID!,
   process.env.TWILIO_AUTH_TOKEN!,
 );
 
-export default async function handler(
-  req: NextApiRequest,
+async function handler(
+  req: AuthenticatedRequest,
   res: NextApiResponse,
 ) {
   if (req.method !== 'POST') {
@@ -31,7 +27,7 @@ export default async function handler(
   }
 
   // Get shift details
-  const { data: shift, error: shiftErr } = await supabase
+  const { data: shift, error: shiftErr } = await supabaseAdmin
     .from('schedule_shifts')
     .select('start_time, location_name, address, job_type')
     .eq('id', shift_id)
@@ -42,7 +38,7 @@ export default async function handler(
   }
 
   // Get ONLY the newly added employees
-  const { data: employees, error: empErr } = await supabase
+  const { data: employees, error: empErr } = await supabaseAdmin
     .from('profiles')
     .select('id, full_name, phone')
     .in('id', employee_ids)
@@ -85,3 +81,5 @@ export default async function handler(
     sent: results.length,
   });
 }
+
+export default requireAdmin(handler);

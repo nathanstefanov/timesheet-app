@@ -1,12 +1,8 @@
 // pages/api/sendShiftUpdateSms.ts
-import type { NextApiRequest, NextApiResponse } from 'next';
-import { createClient } from '@supabase/supabase-js';
+import type { NextApiResponse } from 'next';
 import Twilio from 'twilio';
-
-const supabase = createClient(
-  process.env.SUPABASE_URL!,
-  process.env.SUPABASE_SERVICE_ROLE_KEY!,
-);
+import { requireAdmin, type AuthenticatedRequest } from '../../lib/middleware';
+import { supabaseAdmin } from '../../lib/supabaseAdmin';
 
 const twilio = Twilio(
   process.env.TWILIO_ACCOUNT_SID!,
@@ -21,7 +17,7 @@ function fmt(dtIso?: string | null) {
   });
 }
 
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+async function handler(req: AuthenticatedRequest, res: NextApiResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
   const { shift_id, changes } = req.body as {
@@ -39,7 +35,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   }
 
   // Pull current assignments for this shift
-  const { data: assigns, error: aErr } = await supabase
+  const { data: assigns, error: aErr } = await supabaseAdmin
     .from('schedule_assignments')
     .select('employee_id')
     .eq('schedule_shift_id', shift_id);
@@ -50,7 +46,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (employeeIds.length === 0) return res.status(200).json({ success: true, sent: 0 });
 
   // Load shift (for context)
-  const { data: shift, error: sErr } = await supabase
+  const { data: shift, error: sErr } = await supabaseAdmin
     .from('schedule_shifts')
     .select('start_time, end_time, location_name, address, job_type')
     .eq('id', shift_id)
@@ -59,7 +55,7 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   if (sErr || !shift) return res.status(500).json({ error: 'Shift not found' });
 
   // Load employee phone numbers (ONLY opt-in)
-  const { data: emps, error: eErr } = await supabase
+  const { data: emps, error: eErr } = await supabaseAdmin
     .from('profiles')
     .select('id, full_name, phone')
     .in('id', employeeIds)
@@ -105,3 +101,5 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
 
   return res.status(200).json({ success: true, sent });
 }
+
+export default requireAdmin(handler);

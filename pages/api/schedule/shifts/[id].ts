@@ -1,6 +1,7 @@
-import type { NextApiRequest, NextApiResponse } from 'next';
+import type { NextApiResponse } from 'next';
 import { z } from 'zod';
 import { supabaseAdmin } from '../../../../lib/supabaseAdmin';
+import { requireAdmin, type AuthenticatedRequest } from '../../../../lib/middleware';
 
 // IMPORTANT: twilio must only run server-side
 import twilio from 'twilio';
@@ -103,7 +104,7 @@ async function sendSms(to: string, body: string) {
 }
 
 // ---------- handler ----------
-export default async function handler(req: NextApiRequest, res: NextApiResponse) {
+async function handler(req: AuthenticatedRequest, res: NextApiResponse) {
   const id = req.query.id as string;
   if (!id) return res.status(400).json({ error: 'Missing id' });
 
@@ -215,3 +216,5 @@ export default async function handler(req: NextApiRequest, res: NextApiResponse)
   res.setHeader('Allow', ['PATCH', 'DELETE']);
   return res.status(405).json({ error: 'Method Not Allowed' });
 }
+
+export default requireAdmin(handler);

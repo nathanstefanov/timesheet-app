@@ -1,11 +1,12 @@
 // pages/api/schedule/shifts/[id]/assign.ts
-import type { NextApiRequest, NextApiResponse } from 'next';
+import type { NextApiResponse } from 'next';
 import twilio from 'twilio';
 import { supabaseAdmin } from '../../../../../lib/supabaseAdmin';
+import { requireAdmin, type AuthenticatedRequest } from '../../../../../lib/middleware';
 
 type ApiResponse = { ok: true } | { error: string };
 
-function getBaseUrl(req: NextApiRequest) {
+function getBaseUrl(req: AuthenticatedRequest) {
   // Prefer an explicit env if you have it
   const env =
     process.env.NEXT_PUBLIC_APP_URL ||
@@ -48,8 +49,8 @@ function fmtShiftText(shift: any) {
   return { date, startTime, endTime };
 }
 
-export default async function handler(
-  req: NextApiRequest,
+async function handler(
+  req: AuthenticatedRequest,
   res: NextApiResponse<ApiResponse>
 ) {
   const { id } = req.query;
@@ -57,8 +58,6 @@ export default async function handler(
   if (!id || typeof id !== 'string') {
     return res.status(400).json({ error: 'Missing schedule_shift_id in URL.' });
   }
-
-  if (req.method === 'OPTIONS') return res.status(200).end();
 
   // ADD ASSIGNMENTS (+ SMS ONLY TO NEW ADDS)
   if (req.method === 'POST') {
@@ -214,3 +213,5 @@ export default async function handler(
   res.setHeader('Allow', 'POST, DELETE, OPTIONS');
   return res.status(405).json({ error: 'Method Not Allowed' });
 }
+
+export default requireAdmin(handler);
