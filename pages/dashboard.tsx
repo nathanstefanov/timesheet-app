@@ -189,12 +189,23 @@ export default function Dashboard() {
         {/* MOBILE MENU BUTTON */}
         <button
           className="mobile-menu-toggle"
-          onClick={() => {
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
             console.log('Hamburger clicked! Current state:', mobileMenuOpen);
+            alert('Button clicked! State: ' + mobileMenuOpen);
             setMobileMenuOpen(!mobileMenuOpen);
           }}
+          onTouchStart={(e) => {
+            console.log('Touch started on hamburger');
+          }}
           aria-label="Toggle menu"
-          style={{ zIndex: 99999 }}
+          style={{
+            zIndex: 99999,
+            position: 'fixed',
+            top: '16px',
+            left: '16px',
+          }}
         >
           ☰
         </button>
