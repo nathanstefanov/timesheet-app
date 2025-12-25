@@ -189,8 +189,12 @@ export default function Dashboard() {
         {/* MOBILE MENU BUTTON */}
         <button
           className="mobile-menu-toggle"
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          onClick={() => {
+            console.log('Hamburger clicked! Current state:', mobileMenuOpen);
+            setMobileMenuOpen(!mobileMenuOpen);
+          }}
           aria-label="Toggle menu"
+          style={{ zIndex: 99999 }}
         >
           ☰
         </button>

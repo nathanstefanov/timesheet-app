@@ -5900,6 +5900,7 @@ textarea:focus {
   /* HEADER adjustments - add top padding for hamburger button */
   .app-header {
     padding: calc(var(--space-md) + 60px) var(--space-md) var(--space-md) var(--space-md) !important;
+    z-index: 10 !important;
   }
 
   .header-content {
