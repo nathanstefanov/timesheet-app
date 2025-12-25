@@ -1,8 +1,14 @@
 // pages/dashboard.tsx
+/**
+ * EMPLOYEE DASHBOARD - Brand New SaaS Design
+ * Completely redesigned with sidebar navigation and modern interface
+ */
+
 import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
+import Head from 'next/head';
 import {
   startOfWeek,
   endOfWeek,
@@ -19,29 +25,27 @@ type Mode = 'week' | 'month' | 'all';
 type Shift = {
   id: string;
   user_id: string;
-  shift_date: string; // 'YYYY-MM-DD'
-  shift_type: string; // 'Setup' | 'Breakdown' | 'Shop' | ...
-  time_in: string; // ISO
-  time_out: string; // ISO
+  shift_date: string;
+  shift_type: string;
+  time_in: string;
+  time_out: string;
   hours_worked: number;
   pay_due: number;
   is_paid?: boolean;
-  paid_at?: string | null; // ISO
+  paid_at?: string | null;
 };
 
 export default function Dashboard() {
   const router = useRouter();
-  const [user, setUser] = useState<{ id: string } | null>(null);
+  const [user, setUser] = useState<{ id: string; full_name?: string } | null>(null);
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [loading, setLoading] = useState(true);
   const [mode, setMode] = useState<Mode>('week');
   const [offset, setOffset] = useState(0);
   const [err, setErr] = useState<string | undefined>();
 
-  // All–time unpaid total
   const [unpaidAllTime, setUnpaidAllTime] = useState(0);
 
-  // Get current user once
   useEffect(() => {
     (async () => {
       const {
@@ -50,14 +54,19 @@ export default function Dashboard() {
       if (!session?.user) {
         setUser(null);
         setLoading(false);
-        // _app.tsx handles redirect; nothing here
         return;
       }
-      setUser({ id: session.user.id });
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id, full_name')
+        .eq('id', session.user.id)
+        .single();
+
+      setUser({ id: session.user.id, full_name: profile?.full_name });
     })();
   }, []);
 
-  // Compute the date range + label
   const range = useMemo(() => {
     const now = new Date();
     if (mode === 'week') {
@@ -90,7 +99,6 @@ export default function Dashboard() {
     };
   }, [mode, offset]);
 
-  // Load shifts when user/range changes
   useEffect(() => {
     if (!user) return;
     let alive = true;
@@ -99,7 +107,6 @@ export default function Dashboard() {
       setErr(undefined);
       setLoading(true);
       try {
-        // 1) Range-filtered shifts for the table + range totals
         let q = supabase
           .from('shifts')
           .select('*')
@@ -117,7 +124,6 @@ export default function Dashboard() {
         if (!alive) return;
         setShifts((data ?? []) as Shift[]);
 
-        // 2) All-time unpaid total (ignores date range)
         const { data: unpaidData, error: unpaidError } = await supabase
           .from('shifts')
           .select('pay_due, is_paid')
@@ -133,7 +139,6 @@ export default function Dashboard() {
           }, 0);
           setUnpaidAllTime(totalUnpaid);
         }
-        // If unpaidError, skip updating unpaidAllTime
       } catch (e: any) {
         if (!alive) return;
         setErr(e?.message || 'Failed to load shifts.');
@@ -150,7 +155,10 @@ export default function Dashboard() {
   const totals = useMemo(() => {
     const hours = shifts.reduce((s, x) => s + Number(x.hours_worked || 0), 0);
     const pay = shifts.reduce((s, x) => s + Number(x.pay_due || 0), 0);
-    return { hours, pay };
+    const unpaidInRange = shifts
+      .filter(s => !s.is_paid)
+      .reduce((sum, x) => sum + Number(x.pay_due || 0), 0);
+    return { hours, pay, unpaidInRange, count: shifts.length };
   }, [shifts]);
 
   async function delShift(id: string) {
@@ -160,195 +168,282 @@ export default function Dashboard() {
       alert(error.message);
       return;
     }
-    setShifts((prev) => prev.filter((x) => x.id !== id));
-    // Could refetch unpaidAllTime here if needed
+    setShifts(prev => prev.filter(x => x.id !== id));
+  }
+
+  async function handleLogout() {
+    await supabase.auth.signOut();
+    router.push('/login');
   }
 
   if (!user) return null;
 
   return (
-    <main className="page page--center page--dashboard">
-      <h1 className="page__title">
-        My Shifts (
-        {mode === 'week'
-          ? 'This Week'
-          : mode === 'month'
-          ? 'This Month'
-          : 'All Time'}
-        )
-      </h1>
+    <>
+      <Head>
+        <title>My Shifts - Timesheet</title>
+        <link rel="stylesheet" href="/styles/new-saas-design.css" />
+      </Head>
 
-      {err && (
-        <div className="alert error" role="alert">
-          Error: {err}
-        </div>
-      )}
+      <div className="app-container">
+        {/* SIDEBAR */}
+        <aside className="app-sidebar">
+          <div className="sidebar-header">
+            <div className="sidebar-logo">
+              <div className="sidebar-logo-icon">T</div>
+              <div className="sidebar-logo-text">Timesheet</div>
+            </div>
+          </div>
 
-      {/* Toolbar */}
-      <div className="toolbar toolbar--center full">
-        <div className="toolbar__left row wrap">
-          <label className="sr-only" htmlFor="range-mode">
-            Range
-          </label>
-          <select
-            id="range-mode"
-            value={mode}
-            onChange={(e) => {
-              setMode(e.target.value as Mode);
-              setOffset(0);
-            }}
-          >
-            <option value="week">This week</option>
-            <option value="month">This month</option>
-            <option value="all">All time</option>
-          </select>
+          <nav className="sidebar-nav">
+            <div className="sidebar-nav-section">
+              <div className="sidebar-nav-label">Main</div>
+              <a href="/dashboard" className="sidebar-nav-item active">
+                <span className="sidebar-nav-icon">👤</span>
+                <span>My Shifts</span>
+              </a>
+              <a href="/new-shift" className="sidebar-nav-item">
+                <span className="sidebar-nav-icon">➕</span>
+                <span>Log Shift</span>
+              </a>
+            </div>
+          </nav>
 
-          {mode !== 'all' && (
-            <>
-              <button
-                className="topbar-btn"
-                onClick={() => setOffset((n) => n - 1)}
-                aria-label="Previous range"
-              >
-                ◀ Prev
-              </button>
-              <button className="topbar-btn" onClick={() => setOffset(0)}>
-                {mode === 'week' ? 'This week' : 'This month'}
-              </button>
-              <button
-                className="topbar-btn"
-                onClick={() => setOffset((n) => n + 1)}
-                disabled={offset >= 0}
-                aria-label="Next range"
-                title={offset >= 0 ? 'Cannot view future range' : 'Next'}
-              >
-                Next ▶
-              </button>
-              <div
-                className="muted toolbar-range-label"
-                aria-live="polite"
-              >
-                {range.label}
+          <div className="sidebar-footer">
+            <div className="sidebar-user">
+              <div className="sidebar-user-avatar">
+                {user?.full_name?.charAt(0) || 'U'}
               </div>
-            </>
-          )}
-        </div>
+              <div className="sidebar-user-info">
+                <div className="sidebar-user-name">{user?.full_name || 'User'}</div>
+                <div className="sidebar-user-role">Employee</div>
+              </div>
+            </div>
+            <button className="sidebar-logout" onClick={handleLogout}>
+              🚪 Logout
+            </button>
+          </div>
+        </aside>
 
-        <Link href="/new-shift" className="btn-primary">
-          + Log Shift
-        </Link>
-      </div>
+        {/* MAIN CONTENT */}
+        <main className="app-main">
+          <header className="app-header">
+            <div className="header-content">
+              <div>
+                <h1 className="header-title">My Shifts</h1>
+                <p className="header-subtitle">View and manage your work shifts</p>
+              </div>
+              <div className="header-actions">
+                <button className="btn-new btn-primary-new" onClick={() => router.push('/new-shift')}>
+                  + Log New Shift
+                </button>
+              </div>
+            </div>
+          </header>
 
-      {/* Totals */}
-      <div className="totals totals--center">
-        <div className="chip chip--xl">
-          Hours:&nbsp;<b>{totals.hours.toFixed(2)}</b>
-        </div>
-        <div className="chip chip--xl">
-          Pay:&nbsp;<b>${totals.pay.toFixed(2)}</b>
-        </div>
-        <div className="chip chip--xl">
-          Unpaid:&nbsp;<b>${unpaidAllTime.toFixed(2)}</b>
-        </div>
-      </div>
+          <div className="app-content">
+            {err && (
+              <div className="alert-new alert-error-new">
+                Error: {err}
+              </div>
+            )}
 
-      {/* Shifts table */}
-      <div className="table-wrap">
-        <table className="table table--admin table--center table--stack">
-          <thead>
-            <tr>
-              <th>Date</th>
-              <th>Type</th>
-              <th>In</th>
-              <th>Out</th>
-              <th>Hours</th>
-              <th>Pay</th>
-              <th>Status</th>
-              <th className="col-hide-md">Paid at</th>
-              <th>Actions</th>
-            </tr>
-          </thead>
-          <tbody>
-            {!loading &&
-              shifts.map((s) => {
-                const paid = Boolean(s.is_paid);
-                return (
-                  <tr key={s.id}>
-                    <td data-label="Date">{s.shift_date}</td>
-                    <td data-label="Type">{s.shift_type}</td>
-                    <td data-label="In">
-                      {s.time_in
-                        ? formatForDisplay(s.time_in, 'h:mm a')
-                        : '—'}
-                    </td>
-                    <td data-label="Out">
-                      {s.time_out
-                        ? formatForDisplay(s.time_out, 'h:mm a')
-                        : '—'}
-                    </td>
-                    <td data-label="Hours">
-                      {Number(s.hours_worked ?? 0).toFixed(2)}
-                    </td>
-                    <td data-label="Pay">
-                      ${Number(s.pay_due ?? 0).toFixed(2)}
-                    </td>
-                    <td data-label="Status">
-                      <span
-                        className={
-                          paid ? 'badge badge-paid' : 'badge badge-unpaid'
-                        }
-                      >
-                        {paid ? 'PAID' : 'NOT PAID'}
-                      </span>
-                    </td>
-                    <td data-label="Paid at" className="col-hide-md">
-                      {s.paid_at
-                        ? formatForDisplay(s.paid_at, 'MMM d, yyyy')
-                        : '—'}
-                    </td>
-                    <td data-label="Actions">
-                      <div className="actions">
-                        <Link
-                          href={`/shift/${s.id}`}
-                          className="btn-edit"
-                        >
-                          Edit
-                        </Link>
+            {/* STATS CARDS */}
+            <div className="dashboard-stats">
+              <div className="stat-card-new">
+                <div className="stat-card-header">
+                  <div>
+                    <div className="stat-card-label">Total Unpaid</div>
+                  </div>
+                  <div className="stat-card-icon">💰</div>
+                </div>
+                <div className="stat-card-value gradient-text">${unpaidAllTime.toFixed(2)}</div>
+                <div className="stat-card-change">All time balance</div>
+              </div>
+
+              <div className="stat-card-new">
+                <div className="stat-card-header">
+                  <div>
+                    <div className="stat-card-label">Total Shifts</div>
+                  </div>
+                  <div className="stat-card-icon">📋</div>
+                </div>
+                <div className="stat-card-value">{totals.count}</div>
+                <div className="stat-card-change">
+                  {mode === 'week' ? 'This week' : mode === 'month' ? 'This month' : 'All time'}
+                </div>
+              </div>
+
+              <div className="stat-card-new">
+                <div className="stat-card-header">
+                  <div>
+                    <div className="stat-card-label">Total Hours</div>
+                  </div>
+                  <div className="stat-card-icon">⏰</div>
+                </div>
+                <div className="stat-card-value">{totals.hours.toFixed(1)}</div>
+                <div className="stat-card-change">
+                  {mode === 'week' ? 'This week' : mode === 'month' ? 'This month' : 'All time'}
+                </div>
+              </div>
+
+              <div className="stat-card-new">
+                <div className="stat-card-header">
+                  <div>
+                    <div className="stat-card-label">Total Pay</div>
+                  </div>
+                  <div className="stat-card-icon">💵</div>
+                </div>
+                <div className="stat-card-value">${totals.pay.toFixed(2)}</div>
+                <div className="stat-card-change">
+                  {mode === 'week' ? 'This week' : mode === 'month' ? 'This month' : 'All time'}
+                </div>
+              </div>
+            </div>
+
+            {/* FILTERS */}
+            <div className="filters-card">
+              <div className="filters-header">
+                <h3 className="filters-title">View Options</h3>
+              </div>
+              <div className="filters-content">
+                <div className="filter-row">
+                  <label className="filter-label">Time Range</label>
+                  <div className="filter-controls">
+                    <select
+                      className="select-new"
+                      value={mode}
+                      onChange={e => {
+                        setMode(e.target.value as Mode);
+                        setOffset(0);
+                      }}
+                    >
+                      <option value="week">This Week</option>
+                      <option value="month">This Month</option>
+                      <option value="all">All Time</option>
+                    </select>
+
+                    {mode !== 'all' && (
+                      <>
                         <button
-                          className="btn-delete"
-                          onClick={() => delShift(s.id)}
+                          className="btn-new btn-sm-new"
+                          onClick={() => setOffset(n => n - 1)}
                         >
-                          Delete
+                          ◀ Prev
                         </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
+                        <button className="btn-new btn-sm-new" onClick={() => setOffset(0)}>
+                          Current
+                        </button>
+                        <button
+                          className="btn-new btn-sm-new"
+                          onClick={() => setOffset(n => n + 1)}
+                          disabled={offset >= 0}
+                        >
+                          Next ▶
+                        </button>
+                        <span className="filter-range">{range.label}</span>
+                      </>
+                    )}
+                  </div>
+                </div>
+              </div>
+            </div>
 
-            {!loading && shifts.length === 0 && (
-              <tr>
-                <td colSpan={9} className="muted center">
-                  No shifts in this range.
-                </td>
-              </tr>
-            )}
+            {/* SHIFTS TABLE */}
+            <div className="data-table-container">
+              <div className="data-table-header">
+                <h2 className="data-table-title">Shift History</h2>
+              </div>
 
-            {loading && (
-              <tr>
-                <td colSpan={9} className="center">
-                  Loading…
-                </td>
-              </tr>
-            )}
-          </tbody>
-        </table>
+              {loading ? (
+                <div style={{ padding: '3rem', textAlign: 'center', color: '#64748b' }}>
+                  Loading shifts...
+                </div>
+              ) : shifts.length === 0 ? (
+                <div style={{ padding: '3rem', textAlign: 'center', color: '#64748b' }}>
+                  No shifts in this range. Log your first shift to get started!
+                </div>
+              ) : (
+                <table className="data-table">
+                  <thead>
+                    <tr>
+                      <th>Date</th>
+                      <th>Type</th>
+                      <th>Time In</th>
+                      <th>Time Out</th>
+                      <th>Hours</th>
+                      <th>Pay</th>
+                      <th>Status</th>
+                      <th>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {shifts.map(s => {
+                      const paid = Boolean(s.is_paid);
+                      return (
+                        <tr key={s.id}>
+                          <td style={{ fontWeight: 600 }}>{s.shift_date}</td>
+                          <td>
+                            <span className="badge-new badge-neutral-new">
+                              {s.shift_type}
+                            </span>
+                          </td>
+                          <td>
+                            {s.time_in
+                              ? formatForDisplay(s.time_in, 'h:mm a')
+                              : '—'}
+                          </td>
+                          <td>
+                            {s.time_out
+                              ? formatForDisplay(s.time_out, 'h:mm a')
+                              : '—'}
+                          </td>
+                          <td>{Number(s.hours_worked ?? 0).toFixed(1)} hrs</td>
+                          <td style={{ fontWeight: 600 }}>
+                            ${Number(s.pay_due ?? 0).toFixed(2)}
+                          </td>
+                          <td>
+                            {paid ? (
+                              <span className="badge-new badge-success-new">Paid</span>
+                            ) : (
+                              <span className="badge-new badge-warning-new">Unpaid</span>
+                            )}
+                            {s.paid_at && (
+                              <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>
+                                {formatForDisplay(s.paid_at, 'MMM d, yyyy')}
+                              </div>
+                            )}
+                          </td>
+                          <td>
+                            <div className="action-buttons">
+                              <Link
+                                href={`/shift/${s.id}`}
+                                className="btn-new btn-sm-new"
+                              >
+                                Edit
+                              </Link>
+                              <button
+                                className="btn-new btn-sm-new btn-danger-new"
+                                onClick={() => delShift(s.id)}
+                              >
+                                Delete
+                              </button>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              )}
+            </div>
+          </div>
+        </main>
       </div>
-    </main>
+    </>
   );
 }
 
-// Force SSR to avoid static HTML emission on /dashboard
 export async function getServerSideProps() {
   return { props: {} };
 }
