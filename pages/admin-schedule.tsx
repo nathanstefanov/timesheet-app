@@ -368,6 +368,7 @@ export default function AdminSchedule() {
   const [duplicateFrom, setDuplicateFrom] = useState<SRow | null>(null);
 
   const [edit, setEdit] = useState<SRow | null>(null);
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const [assignShift, setAssignShift] = useState<SRow | null>(null);
@@ -773,8 +774,23 @@ export default function AdminSchedule() {
   return (
     <>
       <div className="app-container">
+        {/* MOBILE MENU BUTTON */}
+        <button
+          className="mobile-menu-toggle"
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          aria-label="Toggle menu"
+        >
+          ☰
+        </button>
+
+        {/* MOBILE OVERLAY */}
+        <div
+          className={`mobile-menu-overlay ${mobileMenuOpen ? 'active' : ''}`}
+          onClick={() => setMobileMenuOpen(false)}
+        />
+
         {/* SIDEBAR */}
-        <aside className="app-sidebar">
+        <aside className={`app-sidebar ${mobileMenuOpen ? 'mobile-open' : ''}`}>
           <div className="sidebar-header">
             <div className="sidebar-logo">
               <div className="sidebar-logo-icon">T</div>
@@ -785,15 +801,15 @@ export default function AdminSchedule() {
           <nav className="sidebar-nav">
             <div className="sidebar-nav-section">
               <div className="sidebar-nav-label">Main</div>
-              <a href="/dashboard" className="sidebar-nav-item">
+              <a href="/dashboard" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
                 <span className="sidebar-nav-icon">👤</span>
                 <span>My Shifts</span>
               </a>
-              <a href="/new-shift" className="sidebar-nav-item">
+              <a href="/new-shift" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
                 <span className="sidebar-nav-icon">➕</span>
                 <span>Log Shift</span>
               </a>
-              <a href="/me/schedule" className="sidebar-nav-item">
+              <a href="/me/schedule" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
                 <span className="sidebar-nav-icon">📅</span>
                 <span>My Schedule</span>
               </a>
@@ -801,15 +817,15 @@ export default function AdminSchedule() {
 
             <div className="sidebar-nav-section">
               <div className="sidebar-nav-label">Admin</div>
-              <a href="/admin" className="sidebar-nav-item">
+              <a href="/admin" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
                 <span className="sidebar-nav-icon">📊</span>
                 <span>Admin Dashboard</span>
               </a>
-              <a href="/admin-schedule" className="sidebar-nav-item active">
+              <a href="/admin-schedule" className="sidebar-nav-item active" onClick={() => setMobileMenuOpen(false)}>
                 <span className="sidebar-nav-icon">📅</span>
                 <span>Schedule</span>
               </a>
-              <a href="/admin-schedule-past" className="sidebar-nav-item">
+              <a href="/admin-schedule-past" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
                 <span className="sidebar-nav-icon">📋</span>
                 <span>Past Schedule</span>
               </a>

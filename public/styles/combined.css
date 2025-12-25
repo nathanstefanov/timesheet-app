@@ -5802,3 +5802,514 @@ textarea:focus {
   }
 }
 
+/* ============================================================================
+   COMPREHENSIVE MOBILE RESPONSIVE STYLES
+   Mobile-first approach: No horizontal scroll, perfect fit on all devices
+   ============================================================================ */
+
+/* MOBILE MENU TOGGLE BUTTON */
+.mobile-menu-toggle {
+  display: none;
+  position: fixed;
+  top: var(--space-md);
+  left: var(--space-md);
+  z-index: 1001;
+  width: 44px;
+  height: 44px;
+  background: var(--brand-primary);
+  border: none;
+  border-radius: var(--radius-md);
+  color: white;
+  font-size: 1.25rem;
+  cursor: pointer;
+  box-shadow: var(--shadow-lg);
+  transition: all 0.2s ease;
+}
+
+.mobile-menu-toggle:hover {
+  background: var(--brand-primary-dark);
+  transform: scale(1.05);
+}
+
+.mobile-menu-toggle:active {
+  transform: scale(0.95);
+}
+
+/* MOBILE OVERLAY */
+.mobile-menu-overlay {
+  display: none;
+  position: fixed;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background: rgba(0, 0, 0, 0.5);
+  z-index: 999;
+  opacity: 0;
+  transition: opacity 0.3s ease;
+}
+
+.mobile-menu-overlay.active {
+  opacity: 1;
+}
+
+/* Mobile: Base breakpoint for phones (portrait and landscape) */
+@media (max-width: 768px) {
+  /* Show mobile menu button */
+  .mobile-menu-toggle {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+
+  /* SIDEBAR - Convert to mobile hamburger or hide */
+  .app-sidebar {
+    position: fixed;
+    left: -280px;
+    transition: left 0.3s ease;
+    z-index: 1000;
+  }
+
+  /* Sidebar open state */
+  .app-sidebar.mobile-open {
+    left: 0;
+  }
+
+  /* Show overlay when sidebar is open */
+  .mobile-menu-overlay {
+    display: block;
+  }
+
+  /* Main content takes full width on mobile */
+  .app-main {
+    margin-left: 0 !important;
+    width: 100% !important;
+    padding: 0 !important;
+  }
+
+  /* HEADER adjustments */
+  .app-header {
+    padding: var(--space-md) !important;
+  }
+
+  .header-content {
+    flex-direction: column !important;
+    gap: var(--space-md) !important;
+    align-items: flex-start !important;
+  }
+
+  .header-title {
+    font-size: 1.5rem !important;
+  }
+
+  .header-subtitle {
+    font-size: 0.875rem !important;
+  }
+
+  .header-actions {
+    width: 100%;
+  }
+
+  .header-actions .btn-new,
+  .header-actions .btn-primary-new {
+    width: 100% !important;
+    justify-content: center;
+  }
+
+  /* APP CONTENT padding */
+  .app-content {
+    padding: var(--space-md) !important;
+  }
+
+  /* STATS CARDS - Stack vertically on mobile */
+  .dashboard-stats {
+    grid-template-columns: 1fr !important;
+    gap: var(--space-md) !important;
+  }
+
+  .stat-card-new {
+    padding: var(--space-lg) !important;
+  }
+
+  .stat-card-value {
+    font-size: 1.75rem !important;
+  }
+
+  /* VIEW OPTIONS */
+  .view-options-section {
+    padding: var(--space-lg) !important;
+  }
+
+  .time-range-controls {
+    flex-direction: column;
+    align-items: stretch !important;
+  }
+
+  .time-range-label {
+    margin-bottom: var(--space-sm);
+  }
+
+  .time-range-buttons {
+    flex-direction: column !important;
+    gap: var(--space-sm) !important;
+    align-items: stretch !important;
+  }
+
+  .time-range-select,
+  .time-nav-btn {
+    width: 100% !important;
+  }
+
+  .time-range-display {
+    text-align: center;
+    padding: var(--space-sm);
+    background: var(--bg-hover);
+    border-radius: var(--radius-sm);
+  }
+
+  /* SHIFT HISTORY SECTION */
+  .shift-history-section {
+    padding: var(--space-lg) !important;
+    overflow: hidden;
+  }
+
+  .shift-history-header {
+    flex-direction: column !important;
+    align-items: flex-start !important;
+    gap: var(--space-md) !important;
+  }
+
+  .shift-history-title {
+    font-size: 1.25rem !important;
+  }
+
+  /* TABLES - Make scrollable horizontally on mobile */
+  .shift-history-table-wrapper {
+    overflow-x: auto !important;
+    -webkit-overflow-scrolling: touch;
+    margin: 0 calc(var(--space-lg) * -1) !important;
+    padding: 0 var(--space-lg) !important;
+  }
+
+  .shift-history-table {
+    min-width: 800px; /* Ensure table doesn't compress too much */
+    font-size: 0.8125rem !important;
+  }
+
+  .shift-history-table th,
+  .shift-history-table td {
+    padding: var(--space-sm) var(--space-xs) !important;
+    white-space: nowrap;
+  }
+
+  /* Shift actions - reduce icon size */
+  .shift-actions {
+    gap: 4px !important;
+  }
+
+  .shift-action-btn {
+    font-size: 0.75rem !important;
+    padding: 4px 8px !important;
+  }
+
+  /* Admin action buttons - stack if needed */
+  .admin-shift-actions {
+    flex-wrap: wrap !important;
+    gap: 2px !important;
+  }
+
+  .admin-action-btn {
+    min-width: 28px !important;
+    width: 28px !important;
+    height: 28px !important;
+    font-size: 13px !important;
+  }
+
+  /* TABS */
+  .tabs-new {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  .tab-new {
+    flex: 1;
+    min-width: 90px;
+    font-size: 0.8125rem !important;
+    padding: var(--space-sm) var(--space-xs) !important;
+  }
+
+  /* SHIFT GROUPS */
+  .shift-groups {
+    gap: var(--space-md) !important;
+  }
+
+  .shift-group-header {
+    padding: var(--space-md) !important;
+    flex-wrap: wrap;
+    gap: var(--space-sm) !important;
+  }
+
+  .shift-group-name {
+    font-size: 1rem !important;
+  }
+
+  .shift-group-stats {
+    font-size: 0.8125rem !important;
+    padding: 4px 10px !important;
+  }
+
+  /* LOG SHIFT LAYOUT */
+  .log-shift-layout {
+    grid-template-columns: 1fr !important;
+    gap: var(--space-lg) !important;
+  }
+
+  .log-shift-form-card {
+    padding: var(--space-lg) !important;
+  }
+
+  .log-shift-form-header {
+    padding-bottom: var(--space-md) !important;
+  }
+
+  .log-shift-form-title {
+    font-size: 1.25rem !important;
+  }
+
+  .log-shift-form-row {
+    grid-template-columns: 1fr !important;
+    gap: var(--space-md) !important;
+  }
+
+  .log-shift-form-footer {
+    flex-direction: column-reverse !important;
+    gap: var(--space-sm) !important;
+  }
+
+  .log-shift-btn {
+    width: 100% !important;
+  }
+
+  /* Help section - show on mobile */
+  .log-shift-help-section {
+    display: block !important;
+  }
+
+  .log-shift-help-card {
+    padding: var(--space-lg) !important;
+  }
+
+  /* SCHEDULE TOOLBAR */
+  .schedule-toolbar {
+    flex-direction: column !important;
+    gap: var(--space-md) !important;
+  }
+
+  .schedule-toolbar-search {
+    width: 100% !important;
+  }
+
+  .schedule-toolbar-filters {
+    width: 100%;
+    flex-direction: column !important;
+    gap: var(--space-sm) !important;
+  }
+
+  .schedule-filter-group {
+    width: 100% !important;
+  }
+
+  .schedule-filter-select {
+    width: 100% !important;
+  }
+
+  .schedule-refresh-btn {
+    width: 100% !important;
+    justify-content: center;
+  }
+
+  /* SCHEDULE SHIFTS GRID */
+  .schedule-shifts-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  .schedule-past-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* ADMIN SCHEDULE FORM */
+  .admin-schedule-form-grid {
+    grid-template-columns: 1fr !important;
+  }
+
+  /* BADGES - reduce size on mobile */
+  .badge-new {
+    font-size: 0.6875rem !important;
+    padding: 2px 6px !important;
+  }
+
+  .shift-type-badge {
+    font-size: 0.6875rem !important;
+    padding: 4px 8px !important;
+  }
+
+  .shift-status-badge {
+    font-size: 0.6875rem !important;
+    padding: 4px 8px !important;
+  }
+
+  /* BUTTONS - full width on mobile for primary actions */
+  .btn-new.btn-lg-new {
+    width: 100%;
+    justify-content: center;
+  }
+
+  /* VENMO BUTTON */
+  .btn-venmo {
+    margin-left: var(--space-sm) !important;
+    font-size: 0.6875rem !important;
+    padding: 4px 8px !important;
+  }
+
+  /* MODALS - ensure they fit mobile screens */
+  .modal-content-new {
+    width: 95vw !important;
+    max-width: 95vw !important;
+    margin: var(--space-md) !important;
+  }
+
+  /* EMPTY STATES */
+  .shift-history-empty {
+    padding: var(--space-xl) var(--space-md) !important;
+  }
+
+  .empty-icon {
+    font-size: 2.5rem !important;
+  }
+
+  .empty-title {
+    font-size: 1.125rem !important;
+  }
+
+  .empty-subtitle {
+    font-size: 0.875rem !important;
+  }
+
+  /* SCHEDULE CARDS */
+  .shift-card-header {
+    flex-wrap: wrap;
+  }
+
+  .shift-card-time {
+    font-size: 0.875rem !important;
+  }
+
+  .shift-card-location-name {
+    font-size: 0.9375rem !important;
+  }
+
+  .shift-card-location-address {
+    font-size: 0.8125rem !important;
+    max-width: 100%;
+    overflow-wrap: break-word;
+  }
+
+  /* FOOTER NOTE */
+  .schedule-footer-note {
+    font-size: 0.8125rem !important;
+    padding: var(--space-md) !important;
+  }
+}
+
+/* Tablet: Medium screens (landscape phones and small tablets) */
+@media (min-width: 769px) and (max-width: 1024px) {
+  .app-sidebar {
+    width: 240px;
+  }
+
+  .app-main {
+    margin-left: 240px !important;
+  }
+
+  .dashboard-stats {
+    grid-template-columns: repeat(2, 1fr) !important;
+  }
+
+  .log-shift-layout {
+    grid-template-columns: 1fr !important;
+  }
+}
+
+/* Small mobile: Extra small devices (small phones in portrait) */
+@media (max-width: 480px) {
+  .app-header {
+    padding: var(--space-sm) !important;
+  }
+
+  .app-content {
+    padding: var(--space-sm) !important;
+  }
+
+  .header-title {
+    font-size: 1.25rem !important;
+  }
+
+  .stat-card-value {
+    font-size: 1.5rem !important;
+  }
+
+  .shift-history-table {
+    min-width: 700px;
+    font-size: 0.75rem !important;
+  }
+
+  .admin-action-btn {
+    min-width: 26px !important;
+    width: 26px !important;
+    height: 26px !important;
+    font-size: 12px !important;
+  }
+
+  .shift-group-name {
+    font-size: 0.9375rem !important;
+  }
+
+  .log-shift-form-card {
+    padding: var(--space-md) !important;
+  }
+
+  .schedule-section-title {
+    font-size: 1.125rem !important;
+  }
+
+  .shift-card-time {
+    font-size: 0.8125rem !important;
+  }
+}
+
+/* Prevent horizontal scroll on all screen sizes */
+html, body {
+  overflow-x: hidden !important;
+  max-width: 100vw !important;
+}
+
+.app-container {
+  overflow-x: hidden !important;
+  max-width: 100vw !important;
+}
+
+.app-main {
+  overflow-x: hidden !important;
+  max-width: 100% !important;
+}
+
+/* Ensure all content respects boundaries */
+* {
+  max-width: 100%;
+}
+
+img, video {
+  max-width: 100% !important;
+  height: auto !important;
+}
+
