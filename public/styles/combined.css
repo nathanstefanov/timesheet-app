@@ -3807,7 +3807,7 @@ textarea:focus {
   border-radius: 6px;
   font-size: 0.75rem;
   font-weight: 500;
-  margin-left: 0.5rem;
+  margin-left: 0.75rem;
   text-decoration: none;
   display: inline-block;
   transition: all 0.15s;
@@ -3816,6 +3816,216 @@ textarea:focus {
 .page--admin .btn-venmo:hover {
   background: #0099cc;
   box-shadow: 0 2px 4px rgba(0, 180, 230, 0.3);
+}
+
+/* ========================================
+   ADMIN SHIFT ACTIONS - Clean & Professional
+   ======================================== */
+
+.admin-shift-actions {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  justify-content: flex-start;
+  flex-wrap: nowrap;
+}
+
+.admin-shift-actions-primary {
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  padding: 3px;
+  background: var(--admin-gray-50);
+  border-radius: 6px;
+  border: 1px solid var(--admin-gray-200);
+}
+
+.admin-shift-actions-secondary {
+  display: flex;
+  align-items: center;
+}
+
+.admin-action-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 30px;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  border: none;
+  background: white;
+  color: var(--admin-gray-600);
+  border-radius: 4px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: all 0.12s ease;
+  position: relative;
+  flex-shrink: 0;
+}
+
+.admin-action-btn:hover {
+  background: var(--admin-gray-100);
+  color: var(--admin-gray-900);
+  transform: scale(1.08);
+}
+
+.admin-action-btn:active {
+  transform: scale(0.95);
+}
+
+/* Paid button - Green */
+.admin-action-btn.admin-action-paid {
+  color: #059669;
+  font-weight: bold;
+  font-size: 14px;
+}
+
+.admin-action-btn.admin-action-paid:hover {
+  background: #d1fae5;
+  color: #047857;
+}
+
+/* Unpaid button - Gray */
+.admin-action-btn.admin-action-unpaid {
+  color: var(--admin-gray-500);
+  font-size: 14px;
+}
+
+.admin-action-btn.admin-action-unpaid:hover {
+  background: var(--admin-gray-200);
+  color: var(--admin-gray-700);
+}
+
+/* Flagged state - Yellow/Orange */
+.admin-action-btn.admin-action-flagged {
+  color: #f59e0b;
+  font-size: 14px;
+}
+
+.admin-action-btn.admin-action-flagged:hover {
+  background: #fef3c7;
+  color: #d97706;
+}
+
+/* Has note indicator - Blue accent */
+.admin-action-btn.admin-action-has-note {
+  color: var(--primary-color);
+  position: relative;
+  font-size: 14px;
+}
+
+.admin-action-btn.admin-action-has-note::after {
+  content: '';
+  position: absolute;
+  top: 3px;
+  right: 3px;
+  width: 5px;
+  height: 5px;
+  background: var(--primary-color);
+  border-radius: 50%;
+  border: 1px solid white;
+}
+
+.admin-action-btn.admin-action-has-note:hover {
+  background: #ede9fe;
+}
+
+/* Delete button - Red, separate styling */
+.admin-action-btn.admin-action-delete {
+  background: transparent;
+  border: 1px solid var(--admin-gray-200);
+  color: #dc2626;
+  font-size: 14px;
+}
+
+.admin-action-btn.admin-action-delete:hover {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  color: #b91c1c;
+  transform: scale(1.08);
+}
+
+/* Disabled state */
+.admin-action-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.admin-action-btn:disabled:hover {
+  background: white;
+  color: var(--admin-gray-600);
+  transform: none !important;
+}
+
+/* Ensure table cells with actions don't wrap */
+.shift-detail-table td:has(.admin-shift-actions) {
+  white-space: nowrap;
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
+/* ========================================
+   SHIFT GROUPS - Enhanced Employee Sections
+   ======================================== */
+
+.shift-groups {
+  display: flex;
+  flex-direction: column;
+  gap: 20px;
+}
+
+.shift-group {
+  background: white;
+  border-radius: 8px;
+  border: 1px solid var(--admin-gray-200);
+  overflow: hidden;
+}
+
+.shift-group-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 16px 20px;
+  background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+  border-bottom: 2px solid var(--admin-gray-100);
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.shift-group-info {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.shift-group-name {
+  font-size: 19px;
+  font-weight: 800;
+  color: #1a1a1a;
+  letter-spacing: -0.02em;
+  text-transform: capitalize;
+}
+
+.shift-group-stats {
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--admin-gray-600);
+  padding: 4px 12px;
+  background: var(--admin-gray-100);
+  border-radius: 6px;
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.shift-group-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
 }
 
 /* Filter section improvements */
@@ -5108,6 +5318,487 @@ textarea:focus {
   .schedule-footer-note {
     flex-direction: column;
     text-align: center;
+  }
+}
+
+/* ================================================================
+   ADMIN SHIFT FORM - Enhanced Design
+   ================================================================ */
+
+.admin-shift-form-card {
+  background: var(--card-bg);
+  border-radius: var(--radius-lg);
+  box-shadow: var(--shadow-lg);
+  padding: var(--space-xl);
+  margin-bottom: var(--space-lg);
+}
+
+.admin-shift-form-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  margin-bottom: var(--space-lg);
+  padding-bottom: var(--space-lg);
+  border-bottom: 1px solid var(--border-color);
+  gap: var(--space-md);
+  flex-wrap: wrap;
+}
+
+.admin-shift-form-title {
+  font-size: 1.5rem;
+  font-weight: 700;
+  color: var(--text-primary);
+  margin: 0;
+  line-height: 1.3;
+}
+
+.admin-shift-form-subtitle {
+  font-size: 0.9375rem;
+  color: var(--text-secondary);
+  margin: var(--space-xs) 0 0 0;
+}
+
+.admin-shift-btn-quick {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-sm) var(--space-lg);
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+  white-space: nowrap;
+}
+
+.admin-shift-btn-quick:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.4);
+}
+
+.admin-shift-btn-quick:active {
+  transform: translateY(0);
+}
+
+.admin-shift-btn-icon {
+  font-size: 1rem;
+}
+
+.admin-shift-alert {
+  padding: var(--space-md);
+  border-radius: var(--radius-md);
+  margin-bottom: var(--space-lg);
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  animation: slideDown 0.3s ease;
+}
+
+.admin-shift-alert.error {
+  background: linear-gradient(135deg, #fee 0%, #fdd 100%);
+  border: 1px solid #fcc;
+  color: #c33;
+}
+
+.admin-shift-alert-icon {
+  font-size: 1.25rem;
+  flex-shrink: 0;
+}
+
+.admin-shift-alert-text {
+  font-size: 0.9375rem;
+  font-weight: 500;
+}
+
+.admin-shift-form-body {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-lg);
+}
+
+.admin-shift-form-row {
+  display: grid;
+  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+  gap: var(--space-md);
+}
+
+.admin-shift-form-group {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-xs);
+}
+
+.admin-shift-form-group.full-width {
+  grid-column: 1 / -1;
+}
+
+.admin-shift-label {
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.admin-shift-label-text {
+  color: var(--text-primary);
+}
+
+.admin-shift-label-required {
+  color: #e53e3e;
+  font-weight: 700;
+}
+
+.admin-shift-label-optional {
+  color: var(--text-secondary);
+  font-weight: 400;
+  font-size: 0.875rem;
+}
+
+.admin-shift-input-wrapper {
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.admin-shift-input-icon {
+  position: absolute;
+  left: 14px;
+  top: 50%;
+  transform: translateY(-50%);
+  font-size: 1rem;
+  pointer-events: none;
+  z-index: 1;
+  line-height: 1;
+}
+
+.admin-shift-input {
+  width: 100%;
+  padding: 12px 12px 12px 42px;
+  background: var(--input-bg);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-md);
+  font-size: 0.9375rem;
+  color: var(--text-primary);
+  transition: all 0.2s ease;
+  line-height: 1.5;
+}
+
+/* Hide emoji icons for date and time inputs to avoid overlap with native browser icons */
+.admin-shift-input[type="date"],
+.admin-shift-input[type="time"] {
+  padding-left: 12px;
+}
+
+.admin-shift-input-wrapper:has(.admin-shift-input[type="date"]) .admin-shift-input-icon,
+.admin-shift-input-wrapper:has(.admin-shift-input[type="time"]) .admin-shift-input-icon {
+  display: none;
+}
+
+.admin-shift-input:hover {
+  border-color: var(--border-hover);
+  background: var(--input-hover-bg);
+}
+
+.admin-shift-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  background: white;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.admin-shift-job-types {
+  display: flex;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+}
+
+.admin-shift-job-btn {
+  padding: var(--space-sm) var(--space-lg);
+  background: var(--card-bg);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-md);
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--text-secondary);
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.admin-shift-job-btn:hover {
+  border-color: var(--primary-color);
+  background: rgba(102, 126, 234, 0.05);
+  color: var(--primary-color);
+}
+
+.admin-shift-job-btn.active {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  border-color: transparent;
+  color: white;
+  box-shadow: 0 2px 8px rgba(102, 126, 234, 0.3);
+}
+
+.admin-shift-textarea-wrapper {
+  position: relative;
+}
+
+.admin-shift-textarea {
+  width: 100%;
+  padding: var(--space-md);
+  background: var(--input-bg);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-md);
+  font-size: 0.9375rem;
+  font-family: inherit;
+  color: var(--text-primary);
+  resize: vertical;
+  min-height: 80px;
+  transition: all 0.2s ease;
+}
+
+.admin-shift-textarea:hover {
+  border-color: var(--border-hover);
+  background: var(--input-hover-bg);
+}
+
+.admin-shift-textarea:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  background: white;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.admin-shift-form-footer {
+  display: flex;
+  justify-content: flex-end;
+  gap: var(--space-md);
+  margin-top: var(--space-lg);
+  padding-top: var(--space-lg);
+  border-top: 1px solid var(--border-color);
+}
+
+.admin-shift-btn {
+  display: inline-flex;
+  align-items: center;
+  gap: var(--space-xs);
+  padding: var(--space-md) var(--space-xl);
+  border: none;
+  border-radius: var(--radius-md);
+  font-size: 1rem;
+  font-weight: 600;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  white-space: nowrap;
+}
+
+.admin-shift-btn.cancel {
+  background: var(--card-bg);
+  color: var(--text-secondary);
+  border: 2px solid var(--border-color);
+}
+
+.admin-shift-btn.cancel:hover {
+  background: var(--bg-secondary);
+  border-color: var(--border-hover);
+  color: var(--text-primary);
+}
+
+.admin-shift-btn.submit {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  color: white;
+  box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+}
+
+.admin-shift-btn.submit:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 16px rgba(102, 126, 234, 0.4);
+}
+
+.admin-shift-btn.submit:active {
+  transform: translateY(0);
+}
+
+.admin-shift-btn:disabled {
+  opacity: 0.6;
+  cursor: not-allowed;
+  transform: none !important;
+}
+
+.admin-shift-btn-spinner {
+  display: inline-block;
+  animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+  from {
+    transform: rotate(0deg);
+  }
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .admin-shift-form-card {
+    padding: var(--space-lg);
+  }
+
+  .admin-shift-form-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-shift-btn-quick {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .admin-shift-form-title {
+    font-size: 1.25rem;
+  }
+
+  .admin-shift-form-row {
+    grid-template-columns: 1fr;
+  }
+
+  .admin-shift-form-footer {
+    flex-direction: column-reverse;
+  }
+
+  .admin-shift-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .admin-shift-job-types {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+  }
+
+  .admin-shift-job-btn {
+    width: 100%;
+  }
+}
+
+/* ================================================================
+   ADMIN DASHBOARD - Enhanced Filters
+   ================================================================ */
+
+.admin-filter-mode {
+  display: flex;
+  flex-direction: column;
+  gap: var(--space-md);
+  padding: var(--space-md) 0;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.admin-filter-mode:last-child {
+  border-bottom: none;
+}
+
+.admin-filter-mode-option {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  cursor: pointer;
+}
+
+.admin-filter-radio {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: var(--primary-color);
+}
+
+.admin-filter-mode-label {
+  font-size: 0.9375rem;
+  font-weight: 600;
+  color: var(--text-primary);
+}
+
+.admin-week-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+  margin-left: 26px;
+}
+
+.admin-custom-controls {
+  display: flex;
+  align-items: center;
+  gap: var(--space-sm);
+  flex-wrap: wrap;
+  margin-left: 26px;
+}
+
+.admin-date-input {
+  padding: var(--space-sm) var(--space-md);
+  background: var(--input-bg);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-md);
+  font-size: 0.9375rem;
+  color: var(--text-primary);
+  transition: all 0.2s ease;
+}
+
+.admin-date-input:hover {
+  border-color: var(--border-hover);
+  background: var(--input-hover-bg);
+}
+
+.admin-date-input:focus {
+  outline: none;
+  border-color: var(--primary-color);
+  background: white;
+  box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+}
+
+.admin-range-separator {
+  font-size: 0.9375rem;
+  color: var(--text-secondary);
+  font-weight: 500;
+}
+
+.admin-sort-controls {
+  display: flex;
+  gap: var(--space-sm);
+  align-items: center;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .admin-week-controls,
+  .admin-custom-controls {
+    margin-left: 0;
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-week-controls .time-nav-btn,
+  .admin-custom-controls .time-nav-btn {
+    width: 100%;
+    justify-content: center;
+  }
+
+  .admin-date-input {
+    width: 100%;
+  }
+
+  .admin-sort-controls {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .admin-sort-controls .time-range-select,
+  .admin-sort-controls .time-nav-btn {
+    width: 100%;
   }
 }
 

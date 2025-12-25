@@ -92,7 +92,7 @@ export default function App({ Component, pageProps }: AppProps) {
   }
 
   // Pages that use the new SaaS design with sidebar (no topbar needed)
-  const newDesignPages = ['/admin', '/dashboard', '/new-shift', '/me/schedule'];
+  const newDesignPages = ['/admin', '/dashboard', '/new-shift', '/me/schedule', '/admin-schedule', '/admin-schedule-past'];
   const useNewDesign = newDesignPages.includes(router.pathname);
 
   return (

@@ -36,7 +36,7 @@ type SRow = {
   notes?: string | null;
 };
 
-type Profile = { id: string; role: 'admin' | 'employee' } | null;
+type Profile = { id: string; role: 'admin' | 'employee'; full_name?: string } | null;
 
 // ---------------- DATE/TIME HELPERS ----------------
 
@@ -771,147 +771,258 @@ export default function AdminSchedule() {
 
   // ---------- MAIN UI ----------
   return (
-    <main className="page page--center page--admin">
-      <div className="card card--tight full">
-        <div className="toolbar toolbar--center">
-          <div className="toolbar__left">
-            <h1 className="page__title">Admin – Scheduling</h1>
-            <div className="muted fs-12">
-              Create shifts, assign employees, and manage upcoming schedule.
+    <>
+      <div className="app-container">
+        {/* SIDEBAR */}
+        <aside className="app-sidebar">
+          <div className="sidebar-header">
+            <div className="sidebar-logo">
+              <div className="sidebar-logo-icon">T</div>
+              <div className="sidebar-logo-text">Timesheet</div>
             </div>
           </div>
-          <div className="toolbar__left">
-            <Link href="/admin-schedule-past" className="topbar-btn">
-              View Past Shifts
-            </Link>
-            <button type="button" className="topbar-btn" onClick={loadRows}>
-              Refresh
+
+          <nav className="sidebar-nav">
+            <div className="sidebar-nav-section">
+              <div className="sidebar-nav-label">Main</div>
+              <a href="/dashboard" className="sidebar-nav-item">
+                <span className="sidebar-nav-icon">👤</span>
+                <span>My Shifts</span>
+              </a>
+              <a href="/new-shift" className="sidebar-nav-item">
+                <span className="sidebar-nav-icon">➕</span>
+                <span>Log Shift</span>
+              </a>
+              <a href="/me/schedule" className="sidebar-nav-item">
+                <span className="sidebar-nav-icon">📅</span>
+                <span>My Schedule</span>
+              </a>
+            </div>
+
+            <div className="sidebar-nav-section">
+              <div className="sidebar-nav-label">Admin</div>
+              <a href="/admin" className="sidebar-nav-item">
+                <span className="sidebar-nav-icon">📊</span>
+                <span>Admin Dashboard</span>
+              </a>
+              <a href="/admin-schedule" className="sidebar-nav-item active">
+                <span className="sidebar-nav-icon">📅</span>
+                <span>Schedule</span>
+              </a>
+              <a href="/admin-schedule-past" className="sidebar-nav-item">
+                <span className="sidebar-nav-icon">📋</span>
+                <span>Past Schedule</span>
+              </a>
+            </div>
+          </nav>
+
+          <div className="sidebar-footer">
+            <div className="sidebar-user">
+              <div className="sidebar-user-avatar">
+                {me?.full_name?.charAt(0) || 'A'}
+              </div>
+              <div className="sidebar-user-info">
+                <div className="sidebar-user-name">{me?.full_name || 'Admin'}</div>
+                <div className="sidebar-user-role">Administrator</div>
+              </div>
+            </div>
+            <button className="sidebar-logout" onClick={async () => {
+              await supabase.auth.signOut();
+              window.location.href = '/login';
+            }}>
+              🚪 Logout
             </button>
           </div>
-        </div>
-      </div>
+        </aside>
 
-      {err && <div className="alert error">{err}</div>}
+        {/* MAIN CONTENT */}
+        <main className="app-main">
+          <header className="app-header">
+            <div className="header-content">
+              <div>
+                <h1 className="header-title">Admin Scheduling</h1>
+                <p className="header-subtitle">Create shifts, assign employees, and manage upcoming schedule</p>
+              </div>
+              <div className="header-actions">
+                <button className="btn-new btn-secondary-new" onClick={loadRows}>
+                  🔄 Refresh
+                </button>
+                <Link href="/admin-schedule-past" className="btn-new btn-secondary-new">
+                  📋 View Past Shifts
+                </Link>
+              </div>
+            </div>
+          </header>
+
+          <div className="app-content">
+            {err && (
+              <div className="schedule-alert error">
+                <span className="schedule-alert-icon">⚠️</span>
+                <span>{err}</span>
+              </div>
+            )}
 
       <div className="admin-schedule-layout">
         {/* FORM */}
         <div className="form-container">
-          <div className="card card--tight full form-card">
-            <div className="row between wrap align-items-center mb-md">
-              <strong className="fs-16">
-                {duplicateFrom
-                  ? `Create Scheduled Shift (duplicating ${duplicateFrom.location_name || 'shift'})`
-                  : 'Create Scheduled Shift'}
-              </strong>
-
-              <div className="row gap-sm">
-                <button
-                  type="button"
-                  className="topbar-btn"
-                  onClick={() => {
-                    const now = new Date().toISOString();
-                    const d = toLocalInput(now);
-                    setForm((f) => ({
-                      ...f,
-                      start_date: d.slice(0, 10),
-                      start_time: d.slice(11, 16),
-                    }));
-                    setDuplicateFrom(null);
-                  }}
-                >
-                  Start Now
-                </button>
-              </div>
-            </div>
-
-            <div className="grid-auto-fit-160 mb-md">
+          <div className="admin-shift-form-card">
+            <div className="admin-shift-form-header">
               <div>
-                <label>Start Date</label>
-                <input
-                  type="date"
-                  value={form.start_date}
-                  onChange={(e) => setForm({ ...form, start_date: e.target.value })}
-                />
+                <h2 className="admin-shift-form-title">
+                  {duplicateFrom
+                    ? `Create Scheduled Shift (duplicating ${duplicateFrom.location_name || 'shift'})`
+                    : 'Create Scheduled Shift'}
+                </h2>
+                <p className="admin-shift-form-subtitle">Fill in the details to create a new scheduled shift</p>
               </div>
-
-              <div>
-                <label>Start Time</label>
-                <input
-                  type="time"
-                  value={form.start_time}
-                  onChange={(e) => setForm({ ...form, start_time: e.target.value })}
-                />
-              </div>
-
-              <div>
-                <label>End Date</label>
-                <input
-                  type="date"
-                  value={form.end_date}
-                  onChange={(e) => setForm({ ...form, end_date: e.target.value })}
-                />
-              </div>
-
-              <div>
-                <label>End Time (Optional)</label>
-                <input
-                  type="time"
-                  value={form.end_time}
-                  onChange={(e) => setForm({ ...form, end_time: e.target.value })}
-                />
-              </div>
-            </div>
-
-            {/* CREATE: editable + Google search */}
-            <LocationPicker
-              label="Location"
-              name={form.location_name}
-              address={form.address}
-              onChangeName={(v) => setForm((f) => ({ ...f, location_name: v }))}
-              onChangeAddress={(v) => setForm((f) => ({ ...f, address: v }))}
-              onSelect={({ name, address }) => setForm((f) => ({ ...f, location_name: name, address }))}
-            />
-
-            <div className="mt-md">
-              <label>Job Type</label>
-              <div className="row wrap gap-sm mt-xs">
-                {JOB_TYPES.map((jt) => (
-                  <button
-                    key={jt}
-                    type="button"
-                    className={`pill ${form.job_type === jt ? 'pill-active' : ''}`}
-                    onClick={() => setForm({ ...form, job_type: jt })}
-                  >
-                    <span className="pill__label">{JOB_LABELS[jt]}</span>
-                  </button>
-                ))}
-              </div>
-            </div>
-
-            <div className="mt-md">
-              <label>Notes</label>
-              <textarea
-                placeholder="Optional instructions"
-                value={form.notes}
-                onChange={(e) => setForm({ ...form, notes: e.target.value })}
-              />
-            </div>
-
-            {formError && <div className="alert error mt-sm">{formError}</div>}
-
-            <div className="form-actions mt-md">
               <button
                 type="button"
-                className="btn-primary"
-                onClick={createShift}
-                disabled={creating}
+                className="admin-shift-btn-quick"
+                onClick={() => {
+                  const now = new Date().toISOString();
+                  const d = toLocalInput(now);
+                  setForm((f) => ({
+                    ...f,
+                    start_date: d.slice(0, 10),
+                    start_time: d.slice(11, 16),
+                  }));
+                  setDuplicateFrom(null);
+                }}
               >
-                {creating ? 'Creating…' : 'Create Scheduled Shift'}
+                <span className="admin-shift-btn-icon">⚡</span>
+                Start Now
               </button>
+            </div>
 
+            {formError && (
+              <div className="admin-shift-alert error">
+                <span className="admin-shift-alert-icon">⚠️</span>
+                <span className="admin-shift-alert-text">{formError}</span>
+              </div>
+            )}
+
+            <div className="admin-shift-form-body">
+              <div className="admin-shift-form-row">
+                <div className="admin-shift-form-group">
+                  <label className="admin-shift-label">
+                    <span className="admin-shift-label-text">Start Date</span>
+                    <span className="admin-shift-label-required">*</span>
+                  </label>
+                  <div className="admin-shift-input-wrapper">
+                    <span className="admin-shift-input-icon">📅</span>
+                    <input
+                      className="admin-shift-input"
+                      type="date"
+                      value={form.start_date}
+                      onChange={(e) => setForm({ ...form, start_date: e.target.value })}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="admin-shift-form-group">
+                  <label className="admin-shift-label">
+                    <span className="admin-shift-label-text">Start Time</span>
+                    <span className="admin-shift-label-required">*</span>
+                  </label>
+                  <div className="admin-shift-input-wrapper">
+                    <span className="admin-shift-input-icon">🕐</span>
+                    <input
+                      className="admin-shift-input"
+                      type="time"
+                      value={form.start_time}
+                      onChange={(e) => setForm({ ...form, start_time: e.target.value })}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="admin-shift-form-group">
+                  <label className="admin-shift-label">
+                    <span className="admin-shift-label-text">End Date</span>
+                    <span className="admin-shift-label-required">*</span>
+                  </label>
+                  <div className="admin-shift-input-wrapper">
+                    <span className="admin-shift-input-icon">📅</span>
+                    <input
+                      className="admin-shift-input"
+                      type="date"
+                      value={form.end_date}
+                      onChange={(e) => setForm({ ...form, end_date: e.target.value })}
+                      required
+                    />
+                  </div>
+                </div>
+
+                <div className="admin-shift-form-group">
+                  <label className="admin-shift-label">
+                    <span className="admin-shift-label-text">End Time</span>
+                    <span className="admin-shift-label-optional">(Optional)</span>
+                  </label>
+                  <div className="admin-shift-input-wrapper">
+                    <span className="admin-shift-input-icon">🕐</span>
+                    <input
+                      className="admin-shift-input"
+                      type="time"
+                      value={form.end_time}
+                      onChange={(e) => setForm({ ...form, end_time: e.target.value })}
+                    />
+                  </div>
+                </div>
+              </div>
+
+              {/* CREATE: editable + Google search */}
+              <div className="admin-shift-form-group full-width">
+                <LocationPicker
+                  label="Location"
+                  name={form.location_name}
+                  address={form.address}
+                  onChangeName={(v) => setForm((f) => ({ ...f, location_name: v }))}
+                  onChangeAddress={(v) => setForm((f) => ({ ...f, address: v }))}
+                  onSelect={({ name, address }) => setForm((f) => ({ ...f, location_name: name, address }))}
+                />
+              </div>
+
+              <div className="admin-shift-form-group full-width">
+                <label className="admin-shift-label">
+                  <span className="admin-shift-label-text">Job Type</span>
+                  <span className="admin-shift-label-required">*</span>
+                </label>
+                <div className="admin-shift-job-types">
+                  {JOB_TYPES.map((jt) => (
+                    <button
+                      key={jt}
+                      type="button"
+                      className={`admin-shift-job-btn ${form.job_type === jt ? 'active' : ''}`}
+                      onClick={() => setForm({ ...form, job_type: jt })}
+                    >
+                      {JOB_LABELS[jt]}
+                    </button>
+                  ))}
+                </div>
+              </div>
+
+              <div className="admin-shift-form-group full-width">
+                <label className="admin-shift-label">
+                  <span className="admin-shift-label-text">Notes</span>
+                  <span className="admin-shift-label-optional">(Optional)</span>
+                </label>
+                <div className="admin-shift-textarea-wrapper">
+                  <textarea
+                    className="admin-shift-textarea"
+                    value={form.notes}
+                    onChange={(e) => setForm({ ...form, notes: e.target.value })}
+                    placeholder="Add any special instructions or details..."
+                    rows={3}
+                  />
+                </div>
+              </div>
+            </div>
+
+            <div className="admin-shift-form-footer">
               <button
                 type="button"
-                className="topbar-btn"
+                className="admin-shift-btn cancel"
                 onClick={() => {
                   const now = new Date().toISOString();
                   const d = toLocalInput(now);
@@ -928,8 +1039,27 @@ export default function AdminSchedule() {
                   setFormError(null);
                   setDuplicateFrom(null);
                 }}
+                disabled={creating}
               >
                 Clear
+              </button>
+              <button
+                type="button"
+                className="admin-shift-btn submit"
+                onClick={createShift}
+                disabled={creating}
+              >
+                {creating ? (
+                  <>
+                    <span className="admin-shift-btn-spinner">⏳</span>
+                    Creating...
+                  </>
+                ) : (
+                  <>
+                    <span className="admin-shift-btn-icon">✓</span>
+                    Create Shift
+                  </>
+                )}
               </button>
             </div>
           </div>
@@ -1197,7 +1327,10 @@ export default function AdminSchedule() {
           </button>
         </div>
       )}
-    </main>
+          </div>
+        </main>
+      </div>
+    </>
   );
 }
 

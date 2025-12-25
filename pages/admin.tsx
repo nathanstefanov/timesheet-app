@@ -578,94 +578,101 @@ export default function Admin() {
               </div>
             </div>
 
-            {/* FILTERS */}
-            <div className="filters-card">
-              <div className="filters-header">
-                <h3 className="filters-title">Filters</h3>
+            {/* FILTERS - Enhanced Design */}
+            <div className="view-options-section">
+              <div className="view-options-header">
+                <h3 className="view-options-title">Date Range Filters</h3>
+                <p className="view-options-subtitle">Filter shifts by time period</p>
               </div>
-              <div className="filters-content">
-                <div className="filter-row">
-                  <label className="filter-label">
+              <div className="view-options-content">
+                <div className="admin-filter-mode">
+                  <label className="admin-filter-mode-option">
                     <input
                       type="radio"
                       name="range-mode"
                       checked={useWeek}
                       onChange={() => setUseWeek(true)}
+                      className="admin-filter-radio"
                     />
-                    <span>Week View</span>
+                    <span className="admin-filter-mode-label">Week View</span>
                   </label>
-                  <div className="filter-controls">
-                    <button
-                      className="btn-new btn-sm-new"
-                      onClick={() => setWeekAnchor(addDays(weekAnchor, -7))}
-                    >
-                      ◀ Prev
-                    </button>
-                    <button
-                      className="btn-new btn-sm-new"
-                      onClick={() => setWeekAnchor(startOfWeek(today))}
-                    >
-                      This Week
-                    </button>
-                    <button
-                      className="btn-new btn-sm-new"
-                      onClick={() => setWeekAnchor(nextWeekAnchor)}
-                      disabled={disableNextWeek}
-                    >
-                      Next ▶
-                    </button>
-                    <span className="filter-range">{weekFrom} → {weekTo}</span>
-                  </div>
+                  {useWeek && (
+                    <div className="admin-week-controls">
+                      <button
+                        className="time-nav-btn"
+                        onClick={() => setWeekAnchor(addDays(weekAnchor, -7))}
+                      >
+                        ◀ Prev
+                      </button>
+                      <button
+                        className="time-nav-btn time-nav-current"
+                        onClick={() => setWeekAnchor(startOfWeek(today))}
+                      >
+                        This Week
+                      </button>
+                      <button
+                        className="time-nav-btn"
+                        onClick={() => setWeekAnchor(nextWeekAnchor)}
+                        disabled={disableNextWeek}
+                      >
+                        Next ▶
+                      </button>
+                      <span className="time-range-display">{weekFrom} → {weekTo}</span>
+                    </div>
+                  )}
                 </div>
 
-                <div className="filter-row">
-                  <label className="filter-label">
+                <div className="admin-filter-mode">
+                  <label className="admin-filter-mode-option">
                     <input
                       type="radio"
                       name="range-mode"
                       checked={!useWeek}
                       onChange={() => setUseWeek(false)}
+                      className="admin-filter-radio"
                     />
-                    <span>Custom Range</span>
+                    <span className="admin-filter-mode-label">Custom Range</span>
                   </label>
-                  <div className="filter-controls">
-                    <input
-                      type="date"
-                      className="input-new"
-                      value={rangeFrom ?? ''}
-                      onChange={e => setRangeFrom(e.target.value || null)}
-                      disabled={useWeek}
-                    />
-                    <span>to</span>
-                    <input
-                      type="date"
-                      className="input-new"
-                      value={rangeTo ?? ''}
-                      onChange={e => setRangeTo(e.target.value || null)}
-                      disabled={useWeek}
-                    />
-                    <button
-                      className="btn-new btn-sm-new"
-                      onClick={() => {
-                        setRangeFrom(null);
-                        setRangeTo(null);
-                      }}
-                      disabled={useWeek}
-                    >
-                      Clear
-                    </button>
-                  </div>
+                  {!useWeek && (
+                    <div className="admin-custom-controls">
+                      <input
+                        type="date"
+                        className="admin-date-input"
+                        value={rangeFrom ?? ''}
+                        onChange={e => setRangeFrom(e.target.value || null)}
+                      />
+                      <span className="admin-range-separator">to</span>
+                      <input
+                        type="date"
+                        className="admin-date-input"
+                        value={rangeTo ?? ''}
+                        onChange={e => setRangeTo(e.target.value || null)}
+                      />
+                      <button
+                        className="time-nav-btn"
+                        onClick={() => {
+                          setRangeFrom(null);
+                          setRangeTo(null);
+                        }}
+                      >
+                        Clear
+                      </button>
+                    </div>
+                  )}
                 </div>
               </div>
             </div>
 
             {/* EMPLOYEE TOTALS */}
-            <div className="data-table-container">
-              <div className="data-table-header">
-                <h2 className="data-table-title">Employee Totals</h2>
-                <div className="data-table-filters">
+            <div className="shift-history-section">
+              <div className="shift-history-header">
+                <div>
+                  <h2 className="shift-history-title">Employee Totals</h2>
+                  <p className="shift-history-subtitle">Aggregated payroll data per employee</p>
+                </div>
+                <div className="admin-sort-controls">
                   <select
-                    className="select-new"
+                    className="time-range-select"
                     value={sortBy}
                     onChange={e => {
                       setSortBy(e.target.value as SortBy);
@@ -678,7 +685,7 @@ export default function Admin() {
                     <option value="unpaid">Sort by Unpaid</option>
                   </select>
                   <button
-                    className="btn-new btn-sm-new"
+                    className="time-nav-btn"
                     onClick={() => {
                       setSortDir(d => (d === 'asc' ? 'desc' : 'asc'));
                       setUserSorted(true);
@@ -689,101 +696,110 @@ export default function Admin() {
                 </div>
               </div>
 
-              <table className="data-table">
-                <thead>
-                  <tr>
-                    <th>Employee</th>
-                    <th>Hours</th>
-                    <th>Total Pay</th>
-                    <th>Unpaid</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  {sortedTotals.map(t => {
-                    const vHref = venmoHref(venmo[t.id]);
-                    const hasUnpaid = t.unpaid > 0.0001;
+              <div className="shift-history-table-wrapper">
+                <table className="shift-history-table">
+                  <thead>
+                    <tr>
+                      <th>Employee</th>
+                      <th>Hours</th>
+                      <th>Total Pay</th>
+                      <th>Unpaid</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {sortedTotals.map(t => {
+                      const vHref = venmoHref(venmo[t.id]);
+                      const hasUnpaid = t.unpaid > 0.0001;
 
-                    return (
-                      <tr key={t.id}>
-                        <td style={{ fontWeight: 600 }}>
-                          {t.name}
-                          {t.minCount > 0 && (
-                            <span className="badge-new badge-neutral-new ml-sm">
-                              {t.minCount}× MIN
-                            </span>
-                          )}
-                          {t.flaggedCount > 0 && (
-                            <span className="badge-new badge-warning-new ml-sm">
-                              {t.flaggedCount}× FLAG
-                            </span>
-                          )}
-                        </td>
-                        <td>{t.hours.toFixed(2)} hrs</td>
-                        <td style={{ fontWeight: 600 }}>${t.pay.toFixed(2)}</td>
-                        <td>
-                          <span style={{ fontWeight: 600 }}>${t.unpaid.toFixed(2)}</span>
-                          {vHref && hasUnpaid && (
-                            <a
-                              className="btn-new btn-sm-new btn-venmo ml-sm"
-                              href={vHref}
-                              target="_blank"
-                              rel="noopener noreferrer"
-                            >
-                              Venmo
-                            </a>
-                          )}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
+                      return (
+                        <tr key={t.id}>
+                          <td className="shift-date" style={{ fontWeight: 600 }}>
+                            {t.name}
+                            {t.minCount > 0 && (
+                              <span className="badge-new badge-neutral-new ml-sm">
+                                {t.minCount}× MIN
+                              </span>
+                            )}
+                            {t.flaggedCount > 0 && (
+                              <span className="badge-new badge-warning-new ml-sm">
+                                {t.flaggedCount}× FLAG
+                              </span>
+                            )}
+                          </td>
+                          <td className="shift-hours">{t.hours.toFixed(1)} hrs</td>
+                          <td className="shift-pay">${t.pay.toFixed(2)}</td>
+                          <td className="shift-pay">
+                            ${t.unpaid.toFixed(2)}
+                            {vHref && hasUnpaid && (
+                              <a
+                                className="btn-new btn-sm-new btn-venmo ml-sm"
+                                href={vHref}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                              >
+                                💸 Venmo
+                              </a>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
             </div>
 
             {/* SHIFT DETAILS */}
-            <div className="data-table-container">
-              <div className="data-table-header">
-                <h2 className="data-table-title">Shift Details</h2>
-                <div className="data-table-filters">
-                  <div className="tabs-new">
-                    <button
-                      className={`tab-new ${tab === 'unpaid' ? 'active' : ''}`}
-                      onClick={() => {
-                        setTab('unpaid');
-                        setUserSorted(false);
-                      }}
-                    >
-                      Unpaid ({shifts.filter(s => !s.is_paid).length})
-                    </button>
-                    <button
-                      className={`tab-new ${tab === 'paid' ? 'active' : ''}`}
-                      onClick={() => {
-                        setTab('paid');
-                        setUserSorted(false);
-                      }}
-                    >
-                      Paid ({shifts.filter(s => s.is_paid).length})
-                    </button>
-                    <button
-                      className={`tab-new ${tab === 'all' ? 'active' : ''}`}
-                      onClick={() => {
-                        setTab('all');
-                        setUserSorted(false);
-                      }}
-                    >
-                      All ({shifts.length})
-                    </button>
-                  </div>
+            <div className="shift-history-section">
+              <div className="shift-history-header">
+                <div>
+                  <h2 className="shift-history-title">Shift Details</h2>
+                  <p className="shift-history-subtitle">
+                    {loading ? 'Loading...' : `${shifts.length} ${shifts.length === 1 ? 'shift' : 'shifts'} found`}
+                  </p>
+                </div>
+                <div className="tabs-new">
+                  <button
+                    className={`tab-new ${tab === 'unpaid' ? 'active' : ''}`}
+                    onClick={() => {
+                      setTab('unpaid');
+                      setUserSorted(false);
+                    }}
+                  >
+                    Unpaid ({shifts.filter(s => !s.is_paid).length})
+                  </button>
+                  <button
+                    className={`tab-new ${tab === 'paid' ? 'active' : ''}`}
+                    onClick={() => {
+                      setTab('paid');
+                      setUserSorted(false);
+                    }}
+                  >
+                    Paid ({shifts.filter(s => s.is_paid).length})
+                  </button>
+                  <button
+                    className={`tab-new ${tab === 'all' ? 'active' : ''}`}
+                    onClick={() => {
+                      setTab('all');
+                      setUserSorted(false);
+                    }}
+                  >
+                    All ({shifts.length})
+                  </button>
                 </div>
               </div>
 
               {loading ? (
-                <div style={{ padding: '3rem', textAlign: 'center', color: '#64748b' }}>
-                  Loading shifts...
+                <div className="shift-history-empty">
+                  <div className="empty-icon">⏳</div>
+                  <div className="empty-title">Loading shifts...</div>
+                  <div className="empty-subtitle">Please wait while we fetch your data</div>
                 </div>
               ) : shifts.length === 0 ? (
-                <div style={{ padding: '3rem', textAlign: 'center', color: '#64748b' }}>
-                  No shifts found
+                <div className="shift-history-empty">
+                  <div className="empty-icon">📋</div>
+                  <div className="empty-title">No shifts found</div>
+                  <div className="empty-subtitle">Try adjusting your filters or date range</div>
                 </div>
               ) : (
                 <div className="shift-groups">
@@ -899,48 +915,57 @@ export default function Admin() {
                                     )}
                                   </td>
                                   <td>
-                                    <div className="action-buttons">
-                                      {!paid && (
+                                    <div className="admin-shift-actions">
+                                      <div className="admin-shift-actions-primary">
+                                        {!paid && (
+                                          <button
+                                            className="admin-action-btn admin-action-paid"
+                                            onClick={() => togglePaid(s, true)}
+                                            title="Mark as paid"
+                                          >
+                                            ✓
+                                          </button>
+                                        )}
+                                        {paid && (
+                                          <button
+                                            className="admin-action-btn admin-action-unpaid"
+                                            onClick={() => togglePaid(s, false)}
+                                            title="Mark as unpaid"
+                                          >
+                                            ↶
+                                          </button>
+                                        )}
                                         <button
-                                          className="btn-new btn-sm-new btn-success-new"
-                                          onClick={() => togglePaid(s, true)}
+                                          className="admin-action-btn"
+                                          onClick={() => editRow(s)}
+                                          title="Edit shift"
                                         >
-                                          Mark Paid
+                                          ✏️
                                         </button>
-                                      )}
-                                      {paid && (
                                         <button
-                                          className="btn-new btn-sm-new"
-                                          onClick={() => togglePaid(s, false)}
+                                          className={`admin-action-btn ${isFlagged ? 'admin-action-flagged' : ''}`}
+                                          onClick={() => toggleAdminFlag(s, !Boolean(s.admin_flag))}
+                                          title={isFlagged ? 'Remove flag' : 'Flag shift'}
                                         >
-                                          Mark Unpaid
+                                          {isFlagged ? '★' : '☆'}
                                         </button>
-                                      )}
-                                      <button
-                                        className="btn-new btn-sm-new"
-                                        onClick={() => editRow(s)}
-                                      >
-                                        Edit
-                                      </button>
-                                      <button
-                                        className="btn-new btn-sm-new btn-danger-new"
-                                        onClick={() => deleteRow(s)}
-                                      >
-                                        Delete
-                                      </button>
-                                      <button
-                                        className={isFlagged ? 'btn-new btn-sm-new btn-warning-new' : 'btn-new btn-sm-new'}
-                                        onClick={() => toggleAdminFlag(s, !Boolean(s.admin_flag))}
-                                      >
-                                        {isFlagged ? '★' : 'Flag'}
-                                      </button>
-                                      <button
-                                        className="btn-new btn-sm-new"
-                                        onClick={() => openNoteModal(s)}
-                                        title={hasNote ? 'View note' : 'Add note'}
-                                      >
-                                        📝
-                                      </button>
+                                        <button
+                                          className={`admin-action-btn ${hasNote ? 'admin-action-has-note' : ''}`}
+                                          onClick={() => openNoteModal(s)}
+                                          title={hasNote ? 'View note' : 'Add note'}
+                                        >
+                                          📝
+                                        </button>
+                                      </div>
+                                      <div className="admin-shift-actions-secondary">
+                                        <button
+                                          className="admin-action-btn admin-action-delete"
+                                          onClick={() => deleteRow(s)}
+                                          title="Delete shift"
+                                        >
+                                          🗑️
+                                        </button>
+                                      </div>
                                     </div>
                                   </td>
                                 </tr>
