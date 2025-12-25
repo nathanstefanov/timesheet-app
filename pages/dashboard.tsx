@@ -48,10 +48,6 @@ export default function Dashboard() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
-    console.log('Mobile menu state changed:', mobileMenuOpen);
-  }, [mobileMenuOpen]);
-
-  useEffect(() => {
     (async () => {
       const {
         data: { session },
@@ -193,23 +189,8 @@ export default function Dashboard() {
         {/* MOBILE MENU BUTTON */}
         <button
           className="mobile-menu-toggle"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            console.log('Hamburger clicked! Current state:', mobileMenuOpen);
-            alert('Button clicked! State: ' + mobileMenuOpen);
-            setMobileMenuOpen(!mobileMenuOpen);
-          }}
-          onTouchStart={(e) => {
-            console.log('Touch started on hamburger');
-          }}
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           aria-label="Toggle menu"
-          style={{
-            zIndex: 99999,
-            position: 'fixed',
-            top: '16px',
-            left: '16px',
-          }}
         >
           ☰
         </button>
@@ -221,12 +202,7 @@ export default function Dashboard() {
         />
 
         {/* SIDEBAR */}
-        <aside
-          className={`app-sidebar ${mobileMenuOpen ? 'mobile-open' : ''}`}
-          ref={(el) => {
-            if (el) console.log('Sidebar classes:', el.className, 'Computed left:', window.getComputedStyle(el).left);
-          }}
-        >
+        <aside className={`app-sidebar ${mobileMenuOpen ? 'mobile-open' : ''}`}>
           <div className="sidebar-header">
             <div className="sidebar-logo">
               <div className="sidebar-logo-icon">T</div>
