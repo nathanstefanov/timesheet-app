@@ -6028,11 +6028,11 @@ textarea:focus {
 
   .shift-history-table tbody tr {
     display: block !important;
-    margin-bottom: var(--space-sm) !important;
+    margin-bottom: 8px !important;
     background: var(--card-bg) !important;
     border: 1px solid var(--border-color) !important;
-    border-radius: 8px !important;
-    padding: 12px !important;
+    border-radius: 6px !important;
+    padding: 8px !important;
     box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
   }
 
@@ -6042,21 +6042,21 @@ textarea:focus {
 
   .shift-history-table td {
     display: grid !important;
-    grid-template-columns: 75px 1fr !important;
-    gap: 10px !important;
-    padding: 4px 0 !important;
+    grid-template-columns: 60px 1fr !important;
+    gap: 8px !important;
+    padding: 2px 0 !important;
     border: none !important;
     white-space: normal !important;
-    min-height: 24px;
+    min-height: 20px;
     align-items: center;
-    font-size: 0.875rem !important;
+    font-size: 0.8125rem !important;
   }
 
   /* Add labels before each cell using ::before */
   .shift-history-table td::before {
     content: '';
     font-weight: 600;
-    font-size: 0.75rem;
+    font-size: 0.6875rem;
     color: var(--text-secondary);
     text-align: left;
     grid-column: 1;
@@ -6070,7 +6070,7 @@ textarea:focus {
     content: 'Hours';
   }
   .shift-history-table tbody tr td:nth-child(3)::before {
-    content: 'Total Pay';
+    content: 'Pay';
   }
   .shift-history-table tbody tr td:nth-child(4)::before {
     content: 'Unpaid';
@@ -6079,33 +6079,33 @@ textarea:focus {
   /* Special styling for employee name cell */
   .shift-history-table td.shift-date {
     font-weight: 600 !important;
-    font-size: 0.9375rem !important;
-    grid-template-columns: 75px 1fr !important;
-    padding-bottom: 6px !important;
+    font-size: 0.875rem !important;
+    grid-template-columns: 60px 1fr !important;
+    padding-bottom: 4px !important;
     border-bottom: 1px solid var(--border-color) !important;
   }
 
   .shift-history-table td.shift-hours,
   .shift-history-table td.shift-pay {
     font-weight: 500;
-    font-size: 0.875rem !important;
+    font-size: 0.8125rem !important;
   }
 
   /* Badges in employee cell - smaller and inline */
   .shift-history-table td.shift-date .badge-new {
-    margin-left: 6px !important;
+    margin-left: 4px !important;
     display: inline-flex !important;
-    font-size: 0.6875rem !important;
-    padding: 2px 6px !important;
+    font-size: 0.625rem !important;
+    padding: 1px 4px !important;
   }
 
   /* Venmo button in unpaid cell - more compact */
   .shift-history-table td .btn-venmo {
     margin-left: 0 !important;
-    margin-top: 6px;
+    margin-top: 4px;
     display: block !important;
-    font-size: 0.8125rem !important;
-    padding: 6px 12px !important;
+    font-size: 0.75rem !important;
+    padding: 4px 8px !important;
   }
 
   /* SHIFT DETAIL TABLE - More columns, needs different labels */
