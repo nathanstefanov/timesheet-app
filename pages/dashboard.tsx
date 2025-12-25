@@ -189,8 +189,19 @@ export default function Dashboard() {
         {/* MOBILE MENU BUTTON */}
         <button
           className="mobile-menu-toggle"
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          onClick={(e) => {
+            e.preventDefault();
+            e.stopPropagation();
+            console.log('Button clicked! Current state:', mobileMenuOpen);
+            setMobileMenuOpen(prev => !prev);
+          }}
+          onTouchStart={(e) => {
+            e.preventDefault();
+            console.log('Touch detected!');
+            setMobileMenuOpen(prev => !prev);
+          }}
           aria-label="Toggle menu"
+          style={{ cursor: 'pointer', userSelect: 'none', WebkitTapHighlightColor: 'transparent' }}
         >
           ☰
         </button>
