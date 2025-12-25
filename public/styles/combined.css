@@ -6046,16 +6046,18 @@ textarea:focus {
     align-items: center !important;
     padding: var(--space-sm) 0 !important;
     border: none !important;
-    text-align: right !important;
     white-space: normal !important;
+    min-height: 32px;
   }
 
   /* Add labels before each cell using ::before */
   .shift-history-table td::before {
-    content: attr(data-label);
+    content: '';
     font-weight: 600;
+    font-size: 0.875rem;
     color: var(--text-secondary);
     text-align: left;
+    flex-shrink: 0;
     margin-right: var(--space-md);
   }
 
@@ -6073,21 +6075,40 @@ textarea:focus {
     content: 'Unpaid';
   }
 
+  /* Cell content wrapper - make sure it displays */
+  .shift-history-table td > * {
+    display: inline-flex !important;
+    align-items: center;
+    gap: var(--space-xs);
+    flex-wrap: wrap;
+  }
+
   /* Special styling for employee name cell */
   .shift-history-table td.shift-date {
     font-weight: 600 !important;
     font-size: 1rem !important;
-    flex-wrap: wrap;
+    flex-direction: column;
+    align-items: flex-start !important;
+  }
+
+  .shift-history-table td.shift-hours,
+  .shift-history-table td.shift-pay {
+    font-weight: 500;
+    text-align: right;
   }
 
   /* Badges should wrap properly */
   .shift-history-table td .badge-new {
-    margin-left: var(--space-xs) !important;
+    margin-left: 0 !important;
+    margin-top: var(--space-xs);
   }
 
   /* Venmo button in card layout */
   .shift-history-table td .btn-venmo {
+    margin-left: 0 !important;
     margin-top: var(--space-xs);
+    display: block !important;
+    width: 100%;
   }
 
   /* SHIFT DETAIL TABLE - More columns, needs different labels */
