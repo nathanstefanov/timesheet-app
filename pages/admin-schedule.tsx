@@ -809,7 +809,7 @@ export default function AdminSchedule() {
                   type="button"
                   className="topbar-btn"
                   onClick={() => {
-                    const now = new Date();
+                    const now = new Date().toISOString();
                     const d = toLocalInput(now);
                     setForm((f) => ({
                       ...f,
@@ -913,7 +913,7 @@ export default function AdminSchedule() {
                 type="button"
                 className="topbar-btn"
                 onClick={() => {
-                  const now = new Date();
+                  const now = new Date().toISOString();
                   const d = toLocalInput(now);
                   setForm({
                     start_date: d.slice(0, 10),
