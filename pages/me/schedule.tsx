@@ -376,63 +376,81 @@ export default function MySchedule() {
           <div className="app-content">
             <div className="me-schedule-inner">
 
-        {/* TOOLBAR */}
-        <div className="me-schedule-toolbar">
-          <input
-            className="me-schedule-search"
-            placeholder="Search location, address, teammates…"
-            value={q}
-            onChange={(e) => setQ(e.target.value)}
-          />
-          <select
-            className="me-schedule-filter"
-            value={typeFilter}
-            onChange={(e) => setTypeFilter(e.target.value as any)}
-          >
-            <option value="all">All types</option>
-            <option value="setup">Setup</option>
-            <option value="lights">Lights</option>
-            <option value="breakdown">Breakdown</option>
-            <option value="other">Shop</option> {/* 👈 label shows Shop */}
-          </select>
-          <button className="topbar-btn me-schedule-refresh" onClick={load}>
-            Refresh
-          </button>
+        {/* ENHANCED TOOLBAR */}
+        <div className="schedule-toolbar">
+          <div className="schedule-toolbar-search">
+            <span className="schedule-search-icon">🔍</span>
+            <input
+              className="schedule-search-input"
+              placeholder="Search location, address, teammates…"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+            />
+          </div>
+          <div className="schedule-toolbar-filters">
+            <div className="schedule-filter-group">
+              <span className="schedule-filter-icon">🔧</span>
+              <select
+                className="schedule-filter-select"
+                value={typeFilter}
+                onChange={(e) => setTypeFilter(e.target.value as any)}
+              >
+                <option value="all">All types</option>
+                <option value="setup">Setup</option>
+                <option value="lights">Lights</option>
+                <option value="breakdown">Breakdown</option>
+                <option value="other">Shop</option>
+              </select>
+            </div>
+            <button className="schedule-refresh-btn" onClick={load}>
+              <span className="schedule-btn-icon">🔄</span>
+              Refresh
+            </button>
+          </div>
         </div>
 
-        {err && <div className="alert error">{err}</div>}
-        {loading && <div className="toast mt-sm">Loading…</div>}
+        {err && (
+          <div className="schedule-alert error">
+            <span className="schedule-alert-icon">⚠️</span>
+            <span>{err}</span>
+          </div>
+        )}
+        {loading && (
+          <div className="schedule-loading">
+            <span className="schedule-loading-icon">⏳</span>
+            <span>Loading…</span>
+          </div>
+        )}
 
-        {/* UPCOMING */}
-        <section className="mt-lg full">
-          <div className="section-bar card me-schedule-sectionbar">
-            <div className="section-bar__left">
-              <span className="employee-name">Upcoming</span>
-              <span className="pill">
-                <span className="pill__num">{upcoming.length}</span>
-                <span className="pill__label">shifts</span>
-              </span>
+        {/* UPCOMING SECTION */}
+        <section className="schedule-section">
+          <div className="schedule-section-header">
+            <div className="schedule-section-title-group">
+              <h2 className="schedule-section-title">Upcoming Shifts</h2>
+              <span className="schedule-badge">{upcoming.length}</span>
             </div>
           </div>
 
           {!loading && upcoming.length === 0 && (
-            <div className="card me-schedule-empty">
-              <span className="muted">No upcoming shifts.</span>
+            <div className="schedule-empty-state">
+              <div className="schedule-empty-icon">📅</div>
+              <div className="schedule-empty-title">No upcoming shifts</div>
+              <div className="schedule-empty-subtitle">Your scheduled shifts will appear here</div>
             </div>
           )}
 
-          <div className="me-schedule-groups">
+          <div className="schedule-groups">
             {upcomingGroups.map(([dayKey, list]) => (
-              <div key={dayKey} className="card me-schedule-group-card">
-                <div className="row between wrap me-schedule-group-header">
-                  <strong>
-                    {dayKey === 'TBD' ? 'Date TBD' : fmtDateLong(dayKey)}
-                  </strong>
-                  <span className="muted">
+              <div key={dayKey} className="schedule-day-group">
+                <div className="schedule-day-header">
+                  <div className="schedule-day-title">
+                    {dayKey === 'TBD' ? '📌 Date TBD' : `📅 ${fmtDateLong(dayKey)}`}
+                  </div>
+                  <div className="schedule-day-count">
                     {list.length} shift{list.length > 1 ? 's' : ''}
-                  </span>
+                  </div>
                 </div>
-                <div className="me-schedule-group-grid">
+                <div className="schedule-shifts-grid">
                   {list.map((s) => (
                     <ShiftCard key={s.id} s={s} me={me} />
                   ))}
@@ -442,40 +460,38 @@ export default function MySchedule() {
           </div>
         </section>
 
-        {/* PAST */}
-        <section className="mt-lg full">
+        {/* PAST SECTION */}
+        <section className="schedule-section past">
           <button
             type="button"
-            className="section-bar card me-schedule-past-toggle"
-            style={{
-              cursor: past.length === 0 ? 'default' : 'pointer',
-              opacity: past.length === 0 ? 0.6 : 1,
-            }}
+            className="schedule-past-toggle"
             onClick={() => {
               if (past.length === 0) return;
               setShowPast((prev) => !prev);
             }}
+            disabled={past.length === 0}
           >
-            <div className="section-bar__left me-schedule-past-header">
-              <span className="me-schedule-past-chevron">
-                {showPast ? '▾' : '▸'}
-              </span>
-              <span className="employee-name">Past</span>
-              <span className="pill me-schedule-past-pill">
-                <span className="pill__num">{past.length}</span>
-                <span className="pill__label">shifts</span>
-              </span>
+            <div className="schedule-section-title-group">
+              <div className="schedule-past-toggle-content">
+                <span className="schedule-toggle-chevron">
+                  {showPast ? '▾' : '▸'}
+                </span>
+                <h2 className="schedule-section-title">Past Shifts</h2>
+              </div>
+              <span className="schedule-badge">{past.length}</span>
             </div>
           </button>
 
           {!loading && past.length === 0 && (
-            <div className="card me-schedule-empty">
-              <span className="muted">No past shifts yet.</span>
+            <div className="schedule-empty-state">
+              <div className="schedule-empty-icon">📦</div>
+              <div className="schedule-empty-title">No past shifts yet</div>
+              <div className="schedule-empty-subtitle">Completed shifts will appear here</div>
             </div>
           )}
 
           {showPast && past.length > 0 && (
-            <div className="me-schedule-past-grid">
+            <div className="schedule-past-grid">
               {past.map((s) => (
                 <ShiftCard key={s.id} s={s} me={me} />
               ))}
@@ -483,9 +499,12 @@ export default function MySchedule() {
           )}
         </section>
 
-            <div className="mt-lg me-schedule-footer muted">
-              Scheduling is separate from payroll. You still log your own hours on{' '}
-              <strong>Log Shift</strong>.
+            <div className="schedule-footer-note">
+              <span className="schedule-note-icon">ℹ️</span>
+              <span>
+                Scheduling is separate from payroll. You still log your own hours on{' '}
+                <strong>Log Shift</strong>.
+              </span>
             </div>
           </div>
         </div>

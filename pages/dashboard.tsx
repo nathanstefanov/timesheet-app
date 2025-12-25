@@ -318,17 +318,18 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* FILTERS */}
-            <div className="filters-card">
-              <div className="filters-header">
-                <h3 className="filters-title">View Options</h3>
+            {/* FILTERS - Enhanced Design */}
+            <div className="view-options-section">
+              <div className="view-options-header">
+                <h3 className="view-options-title">View Options</h3>
+                <p className="view-options-subtitle">Filter your shift history by time range</p>
               </div>
-              <div className="filters-content">
-                <div className="filter-row">
-                  <label className="filter-label">Time Range</label>
-                  <div className="filter-controls">
+              <div className="view-options-content">
+                <div className="time-range-controls">
+                  <label className="time-range-label">Time Range</label>
+                  <div className="time-range-buttons">
                     <select
-                      className="select-new"
+                      className="time-range-select"
                       value={mode}
                       onChange={e => {
                         setMode(e.target.value as Mode);
@@ -343,22 +344,22 @@ export default function Dashboard() {
                     {mode !== 'all' && (
                       <>
                         <button
-                          className="btn-new btn-sm-new"
+                          className="time-nav-btn"
                           onClick={() => setOffset(n => n - 1)}
                         >
                           ◀ Prev
                         </button>
-                        <button className="btn-new btn-sm-new" onClick={() => setOffset(0)}>
+                        <button className="time-nav-btn time-nav-current" onClick={() => setOffset(0)}>
                           Current
                         </button>
                         <button
-                          className="btn-new btn-sm-new"
+                          className="time-nav-btn"
                           onClick={() => setOffset(n => n + 1)}
                           disabled={offset >= 0}
                         >
                           Next ▶
                         </button>
-                        <span className="filter-range">{range.label}</span>
+                        <span className="time-range-display">{range.label}</span>
                       </>
                     )}
                   </div>
@@ -366,92 +367,103 @@ export default function Dashboard() {
               </div>
             </div>
 
-            {/* SHIFTS TABLE */}
-            <div className="data-table-container">
-              <div className="data-table-header">
-                <h2 className="data-table-title">Shift History</h2>
+            {/* SHIFTS TABLE - Enhanced Design */}
+            <div className="shift-history-section">
+              <div className="shift-history-header">
+                <div>
+                  <h2 className="shift-history-title">Shift History</h2>
+                  <p className="shift-history-subtitle">
+                    {loading ? 'Loading...' : `${shifts.length} ${shifts.length === 1 ? 'shift' : 'shifts'} found`}
+                  </p>
+                </div>
               </div>
 
               {loading ? (
-                <div style={{ padding: '3rem', textAlign: 'center', color: '#64748b' }}>
-                  Loading shifts...
+                <div className="shift-history-empty">
+                  <div className="empty-icon">⏳</div>
+                  <div className="empty-title">Loading shifts...</div>
+                  <div className="empty-subtitle">Please wait while we fetch your data</div>
                 </div>
               ) : shifts.length === 0 ? (
-                <div style={{ padding: '3rem', textAlign: 'center', color: '#64748b' }}>
-                  No shifts in this range. Log your first shift to get started!
+                <div className="shift-history-empty">
+                  <div className="empty-icon">📋</div>
+                  <div className="empty-title">No shifts in this range</div>
+                  <div className="empty-subtitle">Log your first shift to get started!</div>
                 </div>
               ) : (
-                <table className="data-table">
-                  <thead>
-                    <tr>
-                      <th>Date</th>
-                      <th>Type</th>
-                      <th>Time In</th>
-                      <th>Time Out</th>
-                      <th>Hours</th>
-                      <th>Pay</th>
-                      <th>Status</th>
-                      <th>Actions</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {shifts.map(s => {
-                      const paid = Boolean(s.is_paid);
-                      return (
-                        <tr key={s.id}>
-                          <td style={{ fontWeight: 600 }}>{s.shift_date}</td>
-                          <td>
-                            <span className="badge-new badge-neutral-new">
-                              {s.shift_type}
-                            </span>
-                          </td>
-                          <td>
-                            {s.time_in
-                              ? formatForDisplay(s.time_in, 'h:mm a')
-                              : '—'}
-                          </td>
-                          <td>
-                            {s.time_out
-                              ? formatForDisplay(s.time_out, 'h:mm a')
-                              : '—'}
-                          </td>
-                          <td>{Number(s.hours_worked ?? 0).toFixed(1)} hrs</td>
-                          <td style={{ fontWeight: 600 }}>
-                            ${Number(s.pay_due ?? 0).toFixed(2)}
-                          </td>
-                          <td>
-                            {paid ? (
-                              <span className="badge-new badge-success-new">Paid</span>
-                            ) : (
-                              <span className="badge-new badge-warning-new">Unpaid</span>
-                            )}
-                            {s.paid_at && (
-                              <div style={{ fontSize: '0.75rem', color: '#64748b', marginTop: '0.25rem' }}>
-                                {formatForDisplay(s.paid_at, 'MMM d, yyyy')}
+                <div className="shift-history-table-wrapper">
+                  <table className="shift-history-table">
+                    <thead>
+                      <tr>
+                        <th>Date</th>
+                        <th>Type</th>
+                        <th>Time In</th>
+                        <th>Time Out</th>
+                        <th>Hours</th>
+                        <th>Pay</th>
+                        <th>Status</th>
+                        <th>Actions</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {shifts.map(s => {
+                        const paid = Boolean(s.is_paid);
+                        return (
+                          <tr key={s.id}>
+                            <td className="shift-date">{s.shift_date}</td>
+                            <td>
+                              <span className="shift-type-badge">
+                                {s.shift_type}
+                              </span>
+                            </td>
+                            <td className="shift-time">
+                              {s.time_in
+                                ? formatForDisplay(s.time_in, 'h:mm a')
+                                : '—'}
+                            </td>
+                            <td className="shift-time">
+                              {s.time_out
+                                ? formatForDisplay(s.time_out, 'h:mm a')
+                                : '—'}
+                            </td>
+                            <td className="shift-hours">{Number(s.hours_worked ?? 0).toFixed(1)} hrs</td>
+                            <td className="shift-pay">
+                              ${Number(s.pay_due ?? 0).toFixed(2)}
+                            </td>
+                            <td>
+                              {paid ? (
+                                <span className="shift-status-badge paid">✓ Paid</span>
+                              ) : (
+                                <span className="shift-status-badge unpaid">⏱ Unpaid</span>
+                              )}
+                              {s.paid_at && (
+                                <div className="shift-paid-date">
+                                  {formatForDisplay(s.paid_at, 'MMM d, yyyy')}
+                                </div>
+                              )}
+                            </td>
+                            <td>
+                              <div className="shift-actions">
+                                <Link
+                                  href={`/shift/${s.id}`}
+                                  className="shift-action-btn edit"
+                                >
+                                  ✏️ Edit
+                                </Link>
+                                <button
+                                  className="shift-action-btn delete"
+                                  onClick={() => delShift(s.id)}
+                                >
+                                  🗑️ Delete
+                                </button>
                               </div>
-                            )}
-                          </td>
-                          <td>
-                            <div className="action-buttons">
-                              <Link
-                                href={`/shift/${s.id}`}
-                                className="btn-new btn-sm-new"
-                              >
-                                Edit
-                              </Link>
-                              <button
-                                className="btn-new btn-sm-new btn-danger-new"
-                                onClick={() => delShift(s.id)}
-                              >
-                                Delete
-                              </button>
-                            </div>
-                          </td>
-                        </tr>
-                      );
-                    })}
-                  </tbody>
-                </table>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
               )}
             </div>
           </div>
