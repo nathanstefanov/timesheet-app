@@ -349,7 +349,7 @@ export default function AdminSchedule() {
   const [assignedMap, setAssignedMap] = useState<Record<string, Emp[]>>({});
 
   const [form, setForm] = useState(() => {
-    const now = new Date();
+    const now = new Date().toISOString();
     const d = toLocalInput(now);
     return {
       start_date: d.slice(0, 10),
