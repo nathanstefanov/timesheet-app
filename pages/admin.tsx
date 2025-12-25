@@ -2,7 +2,6 @@
 import React, { useEffect, useMemo, useState, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
-import { SkeletonTable } from '../components/LoadingSkeleton';
 
 type Tab = 'unpaid' | 'paid' | 'all';
 type SortBy = 'name' | 'hours' | 'pay' | 'unpaid';
@@ -702,7 +701,7 @@ export default function Admin() {
           <h3>Shifts (Details)</h3>
         </div>
 
-        {loading && <SkeletonTable rows={8} columns={7} className="table--compact table--stack" />}
+        {loading && <p className="center">Loading…</p>}
 
         {!loading && !shifts.length && (
           <div className="card-empty-past">
