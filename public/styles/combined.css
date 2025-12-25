@@ -6041,13 +6041,14 @@ textarea:focus {
   }
 
   .shift-history-table td {
-    display: flex !important;
-    justify-content: space-between !important;
-    align-items: center !important;
+    display: grid !important;
+    grid-template-columns: 100px 1fr !important;
+    gap: var(--space-md) !important;
     padding: var(--space-sm) 0 !important;
     border: none !important;
     white-space: normal !important;
     min-height: 32px;
+    align-items: start;
   }
 
   /* Add labels before each cell using ::before */
@@ -6057,8 +6058,7 @@ textarea:focus {
     font-size: 0.875rem;
     color: var(--text-secondary);
     text-align: left;
-    flex-shrink: 0;
-    margin-right: var(--space-md);
+    grid-column: 1;
   }
 
   /* For Employee Totals table - specific labels */
@@ -6075,40 +6075,29 @@ textarea:focus {
     content: 'Unpaid';
   }
 
-  /* Cell content wrapper - make sure it displays */
-  .shift-history-table td > * {
-    display: inline-flex !important;
-    align-items: center;
-    gap: var(--space-xs);
-    flex-wrap: wrap;
-  }
-
   /* Special styling for employee name cell */
   .shift-history-table td.shift-date {
     font-weight: 600 !important;
     font-size: 1rem !important;
-    flex-direction: column;
-    align-items: flex-start !important;
+    grid-template-columns: 100px 1fr !important;
   }
 
   .shift-history-table td.shift-hours,
   .shift-history-table td.shift-pay {
     font-weight: 500;
-    text-align: right;
   }
 
-  /* Badges should wrap properly */
-  .shift-history-table td .badge-new {
-    margin-left: 0 !important;
-    margin-top: var(--space-xs);
+  /* Badges in employee cell - inline next to name */
+  .shift-history-table td.shift-date .badge-new {
+    margin-left: var(--space-xs) !important;
+    display: inline-flex !important;
   }
 
-  /* Venmo button in card layout */
+  /* Venmo button in unpaid cell */
   .shift-history-table td .btn-venmo {
     margin-left: 0 !important;
     margin-top: var(--space-xs);
     display: block !important;
-    width: 100%;
   }
 
   /* SHIFT DETAIL TABLE - More columns, needs different labels */
