@@ -3,6 +3,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../../lib/supabaseClient';
 import { get, ApiError } from '../../lib/api';
+import Head from 'next/head';
 
 type Mate = { id: string; full_name?: string | null };
 
@@ -48,6 +49,7 @@ export default function MySchedule() {
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
   const [me, setMe] = useState<Mate | null>(null);
+  const [userRole, setUserRole] = useState<string>('employee');
 
   const [q, setQ] = useState('');
   const [typeFilter, setTypeFilter] =
@@ -91,6 +93,11 @@ export default function MySchedule() {
     return <span className="badge job-badge-xl">{label}</span>;
   };
 
+  async function handleLogout() {
+    await supabase.auth.signOut();
+    router.push('/login');
+  }
+
   async function load() {
     setLoading(true);
     setErr(null);
@@ -102,12 +109,13 @@ export default function MySchedule() {
       if (session?.user) {
         const { data: meProfile } = await supabase
           .from('profiles')
-          .select('id, full_name')
+          .select('id, full_name, role')
           .eq('id', session.user.id)
           .maybeSingle();
 
         if (meProfile) {
           setMe({ id: meProfile.id, full_name: meProfile.full_name });
+          setUserRole(meProfile.role || 'employee');
         }
       }
 
@@ -115,13 +123,13 @@ export default function MySchedule() {
       const scheduleData = await get<Shift[]>('/api/schedule/me');
       setRows(Array.isArray(scheduleData) ? scheduleData : []);
     } catch (e: any) {
+      console.error('Schedule load error:', e);
       if (e instanceof ApiError) {
         if (e.statusCode === 401) {
-          // Redirect to login if not authenticated
-          router.push('/login');
-          return;
+          setErr('Authentication error - please refresh the page or log in again');
+        } else {
+          setErr(`Error: ${e.message}`);
         }
-        setErr(e.message);
       } else {
         setErr(e.message || 'Failed to load schedule');
       }
@@ -291,9 +299,82 @@ export default function MySchedule() {
   };
 
   return (
-    <main className="page page--center me-schedule-page">
-      <div className="me-schedule-inner">
-        <h1 className="page__title me-schedule-title">My Schedule</h1>
+    <>
+      <Head>
+        <title>My Schedule - Timesheet</title>
+      </Head>
+
+      <div className="app-container">
+        {/* SIDEBAR */}
+        <aside className="app-sidebar">
+          <div className="sidebar-header">
+            <div className="sidebar-logo">
+              <div className="sidebar-logo-icon">T</div>
+              <div className="sidebar-logo-text">Timesheet</div>
+            </div>
+          </div>
+
+          <nav className="sidebar-nav">
+            <div className="sidebar-nav-section">
+              <div className="sidebar-nav-label">Main</div>
+              <a href="/dashboard" className="sidebar-nav-item">
+                <span className="sidebar-nav-icon">👤</span>
+                <span>My Shifts</span>
+              </a>
+              <a href="/new-shift" className="sidebar-nav-item">
+                <span className="sidebar-nav-icon">➕</span>
+                <span>Log Shift</span>
+              </a>
+              <a href="/me/schedule" className="sidebar-nav-item active">
+                <span className="sidebar-nav-icon">📅</span>
+                <span>My Schedule</span>
+              </a>
+            </div>
+
+            {userRole === 'admin' && (
+              <div className="sidebar-nav-section">
+                <div className="sidebar-nav-label">Admin</div>
+                <a href="/admin" className="sidebar-nav-item">
+                  <span className="sidebar-nav-icon">📊</span>
+                  <span>Admin Dashboard</span>
+                </a>
+                <a href="/admin-schedule" className="sidebar-nav-item">
+                  <span className="sidebar-nav-icon">📅</span>
+                  <span>Schedule</span>
+                </a>
+              </div>
+            )}
+          </nav>
+
+          <div className="sidebar-footer">
+            <div className="sidebar-user">
+              <div className="sidebar-user-avatar">
+                {me?.full_name?.charAt(0) || 'U'}
+              </div>
+              <div className="sidebar-user-info">
+                <div className="sidebar-user-name">{me?.full_name || 'User'}</div>
+                <div className="sidebar-user-role">{userRole === 'admin' ? 'Administrator' : 'Employee'}</div>
+              </div>
+            </div>
+            <button className="sidebar-logout" onClick={handleLogout}>
+              🚪 Logout
+            </button>
+          </div>
+        </aside>
+
+        {/* MAIN CONTENT */}
+        <main className="app-main">
+          <header className="app-header">
+            <div className="header-content">
+              <div>
+                <h1 className="header-title">My Schedule</h1>
+                <p className="header-subtitle">View your upcoming and past scheduled shifts</p>
+              </div>
+            </div>
+          </header>
+
+          <div className="app-content">
+            <div className="me-schedule-inner">
 
         {/* TOOLBAR */}
         <div className="me-schedule-toolbar">
@@ -402,27 +483,19 @@ export default function MySchedule() {
           )}
         </section>
 
-        <div className="mt-lg me-schedule-footer muted">
-          Scheduling is separate from payroll. You still log your own hours on{' '}
-          <strong>Log Shift</strong>.
+            <div className="mt-lg me-schedule-footer muted">
+              Scheduling is separate from payroll. You still log your own hours on{' '}
+              <strong>Log Shift</strong>.
+            </div>
+          </div>
         </div>
-      </div>
+      </main>
+    </div>
 
       {/* Scoped layout + responsive styles */}
       <style jsx>{`
-        .me-schedule-page {
-          padding: 24px 16px 32px;
-        }
-
         .me-schedule-inner {
           width: 100%;
-          max-width: 960px;
-          margin: 0 auto;
-        }
-
-        .me-schedule-title {
-          text-align: center;
-          margin-bottom: 16px;
         }
 
         /* TOOLBAR */
@@ -606,14 +679,6 @@ export default function MySchedule() {
 
         /* MOBILE */
         @media (max-width: 768px) {
-          .me-schedule-page {
-            padding: 20px 10px 28px;
-          }
-
-          .me-schedule-inner {
-            max-width: 100%;
-          }
-
           .me-schedule-toolbar {
             flex-direction: column;
             align-items: stretch;
@@ -643,6 +708,6 @@ export default function MySchedule() {
           }
         }
       `}</style>
-    </main>
+    </>
   );
 }

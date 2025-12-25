@@ -1,6 +1,7 @@
 // lib/middleware/withAuth.ts
 import type { NextApiRequest, NextApiResponse } from 'next';
-import { createServerSupabaseClient } from '@supabase/auth-helpers-nextjs';
+import { createClient } from '@supabase/supabase-js';
+import { supabaseAdmin } from '../supabaseAdmin';
 
 export interface AuthenticatedRequest extends NextApiRequest {
   user: {
@@ -44,35 +45,35 @@ export function withAuth(
     }
 
     try {
-      // Create Supabase client for server-side auth
-      const supabase = createServerSupabaseClient({ req, res });
+      // Get authorization header
+      const authHeader = req.headers.authorization;
 
-      // Get the current session
-      const {
-        data: { session },
-        error: sessionError,
-      } = await supabase.auth.getSession();
-
-      if (sessionError) {
-        console.error('[withAuth] Session error:', sessionError);
-        return res.status(401).json({
-          error: 'Authentication failed',
-          code: 'AUTH_ERROR'
-        });
-      }
-
-      if (!session?.user) {
+      if (!authHeader || !authHeader.startsWith('Bearer ')) {
         return res.status(401).json({
           error: 'Authentication required',
           code: 'UNAUTHENTICATED'
         });
       }
 
+      // Extract the JWT token
+      const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+
+      // Verify the token using Supabase admin client
+      const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
+
+      if (userError || !user) {
+        console.error('[withAuth] Token verification error:', userError);
+        return res.status(401).json({
+          error: 'Authentication failed',
+          code: 'AUTH_ERROR'
+        });
+      }
+
       // Fetch user profile to get role
-      const { data: profile, error: profileError } = await supabase
+      const { data: profile, error: profileError } = await supabaseAdmin
         .from('profiles')
         .select('role')
-        .eq('id', session.user.id)
+        .eq('id', user.id)
         .single();
 
       if (profileError && profileError.code !== 'PGRST116') {
@@ -94,8 +95,8 @@ export function withAuth(
 
       // Attach user to request
       (req as AuthenticatedRequest).user = {
-        id: session.user.id,
-        email: session.user.email,
+        id: user.id,
+        email: user.email,
         role: userRole,
       };
 

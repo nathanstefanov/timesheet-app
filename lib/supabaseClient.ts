@@ -14,6 +14,7 @@ export const supabase = createClient(supabaseUrl, supabaseKey, {
     detectSessionInUrl: true,
     flowType: 'pkce',
     storageKey: STORAGE_KEY, // ✅ ensures consistent restore across reloads/tabs
+    storage: typeof window !== 'undefined' ? window.localStorage : undefined,
     debug: false,
   },
   // Avoid stale fetches during auth transitions (Chrome can be aggressive)
