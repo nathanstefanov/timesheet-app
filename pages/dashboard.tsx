@@ -48,6 +48,10 @@ export default function Dashboard() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
   useEffect(() => {
+    console.log('Mobile menu state changed:', mobileMenuOpen);
+  }, [mobileMenuOpen]);
+
+  useEffect(() => {
     (async () => {
       const {
         data: { session },
@@ -217,7 +221,12 @@ export default function Dashboard() {
         />
 
         {/* SIDEBAR */}
-        <aside className={`app-sidebar ${mobileMenuOpen ? 'mobile-open' : ''}`}>
+        <aside
+          className={`app-sidebar ${mobileMenuOpen ? 'mobile-open' : ''}`}
+          ref={(el) => {
+            if (el) console.log('Sidebar classes:', el.className, 'Computed left:', window.getComputedStyle(el).left);
+          }}
+        >
           <div className="sidebar-header">
             <div className="sidebar-logo">
               <div className="sidebar-logo-icon">T</div>
