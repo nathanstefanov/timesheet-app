@@ -2,16 +2,9 @@
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
+import { combineLocalWithTz, calculateHours } from '../lib/timezone';
 
 type ShiftType = 'Setup' | 'Breakdown' | 'Shop';
-
-/** Combine a local date (YYYY-MM-DD) and time (HH:MM) into a JS Date in local tz */
-function combineLocal(date: string, time: string): Date {
-  const d = new Date(`${date}T00:00:00`);
-  const [hh, mm] = time.split(':').map(Number);
-  d.setHours(hh ?? 0, mm ?? 0, 0, 0);
-  return d;
-}
 
 export default function NewShift() {
   const r = useRouter();
@@ -46,17 +39,24 @@ export default function NewShift() {
       if (!date || !tin || !tout)
         throw new Error('Date, Time In and Time Out are required.');
 
-      let timeIn = combineLocal(date, tin);
-      let timeOut = combineLocal(date, tout);
+      // Use timezone-aware date combination
+      let timeIn = combineLocalWithTz(date, tin);
+      let timeOut = combineLocalWithTz(date, tout);
 
-      if (timeOut <= timeIn) timeOut.setDate(timeOut.getDate() + 1);
+      // If time_out is before time_in, assume next day
+      if (timeOut <= timeIn) {
+        timeOut = new Date(timeOut.getTime() + 24 * 60 * 60 * 1000);
+      }
 
-      const hours = (timeOut.getTime() - timeIn.getTime()) / 36e5;
-      if (hours <= 0 || hours > 18)
+      // Validate shift length
+      const hours = calculateHours(timeIn.toISOString(), timeOut.toISOString());
+      if (hours <= 0 || hours > 18) {
         throw new Error('Please double-check your times (shift length seems off).');
+      }
 
       setSaving(true);
 
+      // Database trigger will automatically calculate hours_worked, pay_rate, and pay_due
       const { error } = await supabase.from('shifts').insert({
         user_id: userId,
         shift_date: date,

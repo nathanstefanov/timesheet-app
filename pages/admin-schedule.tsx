@@ -4,6 +4,12 @@ import { useEffect, useMemo, useRef, useState, Fragment } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
 import { get, post, patch, del, ApiError } from '../lib/api';
+import {
+  combineLocalWithTz,
+  extractDateInTz,
+  extractTimeInTz,
+  formatForDisplay
+} from '../lib/timezone';
 
 type Emp = {
   id: string;
@@ -34,14 +40,22 @@ type Profile = { id: string; role: 'admin' | 'employee' } | null;
 
 // ---------------- DATE/TIME HELPERS ----------------
 
-const toLocalInput = (d: Date) =>
-  new Date(d.getTime() - d.getTimezoneOffset() * 60000)
-    .toISOString()
-    .slice(0, 16);
+/**
+ * Convert ISO string to datetime-local input value in user's timezone
+ */
+const toLocalInput = (isoString: string) => {
+  const date = extractDateInTz(isoString);
+  const time = extractTimeInTz(isoString);
+  return `${date}T${time}`;
+};
 
+/**
+ * Combine date and time strings to ISO timestamp
+ * Falls back to 09:00 if no time provided
+ */
 const combineLocalDateTime = (date: string, time: string | undefined) => {
   const t = time && time.length >= 5 ? time : '09:00';
-  return `${date}T${t}`;
+  return combineLocalWithTz(date, t).toISOString();
 };
 
 const getEmpInitials = (e: Emp) => {
@@ -437,12 +451,10 @@ export default function AdminSchedule() {
   }, []);
 
   const fmtDate = (s?: string | null) =>
-    s
-      ? new Date(s).toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' })
-      : '';
+    s ? formatForDisplay(s, 'M/d/yy h:mm a') : '';
 
   const fmtTimeOnly = (s?: string | null) =>
-    s ? new Date(s).toLocaleTimeString(undefined, { timeStyle: 'short' }) : '';
+    s ? formatForDisplay(s, 'h:mm a') : '';
 
   async function parseMaybeJson(r: Response) {
     const ct = r.headers.get('content-type') || '';
@@ -561,8 +573,8 @@ export default function AdminSchedule() {
           : null;
 
       const body = {
-        start_time: new Date(startLocal).toISOString(),
-        end_time: endLocal ? new Date(endLocal).toISOString() : null,
+        start_time: startLocal,
+        end_time: endLocal,
         location_name: form.location_name || undefined,
         address: form.address || undefined,
         job_type: form.job_type,
@@ -571,7 +583,7 @@ export default function AdminSchedule() {
 
       await post('/api/schedule/shifts', body);
 
-      const now = new Date();
+      const now = new Date().toISOString();
       const d = toLocalInput(now);
       setForm({
         start_date: d.slice(0, 10),
@@ -607,14 +619,13 @@ export default function AdminSchedule() {
   }, [edit]);
 
   function prefillFormFromShift(row: SRow) {
-    const start = row.start_time ? new Date(row.start_time) : new Date();
-    const d = toLocalInput(start);
+    const startTime = row.start_time || new Date().toISOString();
+    const d = toLocalInput(startTime);
     const start_date = d.slice(0, 10);
 
     let end_date = start_date;
     if (row.end_time) {
-      const e = new Date(row.end_time);
-      const ed = toLocalInput(e);
+      const ed = toLocalInput(row.end_time);
       end_date = ed.slice(0, 10);
     }
 
@@ -651,11 +662,14 @@ export default function AdminSchedule() {
         notes: edit.notes ?? undefined,
       };
 
+      // Convert datetime-local format to ISO if needed
       if (body.start_time && !body.start_time.endsWith?.('Z')) {
-        body.start_time = new Date(body.start_time).toISOString();
+        const [date, time] = body.start_time.split('T');
+        body.start_time = combineLocalWithTz(date, time).toISOString();
       }
       if (body.end_time && !body.end_time.endsWith?.('Z')) {
-        body.end_time = new Date(body.end_time).toISOString();
+        const [date, time] = body.end_time.split('T');
+        body.end_time = combineLocalWithTz(date, time).toISOString();
       }
 
       await patch(`/api/schedule/shifts/${shiftId}`, body);
@@ -1078,7 +1092,7 @@ export default function AdminSchedule() {
               <label>Start</label>
               <input
                 type="datetime-local"
-                value={edit.start_time ? toLocalInput(new Date(edit.start_time)) : ''}
+                value={edit.start_time ? toLocalInput(edit.start_time) : ''}
                 onChange={(e) => setEdit({ ...edit, start_time: e.target.value })}
               />
             </div>
@@ -1087,7 +1101,7 @@ export default function AdminSchedule() {
               <label>End (optional)</label>
               <input
                 type="datetime-local"
-                value={edit.end_time ? toLocalInput(new Date(edit.end_time)) : ''}
+                value={edit.end_time ? toLocalInput(edit.end_time) : ''}
                 onChange={(e) => setEdit({ ...edit, end_time: e.target.value })}
               />
             </div>

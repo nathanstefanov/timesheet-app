@@ -12,6 +12,7 @@ import {
   addMonths,
   format,
 } from 'date-fns';
+import { formatForDisplay } from '../lib/timezone';
 
 type Mode = 'week' | 'month' | 'all';
 
@@ -277,18 +278,12 @@ export default function Dashboard() {
                     <td data-label="Type">{s.shift_type}</td>
                     <td data-label="In">
                       {s.time_in
-                        ? new Date(s.time_in).toLocaleTimeString([], {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })
+                        ? formatForDisplay(s.time_in, 'h:mm a')
                         : '—'}
                     </td>
                     <td data-label="Out">
                       {s.time_out
-                        ? new Date(s.time_out).toLocaleTimeString([], {
-                            hour: '2-digit',
-                            minute: '2-digit',
-                          })
+                        ? formatForDisplay(s.time_out, 'h:mm a')
                         : '—'}
                     </td>
                     <td data-label="Hours">
@@ -308,7 +303,7 @@ export default function Dashboard() {
                     </td>
                     <td data-label="Paid at" className="col-hide-md">
                       {s.paid_at
-                        ? new Date(s.paid_at).toLocaleDateString()
+                        ? formatForDisplay(s.paid_at, 'MMM d, yyyy')
                         : '—'}
                     </td>
                     <td data-label="Actions">
