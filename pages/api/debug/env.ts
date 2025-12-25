@@ -1,7 +1,7 @@
 import type { NextApiResponse } from 'next';
 import { requireAdmin, type AuthenticatedRequest } from '../../../lib/middleware';
 
-function handler(_req: AuthenticatedRequest, res: NextApiResponse) {
+async function handler(_req: AuthenticatedRequest, res: NextApiResponse) {
   // Report only presence (not values) for sensitive keys to avoid leaking secrets.
   const keys = [
     'NEXT_PUBLIC_GOOGLE_MAPS_API_KEY',
