@@ -5809,19 +5809,19 @@ textarea:focus {
 .mobile-menu-toggle {
   display: none;
   position: fixed;
-  top: 20px;
-  left: 20px;
+  top: 12px;
+  left: 12px;
   z-index: 99999;
-  width: 50px;
-  height: 50px;
+  width: 42px;
+  height: 42px;
   background: var(--brand-primary);
   border: none;
-  border-radius: 12px;
+  border-radius: 10px;
   color: white;
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4), 0 2px 4px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3), 0 1px 3px rgba(0, 0, 0, 0.15);
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
@@ -5836,12 +5836,12 @@ textarea:focus {
 .mobile-menu-toggle:hover {
   background: #7c3aed;
   transform: translateY(-1px);
-  box-shadow: 0 6px 16px rgba(139, 92, 246, 0.5), 0 3px 6px rgba(0, 0, 0, 0.25);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4), 0 2px 4px rgba(0, 0, 0, 0.2);
 }
 
 .mobile-menu-toggle:active {
-  transform: translateY(0) scale(0.96);
-  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3), 0 1px 3px rgba(0, 0, 0, 0.2);
+  transform: translateY(0) scale(0.95);
+  box-shadow: 0 1px 4px rgba(139, 92, 246, 0.25), 0 1px 2px rgba(0, 0, 0, 0.15);
 }
 
 /* MOBILE OVERLAY */
@@ -5912,7 +5912,7 @@ textarea:focus {
 
   /* HEADER adjustments - add top padding for hamburger button */
   .app-header {
-    padding: calc(var(--space-md) + 70px) var(--space-md) var(--space-md) var(--space-md) !important;
+    padding: calc(var(--space-md) + 54px) var(--space-md) var(--space-md) var(--space-md) !important;
     z-index: 10 !important;
     position: relative;
   }
