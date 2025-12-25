@@ -5847,10 +5847,12 @@ textarea:focus {
   z-index: 999;
   opacity: 0;
   transition: opacity 0.3s ease;
+  pointer-events: none;
 }
 
 .mobile-menu-overlay.active {
   opacity: 1;
+  pointer-events: auto;
 }
 
 /* Mobile: Base breakpoint for phones (portrait and landscape) */
@@ -5887,9 +5889,9 @@ textarea:focus {
     padding: 0 !important;
   }
 
-  /* HEADER adjustments */
+  /* HEADER adjustments - add top padding for hamburger button */
   .app-header {
-    padding: var(--space-md) !important;
+    padding: calc(var(--space-md) + 60px) var(--space-md) var(--space-md) var(--space-md) !important;
   }
 
   .header-content {
@@ -6288,26 +6290,30 @@ textarea:focus {
 }
 
 /* Prevent horizontal scroll on all screen sizes */
-html, body {
-  overflow-x: hidden !important;
-  max-width: 100vw !important;
+html {
+  overflow-x: hidden;
+  max-width: 100vw;
+}
+
+body {
+  overflow-x: hidden;
+  max-width: 100vw;
+  overflow-y: auto;
 }
 
 .app-container {
-  overflow-x: hidden !important;
-  max-width: 100vw !important;
+  overflow-x: hidden;
+  max-width: 100vw;
+  min-height: 100vh;
 }
 
 .app-main {
-  overflow-x: hidden !important;
-  max-width: 100% !important;
+  overflow-x: hidden;
+  max-width: 100%;
+  overflow-y: auto;
 }
 
 /* Ensure all content respects boundaries */
-* {
-  max-width: 100%;
-}
-
 img, video {
   max-width: 100% !important;
   height: auto !important;
