@@ -88,9 +88,15 @@
   flex-direction: column;
   position: fixed;
   height: 100vh;
-  left: 0;
   top: 0;
   z-index: 100;
+}
+
+/* Desktop only: sidebar visible by default */
+@media (min-width: 769px) {
+  .app-sidebar {
+    left: 0;
+  }
 }
 
 .sidebar-header {
