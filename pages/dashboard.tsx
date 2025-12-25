@@ -189,19 +189,15 @@ export default function Dashboard() {
         {/* MOBILE MENU BUTTON */}
         <button
           className="mobile-menu-toggle"
-          onClick={(e) => {
-            e.preventDefault();
-            e.stopPropagation();
-            console.log('Button clicked! Current state:', mobileMenuOpen);
-            setMobileMenuOpen(prev => !prev);
-          }}
-          onTouchStart={(e) => {
-            e.preventDefault();
-            console.log('Touch detected!');
-            setMobileMenuOpen(prev => !prev);
+          onClick={() => {
+            console.log('Button clicked! State before:', mobileMenuOpen);
+            setMobileMenuOpen(prev => {
+              console.log('Setting state from', prev, 'to', !prev);
+              return !prev;
+            });
           }}
           aria-label="Toggle menu"
-          style={{ cursor: 'pointer', userSelect: 'none', WebkitTapHighlightColor: 'transparent' }}
+          type="button"
         >
           ☰
         </button>
@@ -214,6 +210,10 @@ export default function Dashboard() {
 
         {/* SIDEBAR */}
         <aside className={`app-sidebar ${mobileMenuOpen ? 'mobile-open' : ''}`}>
+          {/* DEBUG */}
+          <div style={{ position: 'absolute', top: 0, left: 0, background: 'red', color: 'white', padding: '4px', zIndex: 99999, fontSize: '10px' }}>
+            State: {mobileMenuOpen ? 'OPEN' : 'CLOSED'}
+          </div>
           <div className="sidebar-header">
             <div className="sidebar-logo">
               <div className="sidebar-logo-icon">T</div>
