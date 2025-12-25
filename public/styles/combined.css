@@ -5809,35 +5809,39 @@ textarea:focus {
 .mobile-menu-toggle {
   display: none;
   position: fixed;
-  top: 16px;
-  left: 16px;
+  top: 20px;
+  left: 20px;
   z-index: 99999;
-  width: 56px;
-  height: 56px;
+  width: 50px;
+  height: 50px;
   background: var(--brand-primary);
-  border: 3px solid white;
-  border-radius: var(--radius-md);
+  border: none;
+  border-radius: 12px;
   color: white;
-  font-size: 1.75rem;
-  font-weight: bold;
+  font-size: 1.5rem;
+  font-weight: 600;
   cursor: pointer;
-  box-shadow: 0 6px 16px rgba(139, 92, 246, 0.6);
-  transition: all 0.2s ease;
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4), 0 2px 4px rgba(0, 0, 0, 0.2);
+  transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   touch-action: manipulation;
-  -webkit-tap-highlight-color: rgba(139, 92, 246, 0.3);
+  -webkit-tap-highlight-color: transparent;
   user-select: none;
   -webkit-user-select: none;
   outline: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
 }
 
 .mobile-menu-toggle:hover {
-  background: var(--brand-primary-dark);
-  transform: scale(1.05);
+  background: #7c3aed;
+  transform: translateY(-1px);
+  box-shadow: 0 6px 16px rgba(139, 92, 246, 0.5), 0 3px 6px rgba(0, 0, 0, 0.25);
 }
 
 .mobile-menu-toggle:active {
-  transform: scale(0.92);
-  background: #7c3aed;
+  transform: translateY(0) scale(0.96);
+  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3), 0 1px 3px rgba(0, 0, 0, 0.2);
 }
 
 /* MOBILE OVERLAY */
@@ -5848,10 +5852,12 @@ textarea:focus {
   left: 0;
   right: 0;
   bottom: 0;
-  background: rgba(0, 0, 0, 0.5);
+  background: rgba(0, 0, 0, 0.6);
+  backdrop-filter: blur(2px);
+  -webkit-backdrop-filter: blur(2px);
   z-index: 999;
   opacity: 0;
-  transition: opacity 0.3s ease;
+  transition: opacity 0.3s cubic-bezier(0.4, 0, 0.2, 1);
   pointer-events: none;
 }
 
@@ -5879,10 +5885,12 @@ textarea:focus {
     height: 100vh !important;
     background: #1e293b !important;
     background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%) !important;
-    transition: left 0.3s ease;
+    transition: left 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     z-index: 10001 !important;
     overflow-y: auto !important;
-    box-shadow: 4px 0 12px rgba(0, 0, 0, 0.5) !important;
+    overflow-x: hidden !important;
+    box-shadow: 4px 0 20px rgba(0, 0, 0, 0.6) !important;
+    -webkit-overflow-scrolling: touch;
   }
 
   /* Sidebar open state */
@@ -5904,8 +5912,9 @@ textarea:focus {
 
   /* HEADER adjustments - add top padding for hamburger button */
   .app-header {
-    padding: calc(var(--space-md) + 60px) var(--space-md) var(--space-md) var(--space-md) !important;
+    padding: calc(var(--space-md) + 70px) var(--space-md) var(--space-md) var(--space-md) !important;
     z-index: 10 !important;
+    position: relative;
   }
 
   .header-content {

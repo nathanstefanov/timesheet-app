@@ -189,15 +189,8 @@ export default function Dashboard() {
         {/* MOBILE MENU BUTTON */}
         <button
           className="mobile-menu-toggle"
-          onClick={() => {
-            console.log('Button clicked! State before:', mobileMenuOpen);
-            setMobileMenuOpen(prev => {
-              console.log('Setting state from', prev, 'to', !prev);
-              return !prev;
-            });
-          }}
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           aria-label="Toggle menu"
-          type="button"
         >
           ☰
         </button>
@@ -210,10 +203,6 @@ export default function Dashboard() {
 
         {/* SIDEBAR */}
         <aside className={`app-sidebar ${mobileMenuOpen ? 'mobile-open' : ''}`}>
-          {/* DEBUG */}
-          <div style={{ position: 'absolute', top: 0, left: 0, background: 'red', color: 'white', padding: '4px', zIndex: 99999, fontSize: '10px' }}>
-            State: {mobileMenuOpen ? 'OPEN' : 'CLOSED'}
-          </div>
           <div className="sidebar-header">
             <div className="sidebar-logo">
               <div className="sidebar-logo-icon">T</div>
