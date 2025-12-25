@@ -92,6 +92,10 @@ export default function App({ Component, pageProps }: AppProps) {
     router.replace('/');
   }
 
+  // Pages that use the new SaaS design with sidebar (no topbar needed)
+  const newDesignPages = ['/admin', '/dashboard', '/new-shift'];
+  const useNewDesign = newDesignPages.includes(router.pathname);
+
   return (
     <>
       {/* ✅ Favicon + title using the same base64 image */}
@@ -100,53 +104,55 @@ export default function App({ Component, pageProps }: AppProps) {
         <link rel="icon" href={LOGO_DATA_URL} />
       </Head>
 
-      <header className="topbar">
-        <div className="shell">
-          <div className="brand-wrap">
-            {/* ✅ Header logo uses the same image */}
-            <img
-              src={LOGO_DATA_URL}
-              alt="Logo"
-              className="logo"
-            />
-            <span className="brand">Timesheet</span>
+      {!useNewDesign && (
+        <header className="topbar">
+          <div className="shell">
+            <div className="brand-wrap">
+              {/* ✅ Header logo uses the same image */}
+              <img
+                src={LOGO_DATA_URL}
+                alt="Logo"
+                className="logo"
+              />
+              <span className="brand">Timesheet</span>
+            </div>
+
+            {!checking && profile && (
+              <nav className="nav">
+                {/* Everyone */}
+                <Link href="/dashboard" className="nav-link">
+                  Dashboard
+                </Link>
+                <Link href="/new-shift" className="nav-link">
+                  Log Shift
+                </Link>
+                <Link href="/me/schedule" className="nav-link">
+                  My Schedule
+                </Link>
+
+                {/* Admin-only */}
+                {profile.role === 'admin' && (
+                  <>
+                    <Link href="/admin" className="nav-link">
+                      Admin Dashboard
+                    </Link>
+                    <Link href="/admin-schedule" className="nav-link">
+                      Schedule
+                    </Link>
+                  </>
+                )}
+
+                <button className="signout" onClick={handleSignOut}>
+                  Sign out
+                </button>
+              </nav>
+            )}
           </div>
-
-          {!checking && profile && (
-            <nav className="nav">
-              {/* Everyone */}
-              <Link href="/dashboard" className="nav-link">
-                Dashboard
-              </Link>
-              <Link href="/new-shift" className="nav-link">
-                Log Shift
-              </Link>
-              <Link href="/me/schedule" className="nav-link">
-                My Schedule
-              </Link>
-
-              {/* Admin-only */}
-              {profile.role === 'admin' && (
-                <>
-                  <Link href="/admin" className="nav-link">
-                    Admin Dashboard
-                  </Link>
-                  <Link href="/admin-schedule" className="nav-link">
-                    Schedule
-                  </Link>
-                </>
-              )}
-
-              <button className="signout" onClick={handleSignOut}>
-                Sign out
-              </button>
-            </nav>
-          )}
-        </div>
-      </header>
+        </header>
+      )}
 
       <main>
-        {err && (
+        {err && !useNewDesign && (
           <div className="wrap">
             <div className="alert error">Profile error: {err}</div>
           </div>
