@@ -5811,19 +5811,23 @@ textarea:focus {
 .mobile-menu-toggle {
   display: none;
   position: fixed;
-  top: var(--space-md);
-  left: var(--space-md);
-  z-index: 1001;
-  width: 44px;
-  height: 44px;
+  top: 16px;
+  left: 16px;
+  z-index: 10000;
+  width: 50px;
+  height: 50px;
   background: var(--brand-primary);
   border: none;
   border-radius: var(--radius-md);
   color: white;
-  font-size: 1.25rem;
+  font-size: 1.5rem;
   cursor: pointer;
-  box-shadow: var(--shadow-lg);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
   transition: all 0.2s ease;
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
+  user-select: none;
+  -webkit-user-select: none;
 }
 
 .mobile-menu-toggle:hover {
