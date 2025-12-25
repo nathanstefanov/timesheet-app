@@ -5813,21 +5813,23 @@ textarea:focus {
   position: fixed;
   top: 16px;
   left: 16px;
-  z-index: 10000;
-  width: 50px;
-  height: 50px;
+  z-index: 99999;
+  width: 56px;
+  height: 56px;
   background: var(--brand-primary);
-  border: none;
+  border: 3px solid white;
   border-radius: var(--radius-md);
   color: white;
-  font-size: 1.5rem;
+  font-size: 1.75rem;
+  font-weight: bold;
   cursor: pointer;
-  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4);
+  box-shadow: 0 6px 16px rgba(139, 92, 246, 0.6);
   transition: all 0.2s ease;
   touch-action: manipulation;
-  -webkit-tap-highlight-color: transparent;
+  -webkit-tap-highlight-color: rgba(139, 92, 246, 0.3);
   user-select: none;
   -webkit-user-select: none;
+  outline: none;
 }
 
 .mobile-menu-toggle:hover {
@@ -5836,7 +5838,8 @@ textarea:focus {
 }
 
 .mobile-menu-toggle:active {
-  transform: scale(0.95);
+  transform: scale(0.92);
+  background: #7c3aed;
 }
 
 /* MOBILE OVERLAY */
@@ -5863,9 +5866,10 @@ textarea:focus {
 @media (max-width: 768px) {
   /* Show mobile menu button */
   .mobile-menu-toggle {
-    display: flex;
+    display: flex !important;
     align-items: center;
     justify-content: center;
+    pointer-events: auto !important;
   }
 
   /* SIDEBAR - Convert to mobile hamburger or hide */
