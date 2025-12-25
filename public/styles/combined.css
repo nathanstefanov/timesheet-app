@@ -5879,8 +5879,12 @@ textarea:focus {
     top: 0 !important;
     width: 280px !important;
     height: 100vh !important;
+    background: #1e293b !important;
+    background: linear-gradient(180deg, #1e293b 0%, #0f172a 100%) !important;
     transition: left 0.3s ease;
-    z-index: 1000 !important;
+    z-index: 10001 !important;
+    overflow-y: auto !important;
+    box-shadow: 4px 0 12px rgba(0, 0, 0, 0.5) !important;
   }
 
   /* Sidebar open state */
