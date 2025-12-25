@@ -1,0 +1,5 @@
+#!/usr/bin/env sh
+. "$(dirname -- "$0")/_/husky.sh"
+
+export PATH="/opt/homebrew/opt/node@20/bin:$PATH"
+npx lint-staged
