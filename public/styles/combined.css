@@ -6534,22 +6534,136 @@ textarea:focus {
      SHIFT HISTORY TABLE - Mobile Card Layout (Dashboard Page)
      ================================================ */
 
-  /* Shift history table on dashboard - keep as regular table on mobile */
+  /* Shift history table on dashboard - convert to compact cards */
   .shift-history-table-wrapper:not(.employee-totals-wrapper) {
-    overflow-x: auto !important;
-    -webkit-overflow-scrolling: touch;
+    overflow-x: visible !important;
+    margin: 0 !important;
+    padding: 0 !important;
   }
 
-  /* Keep normal table layout for shift history */
-  .shift-history-table:not(.employee-totals-table) {
-    min-width: 700px;
-    font-size: 0.75rem !important;
+  /* Hide headers */
+  .shift-history-table:not(.employee-totals-table) thead {
+    display: none !important;
   }
 
-  .shift-history-table:not(.employee-totals-table) th,
-  .shift-history-table:not(.employee-totals-table) td {
-    padding: 0.75rem 0.5rem !important;
+  /* Convert to card layout */
+  .shift-history-table:not(.employee-totals-table),
+  .shift-history-table:not(.employee-totals-table) tbody {
+    display: block !important;
+    width: 100% !important;
+  }
+
+  .shift-history-table:not(.employee-totals-table) tbody tr {
+    display: block !important;
+    margin-bottom: var(--space-md) !important;
+    background: var(--card-bg) !important;
+    border: 1px solid var(--border-color) !important;
+    border-radius: var(--radius-md) !important;
+    padding: var(--space-md) !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
+    position: relative !important;
+  }
+
+  .shift-history-table:not(.employee-totals-table) tbody tr:hover {
+    background: var(--bg-hover) !important;
+    border-color: rgba(100, 116, 139, 0.25) !important;
+  }
+
+  /* Date header - centered at top */
+  .shift-history-table:not(.employee-totals-table) td.shift-date {
+    display: block !important;
+    text-align: center !important;
+    font-size: 1.125rem !important;
+    font-weight: 700 !important;
+    color: var(--text-primary) !important;
+    padding: 0 0 var(--space-sm) 0 !important;
+    margin-bottom: var(--space-sm) !important;
+    border-bottom: 1px solid var(--border-color) !important;
+  }
+
+  /* Type badge - top right corner */
+  .shift-history-table:not(.employee-totals-table) tbody tr td:nth-child(2) {
+    position: absolute !important;
+    top: var(--space-md) !important;
+    right: var(--space-md) !important;
+    display: block !important;
+    padding: 0 !important;
+  }
+
+  /* Time In and Time Out - horizontal row */
+  .shift-history-table:not(.employee-totals-table) td.shift-time {
+    display: inline-block !important;
+    width: 48% !important;
+    padding: var(--space-xs) 0 !important;
+    font-size: 0.875rem !important;
+    text-align: center !important;
+  }
+
+  .shift-history-table:not(.employee-totals-table) tbody tr td:nth-child(3)::before {
+    content: '' !important;
+    display: block !important;
     font-size: 0.75rem !important;
+    color: var(--text-secondary) !important;
+    font-weight: 600 !important;
+    margin-bottom: 2px !important;
+  }
+
+  .shift-history-table:not(.employee-totals-table) tbody tr td:nth-child(4)::before {
+    content: '' !important;
+    display: block !important;
+    font-size: 0.75rem !important;
+    color: var(--text-secondary) !important;
+    font-weight: 600 !important;
+    margin-bottom: 2px !important;
+  }
+
+  /* Hours - centered and prominent */
+  .shift-history-table:not(.employee-totals-table) td.shift-hours {
+    display: block !important;
+    text-align: center !important;
+    font-size: 1.25rem !important;
+    font-weight: 700 !important;
+    color: var(--brand-primary) !important;
+    padding: var(--space-sm) 0 !important;
+  }
+
+  /* Pay - centered and prominent */
+  .shift-history-table:not(.employee-totals-table) td.shift-pay {
+    display: block !important;
+    text-align: center !important;
+    font-size: 1.5rem !important;
+    font-weight: 700 !important;
+    color: var(--text-primary) !important;
+    padding: var(--space-xs) 0 !important;
+  }
+
+  /* Status badge - centered */
+  .shift-history-table:not(.employee-totals-table) tbody tr td:nth-child(7) {
+    display: block !important;
+    text-align: center !important;
+    padding: var(--space-sm) 0 !important;
+  }
+
+  /* Actions - horizontal buttons at bottom */
+  .shift-history-table:not(.employee-totals-table) tbody tr td:nth-child(8) {
+    display: block !important;
+    padding: var(--space-sm) 0 0 0 !important;
+    border-top: 1px solid var(--border-color) !important;
+    margin-top: var(--space-sm) !important;
+  }
+
+  .shift-history-table:not(.employee-totals-table) .shift-actions {
+    display: flex !important;
+    gap: var(--space-sm) !important;
+    justify-content: center !important;
+  }
+
+  .shift-history-table:not(.employee-totals-table) .shift-action-btn {
+    flex: 1 !important;
+    max-width: 150px !important;
+    padding: var(--space-sm) var(--space-md) !important;
+    font-size: 0.875rem !important;
+    text-align: center !important;
   }
 
   /* SHIFT DETAIL TABLE - More columns, needs different labels */
