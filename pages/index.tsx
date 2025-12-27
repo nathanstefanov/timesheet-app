@@ -1,7 +1,7 @@
 // pages/index.tsx
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/router';
-import { supabase } from '../lib/supabaseClient';
+import { supabase, setSessionStorageType } from '../lib/supabaseClient';
 
 type Mode = 'signin' | 'signup';
 
@@ -15,6 +15,7 @@ export default function AuthPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
+  const [rememberMe, setRememberMe] = useState(true); // Default to true for better UX
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string>();
   const [msg, setMsg] = useState<string>();
@@ -49,11 +50,18 @@ export default function AuthPage() {
         setMsg('Account created. You can sign in now.');
         setMode('signin');
       } else {
-        const { error } = await supabase.auth.signInWithPassword({
+        // Sign in with password
+        const { data, error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
         if (error) throw error;
+
+        // Handle "Remember Me" by controlling session storage
+        // rememberMe = true: use localStorage (persists after browser close)
+        // rememberMe = false: use sessionStorage (clears when tab closes)
+        setSessionStorageType(!rememberMe);
+
         r.push('/dashboard');
       }
     } catch (e: any) {
@@ -180,6 +188,18 @@ export default function AuthPage() {
                 Show
               </label>
             </div>
+
+            {mode === 'signin' && (
+              <label className="remember-me" htmlFor="rememberMe">
+                <input
+                  id="rememberMe"
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                />
+                <span>Remember me on this device</span>
+              </label>
+            )}
 
             {err && <div className="alert error">{err}</div>}
             {msg && <div className="alert ok">{msg}</div>}

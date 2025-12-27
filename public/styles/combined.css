@@ -1402,6 +1402,29 @@ textarea:focus {
   color: #6b7280;
 }
 
+/* Remember Me checkbox */
+.remember-me {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin-top: 12px;
+  font-size: 0.875rem;
+  color: #374151;
+  cursor: pointer;
+  user-select: none;
+}
+
+.remember-me input[type="checkbox"] {
+  width: 18px;
+  height: 18px;
+  cursor: pointer;
+  accent-color: #2563eb;
+}
+
+.remember-me span {
+  flex: 1;
+}
+
 .btn.primary {
   width: 100%;
   margin-top: 12px;
@@ -2013,6 +2036,26 @@ textarea:focus {
     justify-content: flex-start !important;
     padding-left: 0.25rem !important;
     font-size: 0.875rem !important;
+  }
+
+  /* Remember Me checkbox - mobile */
+  .remember-me {
+    margin-top: var(--space-md) !important;
+    padding: 0.75rem !important;
+    background: #f8fafc !important;
+    border-radius: var(--radius-md) !important;
+    border: 1px solid #e2e8f0 !important;
+  }
+
+  .remember-me input[type="checkbox"] {
+    width: 20px !important;
+    height: 20px !important;
+    flex-shrink: 0 !important;
+  }
+
+  .remember-me span {
+    font-size: 0.9375rem !important;
+    font-weight: 500 !important;
   }
 
   /* Alert messages */
