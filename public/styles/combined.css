@@ -6221,15 +6221,18 @@ textarea:focus {
   .header-content {
     flex-direction: column !important;
     gap: var(--space-md) !important;
-    align-items: flex-start !important;
+    align-items: center !important;
+    text-align: center !important;
   }
 
   .header-title {
     font-size: 1.5rem !important;
+    text-align: center !important;
   }
 
   .header-subtitle {
     font-size: 0.875rem !important;
+    text-align: center !important;
   }
 
   .header-actions {
