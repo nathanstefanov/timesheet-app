@@ -6615,6 +6615,7 @@ textarea:focus {
 
   .employee-totals-wrapper {
     overflow-x: visible !important;
+    overflow-y: visible !important;
     margin: 0 !important;
     padding: 0 !important;
   }
@@ -6682,7 +6683,7 @@ textarea:focus {
   /* Show mobile Venmo row on mobile */
   .employee-totals-table .mobile-venmo-row {
     display: block !important;
-    width: calc(100% + calc(var(--space-md) * 2)) !important;
+    width: calc(95% + calc(var(--space-md) * 2)) !important;
     margin-left: calc(var(--space-md) * -1) !important;
     margin-right: calc(var(--space-md) * -1) !important;
     margin-top: var(--space-md) !important;
