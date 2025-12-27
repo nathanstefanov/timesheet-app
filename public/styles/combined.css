@@ -6681,19 +6681,22 @@ textarea:focus {
 
   /* Show mobile Venmo row on mobile */
   .employee-totals-table .mobile-venmo-row {
-    display: table-row !important;
-  }
-
-  /* Venmo button row - full width at bottom */
-  .employee-totals-table td.shift-venmo-row {
     display: block !important;
     width: calc(100% + calc(var(--space-md) * 2)) !important;
     margin-left: calc(var(--space-md) * -1) !important;
     margin-right: calc(var(--space-md) * -1) !important;
     margin-top: var(--space-md) !important;
     margin-bottom: calc(var(--space-md) * -1) !important;
-    padding: var(--space-md) !important;
+    padding: 0 !important;
     border-top: 1px solid rgba(0, 0, 0, 0.08) !important;
+  }
+
+  /* Venmo button row - full width at bottom */
+  .employee-totals-table td.shift-venmo-row {
+    display: block !important;
+    width: 100% !important;
+    padding: var(--space-md) !important;
+    margin: 0 !important;
   }
 
   .employee-totals-table td.shift-venmo-row::before {
