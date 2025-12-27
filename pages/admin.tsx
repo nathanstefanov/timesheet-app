@@ -630,7 +630,7 @@ export default function Admin() {
                     </div>
                     <div className="stat-card-icon"><CheckCircle size={20} /></div>
                   </div>
-                  <div className="stat-card-value">${stats.paidPay}</div>
+                  <div className="stat-card-value">${stats.paidPay.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                   <div className="stat-card-change">All time</div>
                 </div>
 
@@ -641,7 +641,7 @@ export default function Admin() {
                     </div>
                     <div className="stat-card-icon"><BarChart3 size={20} /></div>
                   </div>
-                  <div className="stat-card-value">{stats.totalShifts}</div>
+                  <div className="stat-card-value">{stats.totalShifts.toLocaleString('en-US')}</div>
                   <div className="stat-card-change">All time</div>
                 </div>
 
@@ -652,7 +652,7 @@ export default function Admin() {
                     </div>
                     <div className="stat-card-icon"><Clock size={20} /></div>
                   </div>
-                  <div className="stat-card-value">{stats.totalHours}</div>
+                  <div className="stat-card-value">{stats.totalHours.toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</div>
                   <div className="stat-card-change">All time</div>
                 </div>
               </div>
