@@ -6367,7 +6367,7 @@ textarea:focus {
   .shift-history-table,
   .shift-history-table tbody {
     display: block !important;
-    width: 100% !important;
+    width: 20% !important;
     max-width: 100% !important;
   }
 
