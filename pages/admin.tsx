@@ -743,10 +743,10 @@ export default function Admin() {
                               </span>
                             )}
                           </td>
-                          <td className="shift-hours">{t.hours.toFixed(1)} hrs</td>
-                          <td className="shift-pay">${t.pay.toFixed(2)}</td>
+                          <td className="shift-hours"><div className="td-value">{t.hours.toFixed(1)} hrs</div></td>
+                          <td className="shift-pay"><div className="td-value">${t.pay.toFixed(2)}</div></td>
                           <td className="shift-pay">
-                            ${t.unpaid.toFixed(2)}
+                            <div className="td-value">${t.unpaid.toFixed(2)}</div>
                             {vHref && hasUnpaid && (
                               <a
                                 className="btn-new btn-sm-new btn-venmo ml-sm"
