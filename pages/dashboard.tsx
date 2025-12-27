@@ -9,6 +9,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
 import Head from 'next/head';
+import { User, Plus, Calendar, BarChart3, DollarSign, Clock, LogOut } from 'lucide-react';
 import {
   startOfWeek,
   endOfWeek,
@@ -40,12 +41,13 @@ export default function Dashboard() {
   const [user, setUser] = useState<{ id: string; full_name?: string; role?: string } | null>(null);
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [loading, setLoading] = useState(true);
-  const [mode, setMode] = useState<Mode>('week');
+  const [mode, setMode] = useState<Mode>('all');
   const [offset, setOffset] = useState(0);
   const [err, setErr] = useState<string | undefined>();
 
   const [unpaidAllTime, setUnpaidAllTime] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [viewOptionsExpanded, setViewOptionsExpanded] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -162,6 +164,17 @@ export default function Dashboard() {
     return { hours, pay, unpaidInRange, count: shifts.length };
   }, [shifts]);
 
+  // Sort shifts with unpaid at the top
+  const sortedShifts = useMemo(() => {
+    return [...shifts].sort((a, b) => {
+      // Unpaid shifts come first
+      if (!a.is_paid && b.is_paid) return -1;
+      if (a.is_paid && !b.is_paid) return 1;
+      // Within same payment status, sort by date (newest first)
+      return b.shift_date.localeCompare(a.shift_date);
+    });
+  }, [shifts]);
+
   async function delShift(id: string) {
     if (!confirm('Delete this shift?')) return;
     const { error } = await supabase.from('shifts').delete().eq('id', id);
@@ -214,15 +227,15 @@ export default function Dashboard() {
             <div className="sidebar-nav-section">
               <div className="sidebar-nav-label">Main</div>
               <a href="/dashboard" className="sidebar-nav-item active" onClick={() => setMobileMenuOpen(false)}>
-                <span className="sidebar-nav-icon">👤</span>
+                <span className="sidebar-nav-icon"><User size={18} /></span>
                 <span>My Shifts</span>
               </a>
               <a href="/new-shift" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
-                <span className="sidebar-nav-icon">➕</span>
+                <span className="sidebar-nav-icon"><Plus size={18} /></span>
                 <span>Log Shift</span>
               </a>
               <a href="/me/schedule" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
-                <span className="sidebar-nav-icon">📅</span>
+                <span className="sidebar-nav-icon"><Calendar size={18} /></span>
                 <span>My Schedule</span>
               </a>
             </div>
@@ -231,11 +244,11 @@ export default function Dashboard() {
               <div className="sidebar-nav-section">
                 <div className="sidebar-nav-label">Admin</div>
                 <a href="/admin" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
-                  <span className="sidebar-nav-icon">📊</span>
+                  <span className="sidebar-nav-icon"><BarChart3 size={18} /></span>
                   <span>Admin Dashboard</span>
                 </a>
                 <a href="/admin-schedule" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
-                  <span className="sidebar-nav-icon">📅</span>
+                  <span className="sidebar-nav-icon"><Calendar size={18} /></span>
                   <span>Schedule</span>
                 </a>
               </div>
@@ -253,7 +266,7 @@ export default function Dashboard() {
               </div>
             </div>
             <button className="sidebar-logout" onClick={handleLogout}>
-              🚪 Logout
+              <LogOut size={16} /> Logout
             </button>
           </div>
         </aside>
@@ -288,7 +301,7 @@ export default function Dashboard() {
                   <div>
                     <div className="stat-card-label">Total Unpaid</div>
                   </div>
-                  <div className="stat-card-icon">💰</div>
+                  <div className="stat-card-icon"><DollarSign size={20} /></div>
                 </div>
                 <div className="stat-card-value gradient-text">${unpaidAllTime.toFixed(2)}</div>
                 <div className="stat-card-change">All time balance</div>
@@ -299,12 +312,10 @@ export default function Dashboard() {
                   <div>
                     <div className="stat-card-label">Total Shifts</div>
                   </div>
-                  <div className="stat-card-icon">📋</div>
+                  <div className="stat-card-icon"><BarChart3 size={20} /></div>
                 </div>
                 <div className="stat-card-value">{totals.count}</div>
-                <div className="stat-card-change">
-                  {mode === 'week' ? 'This week' : mode === 'month' ? 'This month' : 'All time'}
-                </div>
+                <div className="stat-card-change">All time</div>
               </div>
 
               <div className="stat-card-new">
@@ -312,12 +323,10 @@ export default function Dashboard() {
                   <div>
                     <div className="stat-card-label">Total Hours</div>
                   </div>
-                  <div className="stat-card-icon">⏰</div>
+                  <div className="stat-card-icon"><Clock size={20} /></div>
                 </div>
                 <div className="stat-card-value">{totals.hours.toFixed(1)}</div>
-                <div className="stat-card-change">
-                  {mode === 'week' ? 'This week' : mode === 'month' ? 'This month' : 'All time'}
-                </div>
+                <div className="stat-card-change">All time</div>
               </div>
 
               <div className="stat-card-new">
@@ -325,22 +334,28 @@ export default function Dashboard() {
                   <div>
                     <div className="stat-card-label">Total Pay</div>
                   </div>
-                  <div className="stat-card-icon">💵</div>
+                  <div className="stat-card-icon"><DollarSign size={20} /></div>
                 </div>
                 <div className="stat-card-value">${totals.pay.toFixed(2)}</div>
-                <div className="stat-card-change">
-                  {mode === 'week' ? 'This week' : mode === 'month' ? 'This month' : 'All time'}
-                </div>
+                <div className="stat-card-change">All time</div>
               </div>
             </div>
 
             {/* FILTERS - Enhanced Design */}
             <div className="view-options-section">
-              <div className="view-options-header">
-                <h3 className="view-options-title">View Options</h3>
-                <p className="view-options-subtitle">Filter your shift history by time range</p>
+              <div
+                className="view-options-header"
+                onClick={() => setViewOptionsExpanded(!viewOptionsExpanded)}
+              >
+                <div>
+                  <h3 className="view-options-title">
+                    View Options <span className="mobile-toggle-arrow">{viewOptionsExpanded ? '▼' : '▶'}</span>
+                  </h3>
+                  <p className="view-options-subtitle">Filter your shift history by time range</p>
+                </div>
               </div>
-              <div className="view-options-content">
+              {viewOptionsExpanded && (
+                <div className="view-options-content">
                 <div className="time-range-controls">
                   <label className="time-range-label">Time Range</label>
                   <div className="time-range-buttons">
@@ -381,6 +396,7 @@ export default function Dashboard() {
                   </div>
                 </div>
               </div>
+              )}
             </div>
 
             {/* SHIFTS TABLE - Enhanced Design */}
@@ -396,13 +412,13 @@ export default function Dashboard() {
 
               {loading ? (
                 <div className="shift-history-empty">
-                  <div className="empty-icon">⏳</div>
+                  <div className="empty-icon"><Clock size={48} /></div>
                   <div className="empty-title">Loading shifts...</div>
                   <div className="empty-subtitle">Please wait while we fetch your data</div>
                 </div>
               ) : shifts.length === 0 ? (
                 <div className="shift-history-empty">
-                  <div className="empty-icon">📋</div>
+                  <div className="empty-icon"><BarChart3 size={48} /></div>
                   <div className="empty-title">No shifts in this range</div>
                   <div className="empty-subtitle">Log your first shift to get started!</div>
                 </div>
@@ -422,7 +438,7 @@ export default function Dashboard() {
                       </tr>
                     </thead>
                     <tbody>
-                      {shifts.map(s => {
+                      {sortedShifts.map(s => {
                         const paid = Boolean(s.is_paid);
                         return (
                           <tr key={s.id}>

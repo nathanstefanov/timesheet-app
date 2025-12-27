@@ -4,6 +4,7 @@ import { useRouter } from 'next/router';
 import { supabase } from '../../lib/supabaseClient';
 import { get, ApiError } from '../../lib/api';
 import Head from 'next/head';
+import { Search, Settings, RefreshCw, AlertTriangle, Calendar, User, Plus, LogOut, Clock } from 'lucide-react';
 
 type Mate = { id: string; full_name?: string | null };
 
@@ -57,6 +58,7 @@ export default function MySchedule() {
 
   const [showPast, setShowPast] = useState(false);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [toolbarExpanded, setToolbarExpanded] = useState(false);
 
   const [, setTick] = useState(0);
   useEffect(() => {
@@ -334,15 +336,15 @@ export default function MySchedule() {
             <div className="sidebar-nav-section">
               <div className="sidebar-nav-label">Main</div>
               <a href="/dashboard" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
-                <span className="sidebar-nav-icon">👤</span>
+                <span className="sidebar-nav-icon"><User size={18} /></span>
                 <span>My Shifts</span>
               </a>
               <a href="/new-shift" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
-                <span className="sidebar-nav-icon">➕</span>
+                <span className="sidebar-nav-icon"><Plus size={18} /></span>
                 <span>Log Shift</span>
               </a>
               <a href="/me/schedule" className="sidebar-nav-item active" onClick={() => setMobileMenuOpen(false)}>
-                <span className="sidebar-nav-icon">📅</span>
+                <span className="sidebar-nav-icon"><Calendar size={18} /></span>
                 <span>My Schedule</span>
               </a>
             </div>
@@ -351,11 +353,11 @@ export default function MySchedule() {
               <div className="sidebar-nav-section">
                 <div className="sidebar-nav-label">Admin</div>
                 <a href="/admin" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
-                  <span className="sidebar-nav-icon">📊</span>
+                  <span className="sidebar-nav-icon"><User size={18} /></span>
                   <span>Admin Dashboard</span>
                 </a>
                 <a href="/admin-schedule" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
-                  <span className="sidebar-nav-icon">📅</span>
+                  <span className="sidebar-nav-icon"><Calendar size={18} /></span>
                   <span>Schedule</span>
                 </a>
               </div>
@@ -373,7 +375,7 @@ export default function MySchedule() {
               </div>
             </div>
             <button className="sidebar-logout" onClick={handleLogout}>
-              🚪 Logout
+              <LogOut size={16} /> Logout
             </button>
           </div>
         </aside>
@@ -394,46 +396,58 @@ export default function MySchedule() {
 
         {/* ENHANCED TOOLBAR */}
         <div className="schedule-toolbar">
-          <div className="schedule-toolbar-search">
-            <span className="schedule-search-icon">🔍</span>
-            <input
-              className="schedule-search-input"
-              placeholder="Search location, address, teammates…"
-              value={q}
-              onChange={(e) => setQ(e.target.value)}
-            />
+          <div
+            className="schedule-toolbar-header"
+            onClick={() => setToolbarExpanded(!toolbarExpanded)}
+          >
+            <span className="schedule-toolbar-title">
+              Search & Filters <span className="mobile-toolbar-arrow">{toolbarExpanded ? '▼' : '▶'}</span>
+            </span>
           </div>
-          <div className="schedule-toolbar-filters">
-            <div className="schedule-filter-group">
-              <span className="schedule-filter-icon">🔧</span>
-              <select
-                className="schedule-filter-select"
-                value={typeFilter}
-                onChange={(e) => setTypeFilter(e.target.value as any)}
-              >
-                <option value="all">All types</option>
-                <option value="setup">Setup</option>
-                <option value="lights">Lights</option>
-                <option value="breakdown">Breakdown</option>
-                <option value="other">Shop</option>
-              </select>
-            </div>
-            <button className="schedule-refresh-btn" onClick={load}>
-              <span className="schedule-btn-icon">🔄</span>
-              Refresh
-            </button>
-          </div>
+          {toolbarExpanded && (
+            <>
+              <div className="schedule-toolbar-search">
+                <span className="schedule-search-icon"><Search size={18} /></span>
+                <input
+                  className="schedule-search-input"
+                  placeholder="Search location, address, teammates…"
+                  value={q}
+                  onChange={(e) => setQ(e.target.value)}
+                />
+              </div>
+              <div className="schedule-toolbar-filters">
+                <div className="schedule-filter-group">
+                  <span className="schedule-filter-icon"><Settings size={18} /></span>
+                  <select
+                    className="schedule-filter-select"
+                    value={typeFilter}
+                    onChange={(e) => setTypeFilter(e.target.value as any)}
+                  >
+                    <option value="all">All types</option>
+                    <option value="setup">Setup</option>
+                    <option value="lights">Lights</option>
+                    <option value="breakdown">Breakdown</option>
+                    <option value="other">Shop</option>
+                  </select>
+                </div>
+                <button className="schedule-refresh-btn" onClick={load}>
+                  <span className="schedule-btn-icon"><RefreshCw size={16} /></span>
+                  Refresh
+                </button>
+              </div>
+            </>
+          )}
         </div>
 
         {err && (
           <div className="schedule-alert error">
-            <span className="schedule-alert-icon">⚠️</span>
+            <span className="schedule-alert-icon"><AlertTriangle size={18} /></span>
             <span>{err}</span>
           </div>
         )}
         {loading && (
           <div className="schedule-loading">
-            <span className="schedule-loading-icon">⏳</span>
+            <span className="schedule-loading-icon"><Clock size={18} /></span>
             <span>Loading…</span>
           </div>
         )}

@@ -177,6 +177,15 @@
 .sidebar-nav-icon {
   width: 20px;
   height: 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.sidebar-nav-icon svg {
+  width: 100%;
+  height: 100%;
+  stroke-width: 2;
   opacity: 0.8;
 }
 
@@ -224,6 +233,34 @@
 .sidebar-user-role {
   font-size: 0.75rem;
   color: var(--text-muted);
+}
+
+.sidebar-logout {
+  margin-top: var(--space-md);
+  width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  background: rgba(239, 68, 68, 0.1);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: var(--radius-md);
+  color: #ef4444;
+  font-size: 0.875rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: var(--space-xs);
+}
+
+.sidebar-logout:hover {
+  background: rgba(239, 68, 68, 0.2);
+  border-color: rgba(239, 68, 68, 0.5);
+  transform: translateY(-1px);
+}
+
+.sidebar-logout:active {
+  transform: translateY(0);
 }
 
 /* MAIN CONTENT AREA */
@@ -287,10 +324,19 @@
   margin-bottom: var(--space-2xl) !important;
 }
 
+/* Hide all-time stats toggle on desktop (only show on mobile) */
+.all-time-stats-toggle {
+  display: none !important;
+}
+
+.all-time-stats-container {
+  display: contents;
+}
+
 .stat-card-new {
   background: var(--bg-card) !important;
   border-radius: var(--radius-xl) !important;
-  padding: var(--space-xl) !important;
+  padding: var(--space-md) var(--space-lg) !important;
   box-shadow: var(--shadow) !important;
   border: 1px solid #e2e8f0 !important;
   transition: all 0.3s !important;
@@ -318,11 +364,11 @@
   display: flex;
   justify-content: space-between;
   align-items: flex-start;
-  margin-bottom: var(--space-lg);
+  margin-bottom: var(--space-sm);
 }
 
 .stat-card-label {
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   font-weight: 600;
   color: var(--text-secondary);
   text-transform: uppercase;
@@ -330,30 +376,36 @@
 }
 
 .stat-card-icon {
-  width: 48px;
-  height: 48px;
+  width: 36px;
+  height: 36px;
   border-radius: var(--radius-md);
   display: flex;
   align-items: center;
   justify-content: center;
-  font-size: 1.5rem;
+  font-size: 1.25rem;
   background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(236, 72, 153, 0.1));
   color: var(--brand-primary);
 }
 
+.stat-card-icon svg {
+  width: 18px;
+  height: 18px;
+  stroke-width: 2;
+}
+
 .stat-card-value {
-  font-size: 2.5rem;
+  font-size: 2rem;
   font-weight: 700;
   color: var(--text-primary);
   line-height: 1;
-  margin-bottom: var(--space-sm);
+  margin-bottom: var(--space-xs);
 }
 
 .stat-card-change {
   display: flex;
   align-items: center;
   gap: var(--space-xs);
-  font-size: 0.875rem;
+  font-size: 0.8125rem;
 }
 
 .stat-card-change.positive {
@@ -378,7 +430,7 @@
 }
 
 .data-table-header {
-  padding: var(--space-xl);
+  padding: var(--space-lg) var(--space-xl);
   border-bottom: 1px solid #e2e8f0;
   display: flex;
   justify-content: space-between;
@@ -386,7 +438,7 @@
 }
 
 .data-table-title {
-  font-size: 1.25rem;
+  font-size: 1.125rem;
   font-weight: 700;
   color: var(--text-primary);
 }
@@ -408,9 +460,9 @@
 }
 
 .data-table th {
-  padding: var(--space-md) var(--space-lg);
+  padding: var(--space-sm) var(--space-md);
   text-align: left;
-  font-size: 0.75rem;
+  font-size: 0.6875rem;
   font-weight: 700;
   color: var(--text-secondary);
   text-transform: uppercase;
@@ -424,18 +476,38 @@
 }
 
 .data-table tbody tr:hover {
-  background: linear-gradient(90deg, rgba(139, 92, 246, 0.05), transparent);
-  transform: scale(1.01);
+  background: linear-gradient(90deg, rgba(139, 92, 246, 0.03), transparent);
 }
 
 .data-table td {
-  padding: var(--space-lg);
-  font-size: 0.9375rem;
+  padding: var(--space-md);
+  font-size: 0.875rem;
   color: var(--text-primary);
+  vertical-align: middle;
 }
 
 .data-table tbody tr:last-child {
   border-bottom: none;
+}
+
+/* Action column styling - Desktop only */
+.th-action,
+.td-action-desktop {
+  text-align: center !important;
+  width: 120px;
+}
+
+.td-action-desktop {
+  padding: var(--space-sm) !important;
+}
+
+.td-action-desktop .btn-venmo {
+  margin-left: 0;
+}
+
+/* Hide mobile Venmo row on desktop */
+.mobile-venmo-row {
+  display: none;
 }
 
 /* ============================================================================
@@ -1105,12 +1177,21 @@ textarea:focus {
 /* venmo */
 .btn-venmo {
   margin-left: 6px;
-  font-size: 0.8rem;
-  padding: 3px 8px;
-  border-radius: 999px;
-  border: 1px solid #0f766e;
-  background: #14b8a6;
-  color: #ecfeff;
+  font-size: 0.75rem;
+  padding: 0.375rem 0.75rem;
+  border-radius: 6px;
+  border: none;
+  background: #00b4e6;
+  color: white;
+  font-weight: 500;
+  transition: all 0.15s;
+  text-decoration: none;
+  display: inline-block;
+}
+
+.btn-venmo:hover {
+  background: #0099cc;
+  box-shadow: 0 2px 4px rgba(0, 180, 230, 0.3);
 }
 
 /* icon-only */
@@ -4183,29 +4264,53 @@ textarea:focus {
 .view-options-section {
   background: var(--bg-card);
   border-radius: var(--radius-lg);
-  padding: var(--space-xl);
+  padding: var(--space-md);
   box-shadow: var(--shadow-sm);
   border: 1px solid #e2e8f0;
-  margin-bottom: var(--space-xl);
+  margin-bottom: var(--space-lg);
 }
 
 .view-options-header {
-  margin-bottom: var(--space-lg);
-  padding-bottom: var(--space-lg);
-  border-bottom: 1px solid #e2e8f0;
+  margin-bottom: 0;
+  padding-bottom: 0;
+  border-bottom: none;
+  transition: all 0.2s ease;
+}
+
+.view-options-header:hover {
+  opacity: 0.8;
 }
 
 .view-options-title {
-  font-size: 1.25rem;
-  font-weight: 700;
+  font-size: 1rem;
+  font-weight: 600;
   color: var(--text-primary);
-  margin-bottom: 0.25rem;
+  margin-bottom: 0.125rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .view-options-subtitle {
-  font-size: 0.875rem;
+  font-size: 0.75rem;
   color: var(--text-secondary);
   margin: 0;
+}
+
+/* Hide mobile toggle arrow on desktop */
+.mobile-toggle-arrow {
+  display: none;
+}
+
+/* Add padding and border when expanded */
+.view-options-section:has(.view-options-content) .view-options-header {
+  margin-bottom: var(--space-lg);
+  padding-bottom: var(--space-md);
+  border-bottom: 1px solid #e2e8f0;
+}
+
+.view-options-section:has(.view-options-content) {
+  padding: var(--space-xl);
 }
 
 .view-options-content {
@@ -4347,6 +4452,16 @@ textarea:focus {
   font-size: 4rem;
   margin-bottom: var(--space-lg);
   opacity: 0.5;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+
+.empty-icon svg {
+  width: 64px;
+  height: 64px;
+  stroke-width: 1.5;
 }
 
 .empty-title {
@@ -4951,6 +5066,15 @@ textarea:focus {
   flex-wrap: wrap;
 }
 
+/* Hide toolbar header on desktop */
+.schedule-toolbar-header {
+  display: none;
+}
+
+.mobile-toolbar-arrow {
+  display: none;
+}
+
 .schedule-toolbar-search {
   flex: 1;
   min-width: 250px;
@@ -4964,6 +5088,16 @@ textarea:focus {
   transform: translateY(-50%);
   font-size: 1.125rem;
   pointer-events: none;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+
+.schedule-search-icon svg {
+  width: 18px;
+  height: 18px;
+  stroke-width: 2;
 }
 
 .schedule-search-input {
@@ -5007,6 +5141,16 @@ textarea:focus {
   font-size: 1rem;
   pointer-events: none;
   z-index: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: var(--text-muted);
+}
+
+.schedule-filter-icon svg {
+  width: 18px;
+  height: 18px;
+  stroke-width: 2;
 }
 
 .schedule-filter-select {
@@ -5061,6 +5205,15 @@ textarea:focus {
 
 .schedule-btn-icon {
   font-size: 1.125rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.schedule-btn-icon svg {
+  width: 16px;
+  height: 16px;
+  stroke-width: 2;
 }
 
 /* Alert and Loading States */
@@ -5083,6 +5236,15 @@ textarea:focus {
 
 .schedule-alert-icon {
   font-size: 1.25rem;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.schedule-alert-icon svg {
+  width: 20px;
+  height: 20px;
+  stroke-width: 2;
 }
 
 .schedule-loading {
@@ -5102,6 +5264,15 @@ textarea:focus {
 .schedule-loading-icon {
   font-size: 1.5rem;
   animation: spin 1s linear infinite;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.schedule-loading-icon svg {
+  width: 24px;
+  height: 24px;
+  stroke-width: 2;
 }
 
 /* Schedule Sections */
@@ -5900,6 +6071,78 @@ textarea:focus {
     display: block;
   }
 
+  /* Compact sidebar to fit without scrolling on mobile */
+  .sidebar-header {
+    padding: var(--space-md) !important;
+  }
+
+  .sidebar-logo-icon {
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 1rem !important;
+  }
+
+  .sidebar-logo-text {
+    font-size: 1.125rem !important;
+  }
+
+  .sidebar-nav {
+    padding: var(--space-sm) var(--space-md) !important;
+  }
+
+  .sidebar-nav-section {
+    margin-bottom: var(--space-md) !important;
+  }
+
+  .sidebar-nav-label {
+    font-size: 0.6875rem !important;
+    margin-bottom: var(--space-xs) !important;
+    padding: 0 var(--space-sm) !important;
+  }
+
+  .sidebar-nav-item {
+    padding: var(--space-xs) var(--space-sm) !important;
+    font-size: 0.875rem !important;
+    gap: var(--space-sm) !important;
+  }
+
+  .sidebar-footer {
+    padding: var(--space-md) !important;
+    /* Default for Chrome and other browsers */
+    padding-bottom: calc(var(--space-md) + 120px) !important;
+  }
+
+  /* Safari-specific: less padding since Safari has smaller bottom bar */
+  @supports (-webkit-touch-callout: none) {
+    .sidebar-footer {
+      padding-bottom: calc(var(--space-md) + 40px) !important;
+    }
+  }
+
+  .sidebar-user {
+    padding: var(--space-sm) !important;
+  }
+
+  .sidebar-user-avatar {
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 0.875rem !important;
+  }
+
+  .sidebar-user-name {
+    font-size: 0.8125rem !important;
+  }
+
+  .sidebar-user-role {
+    font-size: 0.6875rem !important;
+  }
+
+  .sidebar-logout {
+    margin-top: var(--space-sm) !important;
+    padding: var(--space-xs) var(--space-sm) !important;
+    font-size: 0.8125rem !important;
+  }
+
   /* Main content takes full width on mobile */
   .app-main {
     margin-left: 0 !important;
@@ -5949,20 +6192,112 @@ textarea:focus {
   /* STATS CARDS - Stack vertically on mobile */
   .dashboard-stats {
     grid-template-columns: 1fr !important;
-    gap: var(--space-md) !important;
+    gap: var(--space-sm) !important;
+    margin-bottom: var(--space-lg) !important;
   }
 
   .stat-card-new {
-    padding: var(--space-lg) !important;
+    padding: var(--space-sm) var(--space-md) !important;
+  }
+
+  .stat-card-new::before {
+    height: 3px !important;
+  }
+
+  .stat-card-header {
+    margin-bottom: var(--space-sm) !important;
+  }
+
+  .stat-card-label {
+    font-size: 0.75rem !important;
+  }
+
+  .stat-card-icon {
+    width: 32px !important;
+    height: 32px !important;
+    font-size: 1rem !important;
   }
 
   .stat-card-value {
-    font-size: 1.75rem !important;
+    font-size: 1.5rem !important;
+    margin-bottom: 4px !important;
   }
 
-  /* VIEW OPTIONS */
+  .stat-card-change {
+    font-size: 0.75rem !important;
+  }
+
+  /* ALL TIME STATS TOGGLE - Only visible on mobile */
+  .all-time-stats-toggle {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    padding: var(--space-sm) !important;
+    background: var(--bg-card) !important;
+    border: 1px solid #e2e8f0 !important;
+    border-radius: var(--radius-md) !important;
+    cursor: pointer !important;
+    font-size: 0.875rem !important;
+    font-weight: 600 !important;
+    color: var(--text-secondary) !important;
+    transition: all 0.2s !important;
+    margin-top: var(--space-xs) !important;
+  }
+
+  .all-time-stats-toggle:hover {
+    background: #f8fafc !important;
+    border-color: var(--brand-primary) !important;
+    color: var(--brand-primary) !important;
+  }
+
+  .all-time-stats-toggle span {
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+  }
+
+  /* Hide all-time stats on mobile unless expanded */
+  .all-time-stats-container {
+    display: none !important;
+  }
+
+  .all-time-stats-container.expanded {
+    display: contents !important;
+  }
+
+  /* VIEW OPTIONS - Collapsible on mobile */
   .view-options-section {
-    padding: var(--space-lg) !important;
+    padding: var(--space-sm) !important;
+    margin-bottom: var(--space-md) !important;
+  }
+
+  .view-options-section:has(.view-options-content) {
+    padding: var(--space-md) !important;
+  }
+
+  .view-options-header {
+    cursor: pointer !important;
+    text-align: center !important;
+  }
+
+  .view-options-header > div {
+    width: 100% !important;
+  }
+
+  .view-options-title {
+    font-size: 0.9375rem !important;
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    gap: 8px !important;
+  }
+
+  .view-options-subtitle {
+    font-size: 0.6875rem !important;
+  }
+
+  .mobile-toggle-arrow {
+    display: inline !important;
   }
 
   .time-range-controls {
@@ -6000,12 +6335,20 @@ textarea:focus {
 
   .shift-history-header {
     flex-direction: column !important;
-    align-items: flex-start !important;
-    gap: var(--space-md) !important;
+    align-items: center !important;
+    text-align: center !important;
+    gap: var(--space-sm) !important;
+    padding: var(--space-md) !important;
   }
 
   .shift-history-title {
     font-size: 1.25rem !important;
+    margin-bottom: 0.125rem !important;
+  }
+
+  .shift-history-subtitle {
+    font-size: 0.75rem !important;
+    margin-bottom: 0.5rem !important;
   }
 
   /* TABLES - Convert to card layout on mobile (NO horizontal scrolling) */
@@ -6024,7 +6367,7 @@ textarea:focus {
   .shift-history-table,
   .shift-history-table tbody {
     display: block !important;
-    width: 45% !important;
+    width: 45.5% !important;
     max-width: 100% !important;
   }
 
@@ -6053,6 +6396,12 @@ textarea:focus {
     white-space: normal !important;
   }
 
+  /* Hide desktop Action column on mobile */
+  .shift-history-table .th-action,
+  .shift-history-table .td-action-desktop {
+    display: none !important;
+  }
+
   /* Add labels for Employee Totals table columns */
   .shift-history-table td::before {
     content: '';
@@ -6069,9 +6418,30 @@ textarea:focus {
     flex-shrink: 0;
   }
 
-  /* Cell with Venmo button should allow wrapping */
-  .shift-history-table td:has(.btn-venmo) {
-    flex-wrap: wrap;
+  /* Show mobile Venmo row on mobile */
+  .mobile-venmo-row {
+    display: table-row !important;
+  }
+
+  /* Venmo button row - full width at bottom */
+  .shift-history-table td.shift-venmo-row {
+    display: block !important;
+    width: 100% !important;
+    margin-top: 0px !important;
+    padding: 0 !important;
+    border-top: 1px solid rgba(0, 0, 0, 0.08) !important;
+    padding-top: 0px !important;
+  }
+
+  .shift-history-table td.shift-venmo-row::before {
+    display: none !important;
+  }
+
+  .shift-history-table td.shift-venmo-row .btn-venmo {
+    display: block !important;
+    width: 100% !important;
+    text-align: center !important;
+    margin: 0 !important;
   }
 
   /* For Employee Totals table - specific labels */
@@ -6096,21 +6466,38 @@ textarea:focus {
     padding-bottom: 6px !important;
     margin-bottom: 4px !important;
     border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
+    text-align: center !important;
   }
 
   .shift-history-table td.shift-date::before {
     display: none !important;
   }
 
-  /* Badges in employee cell */
+  /* Employee name container */
+  .shift-history-table td.shift-date .employee-name {
+    display: block !important;
+  }
+
+  /* Badges container - displayed below name */
+  .shift-history-table td.shift-date .employee-badges {
+    display: block !important;
+    margin-top: 8px !important;
+    text-align: center !important;
+  }
+
+  /* Individual badges */
   .shift-history-table td.shift-date .badge-new {
-    margin-left: 6px !important;
+    margin-left: 4px !important;
+    margin-right: 0 !important;
     display: inline-flex !important;
     font-size: 10px !important;
     padding: 2px 6px !important;
     font-weight: 600 !important;
-    vertical-align: middle;
     border-radius: 4px !important;
+  }
+
+  .shift-history-table td.shift-date .badge-new:first-child {
+    margin-left: 0 !important;
   }
 
   /* Venmo button - compact and clean */
@@ -6271,26 +6658,28 @@ textarea:focus {
   }
 
   .shift-group-header {
-    padding: var(--space-md) !important;
+    padding: var(--space-sm) var(--space-md) !important;
     flex-direction: column !important;
-    align-items: flex-start !important;
-    gap: var(--space-md) !important;
+    align-items: center !important;
+    gap: var(--space-sm) !important;
   }
 
   .shift-group-info {
     width: 100%;
     flex-direction: column !important;
-    align-items: flex-start !important;
-    gap: var(--space-xs) !important;
+    align-items: center !important;
+    text-align: center !important;
+    gap: 6px !important;
   }
 
   .shift-group-name {
-    font-size: 1rem !important;
+    font-size: 1.125rem !important;
+    font-weight: 700 !important;
   }
 
   .shift-group-stats {
-    font-size: 0.8125rem !important;
-    padding: 4px 10px !important;
+    font-size: 0.75rem !important;
+    padding: 3px 8px !important;
   }
 
   .shift-group-actions {
@@ -6346,10 +6735,32 @@ textarea:focus {
     padding: var(--space-lg) !important;
   }
 
-  /* SCHEDULE TOOLBAR */
+  /* SCHEDULE TOOLBAR - Collapsible on mobile */
   .schedule-toolbar {
     flex-direction: column !important;
     gap: var(--space-md) !important;
+    padding: var(--space-sm) !important;
+  }
+
+  .schedule-toolbar-header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: center !important;
+    cursor: pointer !important;
+    padding: var(--space-sm) !important;
+  }
+
+  .schedule-toolbar-title {
+    font-size: 0.9375rem !important;
+    font-weight: 600 !important;
+    color: var(--text-secondary) !important;
+    display: flex !important;
+    align-items: center !important;
+    gap: 8px !important;
+  }
+
+  .mobile-toolbar-arrow {
+    display: inline !important;
   }
 
   .schedule-toolbar-search {

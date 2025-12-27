@@ -8,6 +8,7 @@ import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
 import Head from 'next/head';
+import { User, Plus, Calendar, BarChart3, DollarSign, CheckCircle, Clock, LogOut } from 'lucide-react';
 
 type Tab = 'unpaid' | 'paid' | 'all';
 type SortBy = 'name' | 'hours' | 'pay' | 'unpaid';
@@ -36,8 +37,11 @@ type TotalRow = {
   hours: number;
   pay: number;
   unpaid: number;
+  unpaidHours: number;
   minCount: number;
   flaggedCount: number;
+  unpaidMinCount: number;
+  unpaidFlaggedCount: number;
 };
 
 // ---- Helpers ----
@@ -105,9 +109,12 @@ export default function Admin() {
   const [venmo, setVenmo] = useState<Record<string, string>>({});
 
   const [tab, setTab] = useState<Tab>('unpaid');
+  const [totalsFilter, setTotalsFilter] = useState<'unpaid' | 'all'>('unpaid');
   const [sortBy, setSortBy] = useState<SortBy>('name');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
   const [userSorted, setUserSorted] = useState(false);
+  const [filtersExpanded, setFiltersExpanded] = useState(false);
+  const [allTimeStatsExpanded, setAllTimeStatsExpanded] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | undefined>();
@@ -215,8 +222,8 @@ export default function Admin() {
           .order('shift_date', { ascending: true })
           .order('time_in', { ascending: true });
 
-        if (tab === 'unpaid') q = q.eq('is_paid', false);
-        else if (tab === 'paid') q = q.eq('is_paid', true);
+        // Don't filter by tab at query level - we'll filter in the UI
+        // This ensures Employee Totals always has access to all shifts
 
         if (useWeek) {
           q = q.gte('shift_date', weekFrom).lte('shift_date', weekTo);
@@ -258,11 +265,18 @@ export default function Admin() {
     }
 
     load();
-  }, [checking, me, tab, useWeek, weekFrom, weekTo, rangeFrom, rangeTo]);
+  }, [checking, me, useWeek, weekFrom, weekTo, rangeFrom, rangeTo]);
+
+  // Filter shifts for Shift Details section based on tab
+  const filteredShifts = useMemo(() => {
+    if (tab === 'unpaid') return shifts.filter(s => !s.is_paid);
+    if (tab === 'paid') return shifts.filter(s => s.is_paid);
+    return shifts; // 'all' shows everything
+  }, [shifts, tab]);
 
   const groups = useMemo(() => {
     const m: Record<string, Shift[]> = {};
-    for (const s of shifts) {
+    for (const s of filteredShifts) {
       (m[s.user_id] ??= []).push(s);
     }
     for (const id in m) {
@@ -273,7 +287,7 @@ export default function Admin() {
       });
     }
     return m;
-  }, [shifts]);
+  }, [filteredShifts]);
 
   const totals = useMemo<TotalRow[]>(() => {
     const m: Record<string, TotalRow> = {};
@@ -292,14 +306,26 @@ export default function Admin() {
           hours: 0,
           pay: 0,
           unpaid: 0,
+          unpaidHours: 0,
           minCount: 0,
           flaggedCount: 0,
+          unpaidMinCount: 0,
+          unpaidFlaggedCount: 0,
         };
       }
 
+      const isPaid = Boolean(s.is_paid);
+
       m[id].hours += h;
       m[id].pay += pay;
-      if (!Boolean(s.is_paid)) m[id].unpaid += pay;
+
+      if (!isPaid) {
+        m[id].unpaid += pay;
+        m[id].unpaidHours += h;
+        if (minApplied) m[id].unpaidMinCount += 1;
+        if (isFlagged) m[id].unpaidFlaggedCount += 1;
+      }
+
       if (minApplied) m[id].minCount += 1;
       if (isFlagged) m[id].flaggedCount += 1;
     }
@@ -317,34 +343,46 @@ export default function Admin() {
   );
 
   const sortedTotals = useMemo(() => {
-    const a = [...totals];
-    if (sortBy === 'name') {
-      a.sort((x, y) => x.name.localeCompare(y.name) * (sortDir === 'asc' ? 1 : -1));
-    } else if (sortBy === 'hours') {
-      a.sort((x, y) => (x.hours - y.hours) * (sortDir === 'asc' ? 1 : -1));
-    } else if (sortBy === 'pay') {
-      a.sort((x, y) => (x.pay - y.pay) * (sortDir === 'asc' ? 1 : -1));
-    } else if (sortBy === 'unpaid') {
-      a.sort((x, y) => (x.unpaid - y.unpaid) * (sortDir === 'asc' ? 1 : -1));
+    // First filter based on totalsFilter
+    let filtered = [...totals];
+    if (totalsFilter === 'unpaid') {
+      // Show only employees who have unpaid amounts
+      filtered = filtered.filter(t => t.unpaid > 0.0001);
     }
-    return a;
-  }, [totals, sortBy, sortDir]);
+    // 'all' shows all employees with their all-time totals (hours, pay, etc.)
+
+    // Then sort
+    if (sortBy === 'name') {
+      filtered.sort((x, y) => x.name.localeCompare(y.name) * (sortDir === 'asc' ? 1 : -1));
+    } else if (sortBy === 'hours') {
+      filtered.sort((x, y) => (x.hours - y.hours) * (sortDir === 'asc' ? 1 : -1));
+    } else if (sortBy === 'pay') {
+      filtered.sort((x, y) => (x.pay - y.pay) * (sortDir === 'asc' ? 1 : -1));
+    } else if (sortBy === 'unpaid') {
+      filtered.sort((x, y) => (x.unpaid - y.unpaid) * (sortDir === 'asc' ? 1 : -1));
+    }
+    return filtered;
+  }, [totals, totalsFilter, sortBy, sortDir]);
 
   const sectionOrder = useMemo(() => sortedTotals.map(t => t.id), [sortedTotals]);
 
   const stats = useMemo(() => {
     const totalHours = shifts.reduce((sum, s) => sum + (s.hours_worked || 0), 0);
     const totalPay = shifts.reduce((sum, s) => sum + (s.pay_due || 0), 0);
-    const unpaidCount = shifts.filter(s => !s.is_paid).length;
-    const flaggedCount = shifts.filter(s => Boolean(s.admin_flag) || isAutoFlag(s)).length;
+    const unpaidShifts = shifts.filter(s => !s.is_paid);
+    const paidShifts = shifts.filter(s => s.is_paid);
+    const unpaidCount = unpaidShifts.length;
+    const unpaidHours = unpaidShifts.reduce((sum, s) => sum + (s.hours_worked || 0), 0);
+    const paidAmount = paidShifts.reduce((sum, s) => sum + (s.pay_due || 0), 0);
 
     return {
       totalShifts: shifts.length,
       totalHours: totalHours.toFixed(1),
       totalPay: totalPay.toFixed(2),
       unpaidPay: unpaidTotal.toFixed(2),
+      paidPay: paidAmount.toFixed(2),
       unpaidCount,
-      flaggedCount,
+      unpaidHours: unpaidHours.toFixed(1),
     };
   }, [shifts, unpaidTotal]);
 
@@ -474,19 +512,19 @@ export default function Admin() {
             <div className="sidebar-nav-section">
               <div className="sidebar-nav-label">Main</div>
               <a href="/admin" className="sidebar-nav-item active" onClick={() => setMobileMenuOpen(false)}>
-                <span className="sidebar-nav-icon">📊</span>
+                <span className="sidebar-nav-icon"><BarChart3 size={18} /></span>
                 <span>Admin Dashboard</span>
               </a>
               <a href="/dashboard" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
-                <span className="sidebar-nav-icon">👤</span>
+                <span className="sidebar-nav-icon"><User size={18} /></span>
                 <span>My Shifts</span>
               </a>
               <a href="/new-shift" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
-                <span className="sidebar-nav-icon">➕</span>
+                <span className="sidebar-nav-icon"><Plus size={18} /></span>
                 <span>Log Shift</span>
               </a>
               <a href="/me/schedule" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
-                <span className="sidebar-nav-icon">📅</span>
+                <span className="sidebar-nav-icon"><Calendar size={18} /></span>
                 <span>My Schedule</span>
               </a>
             </div>
@@ -494,11 +532,11 @@ export default function Admin() {
             <div className="sidebar-nav-section">
               <div className="sidebar-nav-label">Admin</div>
               <a href="/admin-schedule" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
-                <span className="sidebar-nav-icon">📅</span>
+                <span className="sidebar-nav-icon"><Calendar size={18} /></span>
                 <span>Schedule</span>
               </a>
               <a href="/admin-schedule-past" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
-                <span className="sidebar-nav-icon">📋</span>
+                <span className="sidebar-nav-icon"><Calendar size={18} /></span>
                 <span>Past Schedule</span>
               </a>
             </div>
@@ -515,7 +553,7 @@ export default function Admin() {
               </div>
             </div>
             <button className="sidebar-logout" onClick={handleLogout}>
-              🚪 Logout
+              <LogOut size={16} /> Logout
             </button>
           </div>
         </aside>
@@ -527,12 +565,6 @@ export default function Admin() {
               <div>
                 <h1 className="header-title">Dashboard</h1>
                 <p className="header-subtitle">Manage employee shifts and payroll</p>
-              </div>
-              <div className="header-actions">
-                <button className="btn-new btn-secondary-new">Export</button>
-                <button className="btn-new btn-primary-new" onClick={() => router.push('/new-shift')}>
-                  + New Shift
-                </button>
               </div>
             </div>
           </header>
@@ -546,12 +578,13 @@ export default function Admin() {
 
             {/* STATS CARDS */}
             <div className="dashboard-stats">
+              {/* UNPAID STATS - Top Row */}
               <div className="stat-card-new">
                 <div className="stat-card-header">
                   <div>
                     <div className="stat-card-label">Total Unpaid</div>
                   </div>
-                  <div className="stat-card-icon">💰</div>
+                  <div className="stat-card-icon"><DollarSign size={20} /></div>
                 </div>
                 <div className="stat-card-value gradient-text">${stats.unpaidPay}</div>
                 <div className="stat-card-change">
@@ -562,46 +595,85 @@ export default function Admin() {
               <div className="stat-card-new">
                 <div className="stat-card-header">
                   <div>
-                    <div className="stat-card-label">Total Shifts</div>
+                    <div className="stat-card-label">Unpaid Shifts</div>
                   </div>
-                  <div className="stat-card-icon">📋</div>
+                  <div className="stat-card-icon"><BarChart3 size={20} /></div>
                 </div>
-                <div className="stat-card-value">{stats.totalShifts}</div>
-                <div className="stat-card-change">
-                  {useWeek ? `${weekFrom} to ${weekTo}` : rangeFrom || rangeTo ? 'Custom range' : 'All time'}
-                </div>
+                <div className="stat-card-value">{stats.unpaidCount}</div>
+                <div className="stat-card-change">Not yet paid</div>
               </div>
 
               <div className="stat-card-new">
                 <div className="stat-card-header">
                   <div>
-                    <div className="stat-card-label">Total Hours</div>
+                    <div className="stat-card-label">Unpaid Hours</div>
                   </div>
-                  <div className="stat-card-icon">⏰</div>
+                  <div className="stat-card-icon"><Clock size={20} /></div>
                 </div>
-                <div className="stat-card-value">{stats.totalHours}</div>
-                <div className="stat-card-change">Across all employees</div>
+                <div className="stat-card-value">{stats.unpaidHours}</div>
+                <div className="stat-card-change">Hours unpaid</div>
               </div>
 
-              <div className="stat-card-new">
-                <div className="stat-card-header">
-                  <div>
-                    <div className="stat-card-label">Flagged Shifts</div>
+              {/* ALL TIME STATS - Collapsible on mobile */}
+              <div
+                className="all-time-stats-toggle"
+                onClick={() => setAllTimeStatsExpanded(!allTimeStatsExpanded)}
+              >
+                <span>All Time Stats {allTimeStatsExpanded ? '▼' : '▶'}</span>
+              </div>
+
+              <div className={`all-time-stats-container ${allTimeStatsExpanded ? 'expanded' : ''}`}>
+                <div className="stat-card-new">
+                  <div className="stat-card-header">
+                    <div>
+                      <div className="stat-card-label">Total Paid</div>
+                    </div>
+                    <div className="stat-card-icon"><CheckCircle size={20} /></div>
                   </div>
-                  <div className="stat-card-icon">⚠️</div>
+                  <div className="stat-card-value">${stats.paidPay}</div>
+                  <div className="stat-card-change">All time</div>
                 </div>
-                <div className="stat-card-value">{stats.flaggedCount}</div>
-                <div className="stat-card-change">Need attention</div>
+
+                <div className="stat-card-new">
+                  <div className="stat-card-header">
+                    <div>
+                      <div className="stat-card-label">Total Shifts</div>
+                    </div>
+                    <div className="stat-card-icon"><BarChart3 size={20} /></div>
+                  </div>
+                  <div className="stat-card-value">{stats.totalShifts}</div>
+                  <div className="stat-card-change">All time</div>
+                </div>
+
+                <div className="stat-card-new">
+                  <div className="stat-card-header">
+                    <div>
+                      <div className="stat-card-label">Total Hours</div>
+                    </div>
+                    <div className="stat-card-icon"><Clock size={20} /></div>
+                  </div>
+                  <div className="stat-card-value">{stats.totalHours}</div>
+                  <div className="stat-card-change">All time</div>
+                </div>
               </div>
             </div>
 
             {/* FILTERS - Enhanced Design */}
             <div className="view-options-section">
-              <div className="view-options-header">
-                <h3 className="view-options-title">Date Range Filters</h3>
-                <p className="view-options-subtitle">Filter shifts by time period</p>
+              <div
+                className="view-options-header"
+                onClick={() => setFiltersExpanded(!filtersExpanded)}
+                style={{ cursor: 'pointer' }}
+              >
+                <div>
+                  <h3 className="view-options-title">
+                    Date Range Filters {filtersExpanded ? '▼' : '▶'}
+                  </h3>
+                  <p className="view-options-subtitle">Filter shifts by time period</p>
+                </div>
               </div>
-              <div className="view-options-content">
+              {filtersExpanded && (
+                <div className="view-options-content">
                 <div className="admin-filter-mode">
                   <label className="admin-filter-mode-option">
                     <input
@@ -678,6 +750,7 @@ export default function Admin() {
                   )}
                 </div>
               </div>
+              )}
             </div>
 
             {/* EMPLOYEE TOTALS */}
@@ -687,28 +760,18 @@ export default function Admin() {
                   <h2 className="shift-history-title">Employee Totals</h2>
                   <p className="shift-history-subtitle">Aggregated payroll data per employee</p>
                 </div>
-                <div className="admin-sort-controls">
-                  <select
-                    className="time-range-select"
-                    value={sortBy}
-                    onChange={e => {
-                      setSortBy(e.target.value as SortBy);
-                      setUserSorted(true);
-                    }}
-                  >
-                    <option value="name">Sort by Name</option>
-                    <option value="hours">Sort by Hours</option>
-                    <option value="pay">Sort by Pay</option>
-                    <option value="unpaid">Sort by Unpaid</option>
-                  </select>
+                <div className="tabs-new">
                   <button
-                    className="time-nav-btn"
-                    onClick={() => {
-                      setSortDir(d => (d === 'asc' ? 'desc' : 'asc'));
-                      setUserSorted(true);
-                    }}
+                    className={`tab-new ${totalsFilter === 'unpaid' ? 'active' : ''}`}
+                    onClick={() => setTotalsFilter('unpaid')}
                   >
-                    {sortDir === 'asc' ? '↑ Asc' : '↓ Desc'}
+                    Unpaid ({totals.filter(t => t.unpaid > 0.0001).length})
+                  </button>
+                  <button
+                    className={`tab-new ${totalsFilter === 'all' ? 'active' : ''}`}
+                    onClick={() => setTotalsFilter('all')}
+                  >
+                    All ({totals.length})
                   </button>
                 </div>
               </div>
@@ -718,9 +781,19 @@ export default function Admin() {
                   <thead>
                     <tr>
                       <th>Employee</th>
-                      <th>Hours</th>
-                      <th>Total Pay</th>
-                      <th>Unpaid</th>
+                      {totalsFilter === 'unpaid' ? (
+                        <>
+                          <th>Unpaid Hours</th>
+                          <th>Unpaid Pay</th>
+                        </>
+                      ) : (
+                        <>
+                          <th>Hours</th>
+                          <th>Total Pay</th>
+                          <th>Unpaid</th>
+                        </>
+                      )}
+                      <th className="th-action">Action</th>
                     </tr>
                   </thead>
                   <tbody>
@@ -728,37 +801,72 @@ export default function Admin() {
                       const vHref = venmoHref(venmo[t.id]);
                       const hasUnpaid = t.unpaid > 0.0001;
 
+                      // Use unpaid-specific counts when filtering by unpaid
+                      const displayMinCount = totalsFilter === 'unpaid' ? t.unpaidMinCount : t.minCount;
+                      const displayFlaggedCount = totalsFilter === 'unpaid' ? t.unpaidFlaggedCount : t.flaggedCount;
+
                       return (
-                        <tr key={t.id}>
-                          <td className="shift-date" style={{ fontWeight: 600 }}>
-                            {t.name}
-                            {t.minCount > 0 && (
-                              <span className="badge-new badge-neutral-new ml-sm">
-                                {t.minCount}× MIN
-                              </span>
+                        <>
+                          <tr key={t.id}>
+                            <td className="shift-date" style={{ fontWeight: 600 }}>
+                              <div className="employee-name">{t.name}</div>
+                              {(displayMinCount > 0 || displayFlaggedCount > 0) && (
+                                <div className="employee-badges">
+                                  {displayMinCount > 0 && (
+                                    <span className="badge-new badge-neutral-new ml-sm">
+                                      {displayMinCount}× MIN
+                                    </span>
+                                  )}
+                                  {displayFlaggedCount > 0 && (
+                                    <span className="badge-new badge-warning-new ml-sm">
+                                      {displayFlaggedCount}× FLAG
+                                    </span>
+                                  )}
+                                </div>
+                              )}
+                            </td>
+                            {totalsFilter === 'unpaid' ? (
+                              <>
+                                <td className="shift-hours"><div className="td-value">{t.unpaidHours.toFixed(1)} hrs</div></td>
+                                <td className="shift-pay"><div className="td-value">${t.unpaid.toFixed(2)}</div></td>
+                              </>
+                            ) : (
+                              <>
+                                <td className="shift-hours"><div className="td-value">{t.hours.toFixed(1)} hrs</div></td>
+                                <td className="shift-pay"><div className="td-value">${t.pay.toFixed(2)}</div></td>
+                                <td className="shift-pay">
+                                  <div className="td-value">${t.unpaid.toFixed(2)}</div>
+                                </td>
+                              </>
                             )}
-                            {t.flaggedCount > 0 && (
-                              <span className="badge-new badge-warning-new ml-sm">
-                                {t.flaggedCount}× FLAG
-                              </span>
-                            )}
-                          </td>
-                          <td className="shift-hours"><div className="td-value">{t.hours.toFixed(1)} hrs</div></td>
-                          <td className="shift-pay"><div className="td-value">${t.pay.toFixed(2)}</div></td>
-                          <td className="shift-pay">
-                            <div className="td-value">${t.unpaid.toFixed(2)}</div>
-                            {vHref && hasUnpaid && (
-                              <a
-                                className="btn-new btn-sm-new btn-venmo ml-sm"
-                                href={vHref}
-                                target="_blank"
-                                rel="noopener noreferrer"
-                              >
-                                💸 Venmo
-                              </a>
-                            )}
-                          </td>
-                        </tr>
+                            <td className="td-action td-action-desktop">
+                              {vHref && hasUnpaid && (
+                                <a
+                                  className="btn-new btn-sm-new btn-venmo"
+                                  href={vHref}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  💸 Venmo
+                                </a>
+                              )}
+                            </td>
+                          </tr>
+                          {vHref && hasUnpaid && (
+                            <tr key={`${t.id}-venmo`} className="mobile-venmo-row">
+                              <td className="shift-venmo-row" colSpan={totalsFilter === 'unpaid' ? 4 : 5}>
+                                <a
+                                  className="btn-new btn-sm-new btn-venmo"
+                                  href={vHref}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                >
+                                  💸 Venmo
+                                </a>
+                              </td>
+                            </tr>
+                          )}
+                        </>
                       );
                     })}
                   </tbody>
@@ -772,7 +880,7 @@ export default function Admin() {
                 <div>
                   <h2 className="shift-history-title">Shift Details</h2>
                   <p className="shift-history-subtitle">
-                    {loading ? 'Loading...' : `${shifts.length} ${shifts.length === 1 ? 'shift' : 'shifts'} found`}
+                    {loading ? 'Loading...' : `${filteredShifts.length} ${filteredShifts.length === 1 ? 'shift' : 'shifts'} found`}
                   </p>
                 </div>
                 <div className="tabs-new">
@@ -808,13 +916,13 @@ export default function Admin() {
 
               {loading ? (
                 <div className="shift-history-empty">
-                  <div className="empty-icon">⏳</div>
+                  <div className="empty-icon"><Clock size={48} /></div>
                   <div className="empty-title">Loading shifts...</div>
                   <div className="empty-subtitle">Please wait while we fetch your data</div>
                 </div>
               ) : shifts.length === 0 ? (
                 <div className="shift-history-empty">
-                  <div className="empty-icon">📋</div>
+                  <div className="empty-icon"><BarChart3 size={48} /></div>
                   <div className="empty-title">No shifts found</div>
                   <div className="empty-subtitle">Try adjusting your filters or date range</div>
                 </div>
