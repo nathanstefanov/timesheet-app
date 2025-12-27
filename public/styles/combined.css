@@ -6698,15 +6698,19 @@ textarea:focus {
     display: none !important;
   }
 
-  .employee-totals-table td.shift-venmo-row .btn-venmo {
-    display: block !important;
+  .employee-totals-table td.shift-venmo-row .btn-venmo,
+  .employee-totals-table .mobile-venmo-row .btn-venmo {
+    display: flex !important;
     width: 100% !important;
     text-align: center !important;
+    justify-content: center !important;
+    align-items: center !important;
     margin: 0 !important;
     padding: 0.875rem 1rem !important;
     font-size: 0.9375rem !important;
     font-weight: 600 !important;
     border-radius: var(--radius-md) !important;
+    box-sizing: border-box !important;
   }
 
   /* Column labels - dynamic based on filter */
