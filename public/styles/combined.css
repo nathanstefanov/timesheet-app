@@ -6613,11 +6613,15 @@ textarea:focus {
      EMPLOYEE TOTALS TABLE - Mobile Card Layout (Admin Page)
      ================================================ */
 
-  .employee-totals-wrapper {
+  .employee-totals-wrapper,
+  .shift-history-table-wrapper.employee-totals-wrapper {
     overflow-x: visible !important;
     overflow-y: visible !important;
+    overflow: visible !important;
     margin: 0 !important;
     padding: 0 !important;
+    max-height: none !important;
+    height: auto !important;
   }
 
   /* Hide table headers on mobile */
@@ -6683,7 +6687,7 @@ textarea:focus {
   /* Show mobile Venmo row on mobile */
   .employee-totals-table .mobile-venmo-row {
     display: block !important;
-    width: calc(95% + calc(var(--space-md) * 2)) !important;
+    width: calc(85% + calc(var(--space-md) * 2)) !important;
     margin-left: calc(var(--space-md) * -1) !important;
     margin-right: calc(var(--space-md) * -1) !important;
     margin-top: var(--space-md) !important;
@@ -6695,7 +6699,7 @@ textarea:focus {
   /* Venmo button row - full width at bottom */
   .employee-totals-table td.shift-venmo-row {
     display: block !important;
-    width: 100% !important;
+    width: 95% !important;
     padding: var(--space-md) !important;
     margin: 0 !important;
   }
