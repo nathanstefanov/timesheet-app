@@ -6688,10 +6688,10 @@ textarea:focus {
   .employee-totals-table td.shift-venmo-row {
     display: block !important;
     width: 100% !important;
-    margin-top: 0px !important;
+    margin-top: var(--space-md) !important;
     padding: 0 !important;
     border-top: 1px solid rgba(0, 0, 0, 0.08) !important;
-    padding-top: 0px !important;
+    padding-top: var(--space-md) !important;
   }
 
   .employee-totals-table td.shift-venmo-row::before {
@@ -6703,6 +6703,10 @@ textarea:focus {
     width: 100% !important;
     text-align: center !important;
     margin: 0 !important;
+    padding: 0.875rem 1rem !important;
+    font-size: 0.9375rem !important;
+    font-weight: 600 !important;
+    border-radius: var(--radius-md) !important;
   }
 
   /* Column labels - dynamic based on filter */
