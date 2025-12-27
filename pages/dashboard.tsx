@@ -48,6 +48,7 @@ export default function Dashboard() {
   const [unpaidAllTime, setUnpaidAllTime] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [viewOptionsExpanded, setViewOptionsExpanded] = useState(false);
+  const [searchQuery, setSearchQuery] = useState('');
 
   useEffect(() => {
     (async () => {
@@ -164,16 +165,36 @@ export default function Dashboard() {
     return { hours, pay, unpaidInRange, count: shifts.length };
   }, [shifts]);
 
-  // Sort shifts with unpaid at the top
+  // Sort and filter shifts
   const sortedShifts = useMemo(() => {
-    return [...shifts].sort((a, b) => {
+    let filtered = [...shifts];
+
+    // Apply search filter
+    if (searchQuery.trim()) {
+      const query = searchQuery.toLowerCase().trim();
+      filtered = filtered.filter(shift => {
+        // Search by date
+        if (shift.shift_date.includes(query)) return true;
+        // Search by type
+        if (shift.shift_type?.toLowerCase().includes(query)) return true;
+        // Search by notes
+        if (shift.notes?.toLowerCase().includes(query)) return true;
+        // Search by payment status
+        if (shift.is_paid && 'paid'.includes(query)) return true;
+        if (!shift.is_paid && 'unpaid'.includes(query)) return true;
+        return false;
+      });
+    }
+
+    // Sort by payment status and date
+    return filtered.sort((a, b) => {
       // Unpaid shifts come first
       if (!a.is_paid && b.is_paid) return -1;
       if (a.is_paid && !b.is_paid) return 1;
       // Within same payment status, sort by date (newest first)
       return b.shift_date.localeCompare(a.shift_date);
     });
-  }, [shifts]);
+  }, [shifts, searchQuery]);
 
   async function delShift(id: string) {
     if (!confirm('Delete this shift?')) return;
@@ -351,11 +372,32 @@ export default function Dashboard() {
                   <h3 className="view-options-title">
                     View Options <span className="mobile-toggle-arrow">{viewOptionsExpanded ? '▼' : '▶'}</span>
                   </h3>
-                  <p className="view-options-subtitle">Filter your shift history by time range</p>
+                  <p className="view-options-subtitle">Search and filter your shift history</p>
                 </div>
               </div>
               {viewOptionsExpanded && (
                 <div className="view-options-content">
+                {/* SEARCH FILTER */}
+                <div className="search-filter-controls">
+                  <label className="time-range-label">Search Shifts</label>
+                  <input
+                    type="text"
+                    className="search-filter-input"
+                    placeholder="Search by date, type, status, or notes..."
+                    value={searchQuery}
+                    onChange={(e) => setSearchQuery(e.target.value)}
+                  />
+                  {searchQuery && (
+                    <button
+                      className="search-clear-btn"
+                      onClick={() => setSearchQuery('')}
+                      aria-label="Clear search"
+                    >
+                      ✕
+                    </button>
+                  )}
+                </div>
+
                 <div className="time-range-controls">
                   <label className="time-range-label">Time Range</label>
                   <div className="time-range-buttons">
