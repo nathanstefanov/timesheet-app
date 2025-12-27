@@ -6039,7 +6039,7 @@ textarea:focus {
   display: none;
   position: fixed;
   top: 16px;
-  left: 16px;
+  right: 16px;
   z-index: 99999;
   width: 48px;
   height: 48px;
@@ -6239,7 +6239,7 @@ textarea:focus {
   .app-header {
     padding-top: 80px !important;
     padding-left: var(--space-md) !important;
-    padding-right: var(--space-md) !important;
+    padding-right: 70px !important;
     padding-bottom: var(--space-md) !important;
     z-index: 10 !important;
     position: relative;
@@ -6669,13 +6669,12 @@ textarea:focus {
     border-bottom: 1px solid var(--border-color) !important;
   }
 
-  /* Type badge - top right corner */
+  /* Type badge - below date, centered */
   .shift-history-table:not(.employee-totals-table) tbody tr td:nth-child(2) {
-    position: absolute !important;
-    top: var(--space-md) !important;
-    right: var(--space-md) !important;
     display: block !important;
-    padding: 0 !important;
+    text-align: center !important;
+    padding: 0 0 var(--space-sm) 0 !important;
+    margin-bottom: var(--space-sm) !important;
   }
 
   /* Time In and Time Out - horizontal row with centered container */
