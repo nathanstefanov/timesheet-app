@@ -1924,6 +1924,133 @@ textarea:focus {
     font-size: 0.85rem;
   }
 }
+
+/* ============================================================================
+   LOGIN PAGE - Mobile Styles (768px and below)
+   ============================================================================ */
+
+@media (max-width: 768px) {
+  /* Login page container */
+  .wrap {
+    margin: var(--space-md) auto !important;
+    padding: 0 var(--space-md) !important;
+  }
+
+  /* Login card - match other mobile card styles */
+  .wrap .card {
+    border-radius: var(--radius-md) !important;
+    padding: var(--space-lg) !important;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1) !important;
+  }
+
+  /* Logo and title row */
+  .title-row {
+    justify-content: center !important;
+    margin-bottom: var(--space-md) !important;
+  }
+
+  .title-row .logo {
+    width: 48px !important;
+    height: 48px !important;
+  }
+
+  .title {
+    font-size: 1.5rem !important;
+    text-align: center !important;
+  }
+
+  /* Auth tabs - full width on mobile */
+  .tabs {
+    display: flex !important;
+    width: 100% !important;
+    margin-bottom: var(--space-md) !important;
+    padding: 4px !important;
+    background: #f1f5f9 !important;
+  }
+
+  .tab {
+    flex: 1 !important;
+    padding: 0.625rem 1rem !important;
+    font-size: 0.9375rem !important;
+    font-weight: 600 !important;
+    text-align: center !important;
+  }
+
+  /* Form labels */
+  .label {
+    font-size: 0.875rem !important;
+    font-weight: 600 !important;
+    margin-bottom: 0.5rem !important;
+  }
+
+  /* Input fields - match app input styles */
+  .wrap .input {
+    width: 100% !important;
+    padding: 0.75rem 1rem !important;
+    font-size: 1rem !important;
+    border-radius: var(--radius-md) !important;
+    border: 2px solid #e2e8f0 !important;
+    margin-bottom: var(--space-md) !important;
+  }
+
+  .wrap .input:focus {
+    border-color: var(--brand-primary) !important;
+    outline: none !important;
+  }
+
+  /* Password row */
+  .pwrow {
+    flex-direction: column !important;
+    align-items: stretch !important;
+    gap: var(--space-sm) !important;
+  }
+
+  .pwrow .input {
+    width: 100% !important;
+  }
+
+  .show {
+    justify-content: flex-start !important;
+    padding-left: 0.25rem !important;
+    font-size: 0.875rem !important;
+  }
+
+  /* Alert messages */
+  .wrap .alert {
+    padding: 0.75rem !important;
+    border-radius: var(--radius-md) !important;
+    font-size: 0.875rem !important;
+    margin-bottom: var(--space-md) !important;
+  }
+
+  /* Primary button - match app button styles */
+  .wrap .btn.primary {
+    width: 100% !important;
+    padding: 0.875rem !important;
+    font-size: 1rem !important;
+    font-weight: 600 !important;
+    border-radius: var(--radius-md) !important;
+    margin-bottom: var(--space-md) !important;
+  }
+
+  /* Action links at bottom */
+  .actions {
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: var(--space-sm) !important;
+    text-align: center !important;
+  }
+
+  .actions .link {
+    font-size: 0.875rem !important;
+    padding: 0.5rem !important;
+  }
+
+  .actions .sep {
+    display: none !important;
+  }
+}
 /* centers the whole header block */
 .center-header {
   display: flex;
