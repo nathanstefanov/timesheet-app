@@ -490,7 +490,7 @@ export default function Admin() {
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           aria-label="Toggle menu"
         >
-          ☰
+          <span></span>
         </button>
 
         {/* MOBILE OVERLAY */}

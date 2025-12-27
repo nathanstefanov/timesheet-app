@@ -226,7 +226,7 @@ export default function Dashboard() {
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           aria-label="Toggle menu"
         >
-          ☰
+          <span></span>
         </button>
 
         {/* MOBILE OVERLAY */}

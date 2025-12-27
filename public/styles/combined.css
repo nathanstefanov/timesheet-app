@@ -6038,36 +6038,63 @@ textarea:focus {
 .mobile-menu-toggle {
   display: none;
   position: fixed;
-  top: 12px;
-  right: 12px;
+  top: 16px;
+  left: 16px;
   z-index: 99999;
-  width: 42px;
-  height: 42px;
-  background: var(--brand-primary);
-  border: none;
-  border-radius: 10px;
-  color: white;
-  font-size: 1.25rem;
-  font-weight: 600;
+  width: 48px;
+  height: 48px;
+  background: white;
+  border: 2px solid #e2e8f0;
+  border-radius: 12px;
+  color: var(--text-primary);
+  font-size: 0;
   cursor: pointer;
-  box-shadow: 0 2px 8px rgba(139, 92, 246, 0.3), 0 1px 3px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08), 0 1px 3px rgba(0, 0, 0, 0.05);
   transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
   touch-action: manipulation;
   -webkit-tap-highlight-color: transparent;
   user-select: none;
   -webkit-user-select: none;
   outline: none;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 5px;
+}
+
+/* Hamburger lines */
+.mobile-menu-toggle::before,
+.mobile-menu-toggle::after {
+  content: '';
+  display: block;
+  width: 22px;
+  height: 2.5px;
+  background: var(--brand-primary);
+  border-radius: 2px;
+  transition: all 0.2s;
+}
+
+.mobile-menu-toggle span {
+  display: block;
+  width: 22px;
+  height: 2.5px;
+  background: var(--brand-primary);
+  border-radius: 2px;
+  transition: all 0.2s;
 }
 
 .mobile-menu-toggle:hover {
-  background: #7c3aed;
+  background: #f8fafc;
+  border-color: var(--brand-primary);
   transform: translateY(-1px);
-  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.4), 0 2px 4px rgba(0, 0, 0, 0.2);
+  box-shadow: 0 4px 12px rgba(139, 92, 246, 0.15), 0 2px 4px rgba(0, 0, 0, 0.08);
 }
 
 .mobile-menu-toggle:active {
   transform: translateY(0) scale(0.95);
-  box-shadow: 0 1px 4px rgba(139, 92, 246, 0.25), 0 1px 2px rgba(0, 0, 0, 0.15);
+  box-shadow: 0 1px 4px rgba(139, 92, 246, 0.1), 0 1px 2px rgba(0, 0, 0, 0.05);
 }
 
 /* MOBILE OVERLAY */
@@ -6208,11 +6235,11 @@ textarea:focus {
     padding: 0 !important;
   }
 
-  /* HEADER adjustments - add top padding for hamburger button */
+  /* HEADER adjustments - add padding for hamburger button on left */
   .app-header {
-    padding-top: 70px !important;
+    padding-top: 80px !important;
     padding-left: var(--space-md) !important;
-    padding-right: 70px !important;
+    padding-right: var(--space-md) !important;
     padding-bottom: var(--space-md) !important;
     z-index: 10 !important;
     position: relative;
