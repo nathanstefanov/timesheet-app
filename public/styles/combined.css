@@ -6687,13 +6687,12 @@ textarea:focus {
   /* Show mobile Venmo row on mobile */
   .employee-totals-table .mobile-venmo-row {
     display: block !important;
-    width: calc(100% + calc(var(--space-md) * 2)) !important;
-    margin-left: calc(var(--space-md) * -1) !important;
-    margin-right: calc(var(--space-md) * -1) !important;
+    width: 100% !important;
+    margin: 0 !important;
     margin-top: var(--space-md) !important;
-    margin-bottom: calc(var(--space-md) * -1) !important;
     padding: 0 !important;
     border-top: 1px solid rgba(0, 0, 0, 0.08) !important;
+    padding-top: var(--space-md) !important;
     background: transparent !important;
     box-shadow: none !important;
     border-radius: 0 !important;
@@ -6703,7 +6702,7 @@ textarea:focus {
   .employee-totals-table td.shift-venmo-row {
     display: block !important;
     width: 100% !important;
-    padding: var(--space-md) !important;
+    padding: 0 !important;
     margin: 0 !important;
   }
 
