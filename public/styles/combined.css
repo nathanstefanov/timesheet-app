@@ -6656,10 +6656,9 @@ textarea:focus {
     padding: var(--space-sm) 0 !important;
   }
 
-  /* Actions - horizontal buttons at bottom */
+  /* Actions - stacked buttons at bottom, centered */
   .shift-history-table:not(.employee-totals-table) tbody tr td:nth-child(8) {
-    display: flex !important;
-    justify-content: center !important;
+    display: block !important;
     padding: var(--space-sm) 0 0 0 !important;
     border-top: 1px solid var(--border-color) !important;
     margin-top: var(--space-sm) !important;
@@ -6667,19 +6666,19 @@ textarea:focus {
 
   .shift-history-table:not(.employee-totals-table) .shift-actions {
     display: flex !important;
+    flex-direction: column !important;
     gap: var(--space-sm) !important;
-    justify-content: center !important;
+    align-items: center !important;
     width: 100% !important;
   }
 
   .shift-history-table:not(.employee-totals-table) .shift-action-btn {
-    flex: 0 0 auto !important;
-    min-width: 120px !important;
-    max-width: 150px !important;
+    width: 100% !important;
+    max-width: 280px !important;
     padding: var(--space-sm) var(--space-lg) !important;
     font-size: 0.9375rem !important;
     text-align: center !important;
-    display: inline-flex !important;
+    display: flex !important;
     align-items: center !important;
     justify-content: center !important;
   }
