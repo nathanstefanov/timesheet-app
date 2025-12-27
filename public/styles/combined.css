@@ -6023,89 +6023,115 @@ textarea:focus {
   /* Convert table to card layout */
   .shift-history-table,
   .shift-history-table tbody {
-    display: block !important;
+    display: -ms-inline-flexbox !important;
+    width: 100% !important;
+    max-width: 100% !important;
   }
 
   .shift-history-table tbody tr {
     display: block !important;
-    margin-bottom: 8px !important;
+    margin-bottom: var(--space-md) !important;
     background: var(--card-bg) !important;
     border: 1px solid var(--border-color) !important;
-    border-radius: 6px !important;
-    padding: 8px !important;
-    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.05) !important;
+    border-radius: var(--radius-md) !important;
+    padding: var(--space-md) !important;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1) !important;
   }
 
   .shift-history-table tbody tr:hover {
     background: var(--bg-hover) !important;
+    border-color: rgba(100, 116, 139, 0.25) !important;
   }
 
   .shift-history-table td {
-    display: grid !important;
-    grid-template-columns: 60px 1fr !important;
-    gap: 8px !important;
-    padding: 2px 0 !important;
+    display: flex !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    padding: var(--space-sm) 0 !important;
     border: none !important;
+    text-align: right !important;
     white-space: normal !important;
-    min-height: 20px;
-    align-items: center;
-    font-size: 0.8125rem !important;
   }
 
-  /* Add labels before each cell using ::before */
+  /* Add labels for Employee Totals table columns */
   .shift-history-table td::before {
     content: '';
     font-weight: 600;
-    font-size: 0.6875rem;
     color: var(--text-secondary);
     text-align: left;
-    grid-column: 1;
+    margin-right: var(--space-md);
+    flex-shrink: 0;
+  }
+
+  /* Cell with Venmo button should allow wrapping */
+  .shift-history-table td:has(.btn-venmo) {
+    flex-wrap: wrap;
   }
 
   /* For Employee Totals table - specific labels */
   .shift-history-table tbody tr td:nth-child(1)::before {
-    content: 'Employee';
+    content: '';
   }
   .shift-history-table tbody tr td:nth-child(2)::before {
-    content: 'Hours';
+    content: 'HOURS';
   }
   .shift-history-table tbody tr td:nth-child(3)::before {
-    content: 'Pay';
+    content: 'PAY';
   }
   .shift-history-table tbody tr td:nth-child(4)::before {
-    content: 'Unpaid';
+    content: 'UNPAID';
   }
 
   /* Special styling for employee name cell */
   .shift-history-table td.shift-date {
-    font-weight: 600 !important;
-    font-size: 0.875rem !important;
-    grid-template-columns: 60px 1fr !important;
-    padding-bottom: 4px !important;
-    border-bottom: 1px solid var(--border-color) !important;
-  }
-
-  .shift-history-table td.shift-hours,
-  .shift-history-table td.shift-pay {
-    font-weight: 500;
-    font-size: 0.8125rem !important;
-  }
-
-  /* Badges in employee cell - smaller and inline */
-  .shift-history-table td.shift-date .badge-new {
-    margin-left: 4px !important;
-    display: inline-flex !important;
-    font-size: 0.625rem !important;
-    padding: 1px 4px !important;
-  }
-
-  /* Venmo button in unpaid cell - more compact */
-  .shift-history-table td .btn-venmo {
-    margin-left: 0 !important;
-    margin-top: 4px;
     display: block !important;
-    font-size: 0.75rem !important;
-    padding: 4px 8px !important;
+    font-weight: 700 !important;
+    font-size: 16px !important;
+    padding-bottom: 6px !important;
+    margin-bottom: 4px !important;
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08) !important;
+  }
+
+  .shift-history-table td.shift-date::before {
+    display: none !important;
+  }
+
+  /* Badges in employee cell */
+  .shift-history-table td.shift-date .badge-new {
+    margin-left: 6px !important;
+    display: inline-flex !important;
+    font-size: 10px !important;
+    padding: 2px 6px !important;
+    font-weight: 600 !important;
+    vertical-align: middle;
+    border-radius: 4px !important;
+  }
+
+  /* Venmo button - compact and clean */
+  .shift-history-table td .btn-venmo {
+    margin-top: 8px !important;
+    margin-left: 0 !important;
+    display: block !important;
+    font-size: 12px !important;
+    line-height: 1 !important;
+    padding: 6px 12px !important;
+    border-radius: 5px !important;
+    font-weight: 500 !important;
+    background: #00b4e6 !important;
+    color: white !important;
+    border: none !important;
+    text-decoration: none !important;
+    transition: background 0.15s ease !important;
+    text-align: center !important;
+    white-space: nowrap !important;
+    -webkit-font-smoothing: antialiased;
+    width: fit-content !important;
+    max-width: none !important;
+  }
+
+  .shift-history-table td .btn-venmo:hover {
+    background: #0099cc !important;
+    box-shadow: 0 1px 3px rgba(0, 180, 230, 0.3) !important;
   }
 
   /* SHIFT DETAIL TABLE - More columns, needs different labels */
