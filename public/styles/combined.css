@@ -6590,31 +6590,43 @@ textarea:focus {
     padding: 0 !important;
   }
 
-  /* Time In and Time Out - horizontal row */
-  .shift-history-table:not(.employee-totals-table) td.shift-time {
+  /* Time In and Time Out - horizontal row with centered container */
+  .shift-history-table:not(.employee-totals-table) tbody tr td:nth-child(3),
+  .shift-history-table:not(.employee-totals-table) tbody tr td:nth-child(4) {
     display: inline-block !important;
-    width: 48% !important;
-    padding: var(--space-xs) 0 !important;
-    font-size: 0.875rem !important;
+    width: 50% !important;
     text-align: center !important;
   }
 
-  .shift-history-table:not(.employee-totals-table) tbody tr td:nth-child(3)::before {
-    content: '' !important;
+  .shift-history-table:not(.employee-totals-table) td.shift-time {
     display: block !important;
-    font-size: 0.75rem !important;
-    color: var(--text-secondary) !important;
+    padding: var(--space-sm) 0 !important;
+    font-size: 1rem !important;
     font-weight: 600 !important;
-    margin-bottom: 2px !important;
+    text-align: center !important;
+    color: var(--text-primary) !important;
   }
 
-  .shift-history-table:not(.employee-totals-table) tbody tr td:nth-child(4)::before {
-    content: '' !important;
+  /* TIME IN label */
+  .shift-history-table:not(.employee-totals-table) tbody tr td:nth-child(3)::before {
+    content: 'TIME IN' !important;
     display: block !important;
-    font-size: 0.75rem !important;
+    font-size: 0.625rem !important;
     color: var(--text-secondary) !important;
-    font-weight: 600 !important;
-    margin-bottom: 2px !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.05em !important;
+    margin-bottom: 4px !important;
+  }
+
+  /* TIME OUT label */
+  .shift-history-table:not(.employee-totals-table) tbody tr td:nth-child(4)::before {
+    content: 'TIME OUT' !important;
+    display: block !important;
+    font-size: 0.625rem !important;
+    color: var(--text-secondary) !important;
+    font-weight: 700 !important;
+    letter-spacing: 0.05em !important;
+    margin-bottom: 4px !important;
   }
 
   /* Hours - centered and prominent */
