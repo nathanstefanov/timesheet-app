@@ -6658,7 +6658,8 @@ textarea:focus {
 
   /* Actions - horizontal buttons at bottom */
   .shift-history-table:not(.employee-totals-table) tbody tr td:nth-child(8) {
-    display: block !important;
+    display: flex !important;
+    justify-content: center !important;
     padding: var(--space-sm) 0 0 0 !important;
     border-top: 1px solid var(--border-color) !important;
     margin-top: var(--space-sm) !important;
@@ -6668,14 +6669,19 @@ textarea:focus {
     display: flex !important;
     gap: var(--space-sm) !important;
     justify-content: center !important;
+    width: 100% !important;
   }
 
   .shift-history-table:not(.employee-totals-table) .shift-action-btn {
-    flex: 1 !important;
+    flex: 0 0 auto !important;
+    min-width: 120px !important;
     max-width: 150px !important;
-    padding: var(--space-sm) var(--space-md) !important;
-    font-size: 0.875rem !important;
+    padding: var(--space-sm) var(--space-lg) !important;
+    font-size: 0.9375rem !important;
     text-align: center !important;
+    display: inline-flex !important;
+    align-items: center !important;
+    justify-content: center !important;
   }
 
   /* SHIFT DETAIL TABLE - More columns, needs different labels */
