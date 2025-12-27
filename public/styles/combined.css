@@ -6763,14 +6763,14 @@ textarea:focus {
 
   /* Venmo button - compact and clean */
   .employee-totals-table td .btn-venmo {
-    margin-top: 8px !important;
+    margin-top: var(--space-md) !important;
     margin-left: 0 !important;
     display: block !important;
-    font-size: 12px !important;
-    line-height: 1 !important;
-    padding: 6px 12px !important;
-    border-radius: 5px !important;
-    font-weight: 500 !important;
+    font-size: 0.9375rem !important;
+    line-height: 1.2 !important;
+    padding: 0.875rem 1rem !important;
+    border-radius: var(--radius-md) !important;
+    font-weight: 600 !important;
     background: #00b4e6 !important;
     color: white !important;
     border: none !important;
@@ -6779,7 +6779,7 @@ textarea:focus {
     text-align: center !important;
     white-space: nowrap !important;
     -webkit-font-smoothing: antialiased;
-    width: fit-content !important;
+    width: 100% !important;
     max-width: none !important;
   }
 
