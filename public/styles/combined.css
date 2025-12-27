@@ -6687,11 +6687,13 @@ textarea:focus {
   /* Venmo button row - full width at bottom */
   .employee-totals-table td.shift-venmo-row {
     display: block !important;
-    width: 100% !important;
+    width: calc(100% + calc(var(--space-md) * 2)) !important;
+    margin-left: calc(var(--space-md) * -1) !important;
+    margin-right: calc(var(--space-md) * -1) !important;
     margin-top: var(--space-md) !important;
-    padding: 0 !important;
+    margin-bottom: calc(var(--space-md) * -1) !important;
+    padding: var(--space-md) !important;
     border-top: 1px solid rgba(0, 0, 0, 0.08) !important;
-    padding-top: var(--space-md) !important;
   }
 
   .employee-totals-table td.shift-venmo-row::before {
