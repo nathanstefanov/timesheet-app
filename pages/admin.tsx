@@ -776,8 +776,8 @@ export default function Admin() {
                 </div>
               </div>
 
-              <div className="shift-history-table-wrapper">
-                <table className="shift-history-table">
+              <div className="shift-history-table-wrapper employee-totals-wrapper">
+                <table className="shift-history-table employee-totals-table">
                   <thead>
                     <tr>
                       <th>Employee</th>
