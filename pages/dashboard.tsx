@@ -177,8 +177,6 @@ export default function Dashboard() {
         if (shift.shift_date.includes(query)) return true;
         // Search by type
         if (shift.shift_type?.toLowerCase().includes(query)) return true;
-        // Search by notes
-        if (shift.notes?.toLowerCase().includes(query)) return true;
         // Search by payment status
         if (shift.is_paid && 'paid'.includes(query)) return true;
         if (!shift.is_paid && 'unpaid'.includes(query)) return true;
@@ -383,7 +381,7 @@ export default function Dashboard() {
                   <input
                     type="text"
                     className="search-filter-input"
-                    placeholder="Search by date, type, status, or notes..."
+                    placeholder="Search by date, type, or status..."
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
                   />
