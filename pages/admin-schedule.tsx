@@ -820,6 +820,10 @@ export default function AdminSchedule() {
                 <span className="sidebar-nav-icon"><Calendar size={18} /></span>
                 <span>My Schedule</span>
               </a>
+              <a href="/reports" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
+                <span className="sidebar-nav-icon"><BarChart3 size={18} /></span>
+                <span>Reports</span>
+              </a>
               <a href="/settings" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
                 <span className="sidebar-nav-icon"><Settings size={18} /></span>
                 <span>Settings</span>
