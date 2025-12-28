@@ -85,41 +85,46 @@ export default function Payroll() {
   async function loadPayroll() {
     setLoading(true);
     try {
-      // Fetch all unpaid shifts
+      // Fetch all unpaid shifts with user profile data in one query
       const { data: shiftsData, error: shiftsError } = await supabase
         .from('shifts')
-        .select('*')
+        .select(`
+          *,
+          profiles!inner(
+            id,
+            full_name,
+            phone,
+            venmo_url
+          )
+        `)
         .eq('is_paid', false)
         .order('shift_date', { ascending: false });
 
       if (shiftsError) throw shiftsError;
 
-      setShifts(shiftsData || []);
+      // Transform the data - Supabase returns profiles as an object, not array
+      const transformedShifts = (shiftsData || []).map((s: any) => ({
+        ...s,
+        // Flatten the profiles object
+        user_profile: s.profiles
+      }));
 
-      // Get unique user IDs
-      const userIds = [...new Set((shiftsData || []).map((s: Shift) => s.user_id))];
+      setShifts(transformedShifts);
 
-      if (userIds.length > 0) {
-        // Fetch profiles for all employees with unpaid shifts
-        const { data: profilesData, error: profilesError } = await supabase
-          .from('profiles')
-          .select('id, full_name, email, phone, venmo_url')
-          .in('id', userIds);
-
-        if (profilesError) throw profilesError;
-
-        const profileMap: Record<string, { name: string; email: string | null; phone: string | null; venmo: string | null }> = {};
-        (profilesData || []).forEach((p: any) => {
-          profileMap[p.id] = {
-            name: p.full_name || 'Unknown',
-            email: p.email || null,
-            phone: p.phone || null,
-            venmo: p.venmo_url || null,
+      // Build profile map from the joined data
+      const profileMap: Record<string, { name: string; email: string | null; phone: string | null; venmo: string | null }> = {};
+      transformedShifts.forEach((s: any) => {
+        if (s.user_profile && !profileMap[s.user_id]) {
+          profileMap[s.user_id] = {
+            name: s.user_profile.full_name || 'Unknown',
+            email: null, // Email not stored in profiles table
+            phone: s.user_profile.phone || null,
+            venmo: s.user_profile.venmo_url || null,
           };
-        });
+        }
+      });
 
-        setProfiles(profileMap);
-      }
+      setProfiles(profileMap);
     } catch (error) {
       console.error('Failed to load payroll:', error);
     } finally {
@@ -172,8 +177,8 @@ export default function Payroll() {
       const q = searchQuery.toLowerCase();
       result = result.filter(emp =>
         emp.name.toLowerCase().includes(q) ||
-        emp.email?.toLowerCase().includes(q) ||
-        emp.phone?.toLowerCase().includes(q)
+        emp.phone?.toLowerCase().includes(q) ||
+        emp.venmo?.toLowerCase().includes(q)
       );
     }
 
@@ -483,7 +488,7 @@ export default function Payroll() {
                     type="text"
                     value={searchQuery}
                     onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Name, email, or phone..."
+                    placeholder="Name or phone..."
                     style={{
                       width: '100%',
                       padding: '8px 12px',
@@ -643,8 +648,8 @@ export default function Payroll() {
                           {emp.name}
                         </div>
                         <div style={{ fontSize: '13px', color: '#64748b', marginTop: '2px' }}>
-                          {emp.email || 'No email'}
-                          {emp.phone && ` • ${emp.phone}`}
+                          {emp.phone || 'No phone number'}
+                          {emp.venmo && ` • ${emp.venmo}`}
                         </div>
                       </div>
                     </div>
