@@ -355,7 +355,7 @@ export default function Dashboard() {
                   </div>
                   <div className="stat-card-icon"><DollarSign size={20} /></div>
                 </div>
-                <div className="stat-card-value">${totals.pay.toFixed(2)}</div>
+                <div className="stat-card-value">${totals.pay.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
                 <div className="stat-card-change">All time</div>
               </div>
             </div>
