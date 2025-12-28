@@ -10,6 +10,7 @@ import {
   extractTimeInTz,
   formatForDisplay
 } from '../lib/timezone';
+import { User, Calendar, LogOut, Plus, BarChart3, Clock, RefreshCw, FileText } from 'lucide-react';
 
 type Emp = {
   id: string;
@@ -802,15 +803,15 @@ export default function AdminSchedule() {
             <div className="sidebar-nav-section">
               <div className="sidebar-nav-label">Main</div>
               <a href="/dashboard" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
-                <span className="sidebar-nav-icon">👤</span>
+                <span className="sidebar-nav-icon"><User size={18} /></span>
                 <span>My Shifts</span>
               </a>
               <a href="/new-shift" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
-                <span className="sidebar-nav-icon">➕</span>
+                <span className="sidebar-nav-icon"><Plus size={18} /></span>
                 <span>Log Shift</span>
               </a>
               <a href="/me/schedule" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
-                <span className="sidebar-nav-icon">📅</span>
+                <span className="sidebar-nav-icon"><Calendar size={18} /></span>
                 <span>My Schedule</span>
               </a>
             </div>
@@ -818,15 +819,15 @@ export default function AdminSchedule() {
             <div className="sidebar-nav-section">
               <div className="sidebar-nav-label">Admin</div>
               <a href="/admin" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
-                <span className="sidebar-nav-icon">📊</span>
+                <span className="sidebar-nav-icon"><BarChart3 size={18} /></span>
                 <span>Admin Dashboard</span>
               </a>
               <a href="/admin-schedule" className="sidebar-nav-item active" onClick={() => setMobileMenuOpen(false)}>
-                <span className="sidebar-nav-icon">📅</span>
+                <span className="sidebar-nav-icon"><Calendar size={18} /></span>
                 <span>Schedule</span>
               </a>
               <a href="/admin-schedule-past" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
-                <span className="sidebar-nav-icon">📋</span>
+                <span className="sidebar-nav-icon"><Calendar size={18} /></span>
                 <span>Past Schedule</span>
               </a>
             </div>
@@ -846,7 +847,7 @@ export default function AdminSchedule() {
               await supabase.auth.signOut();
               window.location.href = '/login';
             }}>
-              🚪 Logout
+              <LogOut size={16} /> Logout
             </button>
           </div>
         </aside>
@@ -861,10 +862,10 @@ export default function AdminSchedule() {
               </div>
               <div className="header-actions">
                 <button className="btn-new btn-secondary-new" onClick={loadRows}>
-                  🔄 Refresh
+                  <RefreshCw size={16} /> Refresh
                 </button>
                 <Link href="/admin-schedule-past" className="btn-new btn-secondary-new">
-                  📋 View Past Shifts
+                  <FileText size={16} /> View Past Shifts
                 </Link>
               </div>
             </div>
@@ -925,7 +926,7 @@ export default function AdminSchedule() {
                     <span className="admin-shift-label-required">*</span>
                   </label>
                   <div className="admin-shift-input-wrapper">
-                    <span className="admin-shift-input-icon">📅</span>
+                    <span className="admin-shift-input-icon"><Calendar size={18} /></span>
                     <input
                       className="admin-shift-input"
                       type="date"
@@ -942,7 +943,7 @@ export default function AdminSchedule() {
                     <span className="admin-shift-label-required">*</span>
                   </label>
                   <div className="admin-shift-input-wrapper">
-                    <span className="admin-shift-input-icon">🕐</span>
+                    <span className="admin-shift-input-icon"><Clock size={18} /></span>
                     <input
                       className="admin-shift-input"
                       type="time"
@@ -959,7 +960,7 @@ export default function AdminSchedule() {
                     <span className="admin-shift-label-required">*</span>
                   </label>
                   <div className="admin-shift-input-wrapper">
-                    <span className="admin-shift-input-icon">📅</span>
+                    <span className="admin-shift-input-icon"><Calendar size={18} /></span>
                     <input
                       className="admin-shift-input"
                       type="date"
@@ -976,7 +977,7 @@ export default function AdminSchedule() {
                     <span className="admin-shift-label-optional">(Optional)</span>
                   </label>
                   <div className="admin-shift-input-wrapper">
-                    <span className="admin-shift-input-icon">🕐</span>
+                    <span className="admin-shift-input-icon"><Clock size={18} /></span>
                     <input
                       className="admin-shift-input"
                       type="time"
