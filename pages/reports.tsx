@@ -42,7 +42,7 @@ export default function Reports() {
   const [allProfiles, setAllProfiles] = useState<Record<string, string>>({});
   const [loading, setLoading] = useState(true);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [dateRange, setDateRange] = useState<'week' | 'month' | 'quarter' | 'year' | 'all'>('month');
+  const [dateRange, setDateRange] = useState<'week' | 'month' | 'quarter' | 'year' | 'all'>('all');
 
   useEffect(() => {
     loadData();
