@@ -49,6 +49,7 @@ export function withAuth(
       const authHeader = req.headers.authorization;
 
       if (!authHeader || !authHeader.startsWith('Bearer ')) {
+        console.log('[withAuth] Missing or invalid auth header');
         return res.status(401).json({
           error: 'Authentication required',
           code: 'UNAUTHENTICATED'
@@ -57,17 +58,20 @@ export function withAuth(
 
       // Extract the JWT token
       const token = authHeader.substring(7); // Remove 'Bearer ' prefix
+      console.log('[withAuth] Verifying token (length:', token?.length || 0, ')');
 
       // Verify the token using Supabase admin client
       const { data: { user }, error: userError } = await supabaseAdmin.auth.getUser(token);
 
       if (userError || !user) {
-        console.error('[withAuth] Token verification error:', userError);
+        console.error('[withAuth] Token verification failed:', userError?.message || 'No user');
         return res.status(401).json({
           error: 'Authentication failed',
           code: 'AUTH_ERROR'
         });
       }
+
+      console.log('[withAuth] User verified:', user.id);
 
       // Fetch user profile to get role
       const { data: profile, error: profileError } = await supabaseAdmin

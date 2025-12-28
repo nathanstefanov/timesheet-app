@@ -109,6 +109,14 @@ export default function MySchedule() {
       const { data } = await supabase.auth.getSession();
       const session = data.session;
 
+      console.log('[Schedule] Session check:', session ? 'Active' : 'None');
+
+      if (!session) {
+        console.log('[Schedule] No session found, redirecting to login');
+        router.push('/');
+        return;
+      }
+
       if (session?.user) {
         const { data: meProfile } = await supabase
           .from('profiles')
@@ -123,21 +131,25 @@ export default function MySchedule() {
       }
 
       // Fetch schedule using authenticated API helper
+      console.log('[Schedule] Fetching schedule data...');
       const scheduleData = await get<Shift[]>('/api/schedule/me');
+      console.log('[Schedule] Schedule data loaded:', scheduleData?.length || 0, 'shifts');
       setRows(Array.isArray(scheduleData) ? scheduleData : []);
     } catch (e: any) {
-      console.error('Schedule load error:', e);
+      console.error('[Schedule] Load error:', e);
       if (e instanceof ApiError) {
         if (e.statusCode === 401) {
-          // Auto sign out and redirect on auth errors
-          console.log('Auth error detected, signing out...');
+          // Auth error - clear session and redirect
+          console.log('[Schedule] Auth error (401), clearing session and redirecting');
           await supabase.auth.signOut();
           router.push('/');
           return;
         } else {
+          console.error('[Schedule] API error:', e.statusCode, e.message);
           setErr(`Error: ${e.message}`);
         }
       } else {
+        console.error('[Schedule] Unexpected error:', e);
         setErr(e.message || 'Failed to load schedule');
       }
     } finally {
