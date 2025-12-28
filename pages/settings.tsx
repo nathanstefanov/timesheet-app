@@ -4,6 +4,8 @@ import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
 import Head from 'next/head';
 import { User, Plus, Calendar, BarChart3, LogOut, Save, Mail, Phone, Key, DollarSign, Settings as SettingsIcon } from 'lucide-react';
+import { useToast } from '../hooks/useToast';
+import { ToastContainer } from '../components/Toast';
 
 type Profile = {
   id: string;
@@ -16,6 +18,7 @@ type Profile = {
 
 export default function Settings() {
   const router = useRouter();
+  const { toasts, closeToast, success, error } = useToast();
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
@@ -28,10 +31,6 @@ export default function Settings() {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-
-  // Messages
-  const [successMsg, setSuccessMsg] = useState('');
-  const [errorMsg, setErrorMsg] = useState('');
 
   // Format phone number to E.164 format (+1XXXXXXXXXX)
   function formatPhoneNumber(value: string): string {
@@ -92,9 +91,9 @@ export default function Settings() {
       setFullName(profileData.full_name || '');
       setPhone(profileData.phone || '');
       setVenmo(profileData.venmo_url || '');
-    } catch (error: any) {
-      console.error('Failed to load profile:', error);
-      setErrorMsg('Failed to load profile');
+    } catch (err: any) {
+      console.error('Failed to load profile:', err);
+      error('Failed to load profile');
     } finally {
       setLoading(false);
     }
@@ -103,12 +102,10 @@ export default function Settings() {
   async function handleSaveProfile() {
     if (!profile) return;
 
-    setSuccessMsg('');
-    setErrorMsg('');
     setSaving(true);
 
     try {
-      const { error } = await supabase
+      const { error: updateError } = await supabase
         .from('profiles')
         .update({
           full_name: fullName,
@@ -117,53 +114,50 @@ export default function Settings() {
         })
         .eq('id', profile.id);
 
-      if (error) throw error;
+      if (updateError) throw updateError;
 
-      setSuccessMsg('Profile updated successfully!');
+      success('Profile updated successfully!');
       setProfile({ ...profile, full_name: fullName, phone: phone || null, venmo_url: venmo || null });
-    } catch (error: any) {
-      console.error('Failed to save profile:', error);
-      setErrorMsg(error.message || 'Failed to save profile');
+    } catch (err: any) {
+      console.error('Failed to save profile:', err);
+      error(err.message || 'Failed to save profile');
     } finally {
       setSaving(false);
     }
   }
 
   async function handleChangePassword() {
-    setSuccessMsg('');
-    setErrorMsg('');
-
     if (!newPassword || !confirmPassword) {
-      setErrorMsg('Please enter both new password and confirmation');
+      error('Please enter both new password and confirmation');
       return;
     }
 
     if (newPassword !== confirmPassword) {
-      setErrorMsg('Passwords do not match');
+      error('Passwords do not match');
       return;
     }
 
     if (newPassword.length < 6) {
-      setErrorMsg('Password must be at least 6 characters');
+      error('Password must be at least 6 characters');
       return;
     }
 
     setSaving(true);
 
     try {
-      const { error } = await supabase.auth.updateUser({
+      const { error: updateError } = await supabase.auth.updateUser({
         password: newPassword,
       });
 
-      if (error) throw error;
+      if (updateError) throw updateError;
 
-      setSuccessMsg('Password changed successfully!');
+      success('Password changed successfully!');
       setCurrentPassword('');
       setNewPassword('');
       setConfirmPassword('');
-    } catch (error: any) {
-      console.error('Failed to change password:', error);
-      setErrorMsg(error.message || 'Failed to change password');
+    } catch (err: any) {
+      console.error('Failed to change password:', err);
+      error(err.message || 'Failed to change password');
     } finally {
       setSaving(false);
     }
@@ -285,39 +279,6 @@ export default function Settings() {
           </header>
 
           <div className="app-content">
-            {/* Success/Error Messages */}
-            {successMsg && (
-              <div style={{
-                padding: '16px',
-                background: '#d1fae5',
-                border: '1px solid #6ee7b7',
-                borderRadius: '8px',
-                color: '#065f46',
-                marginBottom: '24px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}>
-                ✓ {successMsg}
-              </div>
-            )}
-
-            {errorMsg && (
-              <div style={{
-                padding: '16px',
-                background: '#fee2e2',
-                border: '1px solid #fecaca',
-                borderRadius: '8px',
-                color: '#dc2626',
-                marginBottom: '24px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}>
-                ✕ {errorMsg}
-              </div>
-            )}
-
             {/* Profile Information Section */}
             <div style={{
               background: 'white',
@@ -591,6 +552,7 @@ export default function Settings() {
           </div>
         </main>
       </div>
+      <ToastContainer toasts={toasts} onClose={closeToast} />
     </>
   );
 }
