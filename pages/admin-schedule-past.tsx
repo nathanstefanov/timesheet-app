@@ -4,7 +4,7 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
 import { get, patch, del, ApiError } from '../lib/api';
-import { User, Plus, Calendar, BarChart3, LogOut, RefreshCw, Trash2, Settings } from 'lucide-react';
+import { User, Plus, Calendar, BarChart3, LogOut, RefreshCw, Trash2, Settings, DollarSign } from 'lucide-react';
 import Head from 'next/head';
 
 type Row = {
@@ -235,6 +235,10 @@ export default function AdminSchedulePast() {
               <a href="/admin-schedule-past" className="sidebar-nav-item active" onClick={() => setMobileMenuOpen(false)}>
                 <span className="sidebar-nav-icon"><Calendar size={18} /></span>
                 <span>Past Schedule</span>
+              </a>
+              <a href="/payroll" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
+                <span className="sidebar-nav-icon"><DollarSign size={18} /></span>
+                <span>Payroll</span>
               </a>
             </div>
           </nav>

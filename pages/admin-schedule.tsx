@@ -10,7 +10,7 @@ import {
   extractTimeInTz,
   formatForDisplay
 } from '../lib/timezone';
-import { User, Calendar, LogOut, Plus, BarChart3, Clock, RefreshCw, FileText, Zap, MapPin, Settings } from 'lucide-react';
+import { User, Calendar, LogOut, Plus, BarChart3, Clock, RefreshCw, FileText, Zap, MapPin, Settings, DollarSign } from 'lucide-react';
 
 type Emp = {
   id: string;
@@ -831,6 +831,10 @@ export default function AdminSchedule() {
               <a href="/admin-schedule-past" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
                 <span className="sidebar-nav-icon"><Calendar size={18} /></span>
                 <span>Past Schedule</span>
+              </a>
+              <a href="/payroll" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
+                <span className="sidebar-nav-icon"><DollarSign size={18} /></span>
+                <span>Payroll</span>
               </a>
             </div>
           </nav>
