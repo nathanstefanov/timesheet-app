@@ -9,6 +9,7 @@ import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
 import { combineLocalWithTz, calculateHours } from '../lib/timezone';
 import Head from 'next/head';
+import { User, Plus, Calendar, BarChart3, LogOut } from 'lucide-react';
 
 type ShiftType = 'Setup' | 'Breakdown' | 'Shop';
 
@@ -130,15 +131,15 @@ export default function NewShift() {
             <div className="sidebar-nav-section">
               <div className="sidebar-nav-label">Main</div>
               <a href="/dashboard" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
-                <span className="sidebar-nav-icon">👤</span>
+                <span className="sidebar-nav-icon"><User size={18} /></span>
                 <span>My Shifts</span>
               </a>
               <a href="/new-shift" className="sidebar-nav-item active" onClick={() => setMobileMenuOpen(false)}>
-                <span className="sidebar-nav-icon">➕</span>
+                <span className="sidebar-nav-icon"><Plus size={18} /></span>
                 <span>Log Shift</span>
               </a>
               <a href="/me/schedule" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
-                <span className="sidebar-nav-icon">📅</span>
+                <span className="sidebar-nav-icon"><Calendar size={18} /></span>
                 <span>My Schedule</span>
               </a>
             </div>
@@ -147,11 +148,11 @@ export default function NewShift() {
               <div className="sidebar-nav-section">
                 <div className="sidebar-nav-label">Admin</div>
                 <a href="/admin" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
-                  <span className="sidebar-nav-icon">📊</span>
+                  <span className="sidebar-nav-icon"><BarChart3 size={18} /></span>
                   <span>Admin Dashboard</span>
                 </a>
                 <a href="/admin-schedule" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
-                  <span className="sidebar-nav-icon">📅</span>
+                  <span className="sidebar-nav-icon"><Calendar size={18} /></span>
                   <span>Schedule</span>
                 </a>
               </div>
@@ -169,7 +170,7 @@ export default function NewShift() {
               </div>
             </div>
             <button className="sidebar-logout" onClick={handleLogout}>
-              🚪 Logout
+              <LogOut size={16} /> Logout
             </button>
           </div>
         </aside>
