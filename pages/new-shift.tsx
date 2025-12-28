@@ -9,7 +9,7 @@ import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
 import { combineLocalWithTz, calculateHours } from '../lib/timezone';
 import Head from 'next/head';
-import { User, Plus, Calendar, BarChart3, LogOut, Settings } from 'lucide-react';
+import { User, Plus, Calendar, BarChart3, LogOut, Settings, DollarSign } from 'lucide-react';
 
 type ShiftType = 'Setup' | 'Breakdown' | 'Shop';
 
