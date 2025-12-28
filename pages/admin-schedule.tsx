@@ -609,8 +609,14 @@ export default function AdminSchedule() {
 
   // ---------- OPEN EDIT ----------
   function openEdit(row: SRow) {
-    setEdit({ ...row });
-    setOriginalEdit({ ...row }); // Store original values
+    // Convert ISO times to datetime-local format for the inputs
+    const editableRow = {
+      ...row,
+      start_time: row.start_time ? toLocalInput(row.start_time) : null,
+      end_time: row.end_time ? toLocalInput(row.end_time) : null,
+    };
+    setEdit(editableRow);
+    setOriginalEdit(editableRow); // Store original values in datetime-local format
     setEditingSourceId(row.id);
   }
 
@@ -1281,7 +1287,7 @@ export default function AdminSchedule() {
               </label>
               <input
                 type="datetime-local"
-                value={edit.start_time && edit.start_time.includes('T') && !edit.start_time.endsWith('Z') ? edit.start_time : (edit.start_time ? toLocalInput(edit.start_time) : '')}
+                value={edit.start_time || ''}
                 onChange={(e) => {
                   // Don't allow clearing the value - keep original if user tries to delete
                   if (!e.target.value && originalEdit?.start_time) {
@@ -1305,7 +1311,7 @@ export default function AdminSchedule() {
               </label>
               <input
                 type="datetime-local"
-                value={edit.end_time && edit.end_time.includes('T') && !edit.end_time.endsWith('Z') ? edit.end_time : (edit.end_time ? toLocalInput(edit.end_time) : '')}
+                value={edit.end_time || ''}
                 onChange={(e) => {
                   // Allow clearing end_time since it's optional, but if original had a value, preserve it
                   if (!e.target.value && originalEdit?.end_time) {
