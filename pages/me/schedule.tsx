@@ -105,7 +105,7 @@ export default function MySchedule() {
     setLoading(true);
     setErr(null);
     try {
-      // Get current user profile
+      // Get and verify current session
       const { data } = await supabase.auth.getSession();
       const session = data.session;
 
@@ -116,6 +116,18 @@ export default function MySchedule() {
         router.push('/');
         return;
       }
+
+      // Verify the session is actually valid by trying to refresh it
+      const { data: refreshData, error: refreshError } = await supabase.auth.refreshSession();
+      if (refreshError) {
+        console.error('[Schedule] Session refresh failed:', refreshError.message);
+        console.log('[Schedule] Invalid session detected, clearing and redirecting');
+        await supabase.auth.signOut();
+        router.push('/');
+        return;
+      }
+
+      console.log('[Schedule] Session is valid');
 
       if (session?.user) {
         const { data: meProfile } = await supabase
