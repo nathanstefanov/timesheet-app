@@ -274,6 +274,14 @@ export default function Dashboard() {
                   <span className="sidebar-nav-icon"><Calendar size={18} /></span>
                   <span>Schedule</span>
                 </a>
+                <a href="/admin-schedule-past" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
+                  <span className="sidebar-nav-icon"><Calendar size={18} /></span>
+                  <span>Past Schedule</span>
+                </a>
+                <a href="/payroll" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
+                  <span className="sidebar-nav-icon"><DollarSign size={18} /></span>
+                  <span>Payroll</span>
+                </a>
               </div>
             )}
           </nav>
