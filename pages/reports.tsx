@@ -516,7 +516,7 @@ export default function Reports() {
                       <div style={{ fontSize: '14px', color: '#64748b' }}>Avg Cost/Shift</div>
                     </div>
                     <div style={{ fontSize: '32px', fontWeight: 700, color: '#1e293b' }}>
-                      ${(adminStats!.totalLaborCost / adminStats!.totalShifts).toFixed(2)}
+                      ${adminStats!.totalShifts > 0 ? (adminStats!.totalLaborCost / adminStats!.totalShifts).toFixed(2) : '0.00'}
                     </div>
                     <div style={{ fontSize: '13px', color: '#64748b', marginTop: '8px' }}>
                       Across all employees
