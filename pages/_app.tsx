@@ -101,8 +101,20 @@ export default function App({ Component, pageProps }: AppProps) {
       <Head>
         <title>Timesheet</title>
         <link rel="icon" href={LOGO_DATA_URL} />
+        {/* Preload CSS to prevent flash of unstyled content */}
+        <link rel="preload" href="/styles/combined.css" as="style" />
         {/* Load combined CSS for all pages - contains both old and new styles */}
         <link rel="stylesheet" href="/styles/combined.css" />
+        {/* Prevent FOUC by hiding body until CSS loads */}
+        <style dangerouslySetInnerHTML={{__html: `
+          body { visibility: hidden; }
+          body.css-loaded { visibility: visible; }
+        `}} />
+        <script dangerouslySetInnerHTML={{__html: `
+          document.addEventListener('DOMContentLoaded', function() {
+            document.body.classList.add('css-loaded');
+          });
+        `}} />
       </Head>
 
       {!useNewDesign && (
