@@ -4,6 +4,8 @@ import { useEffect, useMemo, useState } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
 import { get, patch, del, ApiError } from '../lib/api';
+import { User, Plus, Calendar, BarChart3, LogOut, RefreshCw, Trash2 } from 'lucide-react';
+import Head from 'next/head';
 
 type Row = {
   id: string;
@@ -11,23 +13,22 @@ type Row = {
   end_time: string | null;
   location_name?: string | null;
   address?: string | null;
-  job_type?: 'setup' | 'Lights' | 'breakdown' | 'other' | null;
+  job_type?: 'setup' | 'lights' | 'breakdown' | 'other' | null;
   notes?: string | null;
 };
 type Emp = { id: string; full_name?: string | null; email?: string | null };
+type Profile = { id: string; role: 'admin' | 'employee'; full_name?: string } | null;
 
 export default function AdminSchedulePast() {
   const router = useRouter();
+  const [me, setMe] = useState<Profile>(null);
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [err, setErr] = useState<string | null>(null);
   const [assignedMap, setAssignedMap] = useState<Record<string, Emp[]>>({});
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
 
-  // inline edit
-  const [edit, setEdit] = useState<Row | null>(null);
-  const [saving, setSaving] = useState(false);
-
-  // 60s heartbeat so things auto-stay “past”
+  // 60s heartbeat so things auto-stay "past"
   const [, setTick] = useState(0);
   useEffect(() => {
     const id = setInterval(() => setTick((t) => t + 1), 60000);
@@ -36,16 +37,30 @@ export default function AdminSchedulePast() {
 
   const fmt = (s?: string | null) => (s ? new Date(s).toLocaleString() : '');
 
-  async function parseMaybeJson(r: Response) {
-    const ct = r.headers.get('content-type') || '';
-    if (ct.includes('application/json')) {
-      try {
-        return await r.json();
-      } catch {}
-    }
-    const raw = await r.text();
-    return { raw };
-  }
+  useEffect(() => {
+    (async () => {
+      const {
+        data: { session },
+      } = await supabase.auth.getSession();
+      if (!session?.user) {
+        router.replace('/');
+        return;
+      }
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id, role, full_name')
+        .eq('id', session.user.id)
+        .single();
+
+      if (profile?.role !== 'admin') {
+        router.replace('/dashboard');
+        return;
+      }
+
+      setMe(profile as Profile);
+    })();
+  }, [router]);
 
   async function loadRows() {
     setLoading(true);
@@ -55,7 +70,7 @@ export default function AdminSchedulePast() {
       setRows(Array.isArray(data) ? data : []);
     } catch (e: any) {
       if (e instanceof ApiError && e.statusCode === 401) {
-        router.push('/login');
+        router.push('/');
         return;
       }
       setErr(e.message || 'Failed to load');
@@ -63,9 +78,12 @@ export default function AdminSchedulePast() {
       setLoading(false);
     }
   }
+
   useEffect(() => {
-    loadRows();
-  }, []);
+    if (me) {
+      loadRows();
+    }
+  }, [me]);
 
   const past = useMemo(() => {
     const now = Date.now();
@@ -100,280 +118,321 @@ export default function AdminSchedulePast() {
         setAssignedMap({});
         return;
       }
-      const { data, error } = await supabase
-        .from('schedule_assignments')
-        .select('schedule_shift_id, profiles:employee_id ( id, full_name, email )')
-        .in('schedule_shift_id', ids);
-      if (error) return;
-      const map: Record<string, Emp[]> = {};
-      (data || []).forEach((row: any) => {
-        const pid = row.schedule_shift_id as string;
-        const emp: Emp = row.profiles;
-        if (!map[pid]) map[pid] = [];
-        map[pid].push(emp);
-      });
-      setAssignedMap(map);
+
+      try {
+        const { data: assignData } = await supabase
+          .from('schedule_assignments')
+          .select('schedule_shift_id, employee_id, profiles!inner(id, full_name, email)')
+          .in('schedule_shift_id', ids);
+
+        const map: Record<string, Emp[]> = {};
+        (assignData || []).forEach((a: any) => {
+          const sid = a.schedule_shift_id;
+          if (!map[sid]) map[sid] = [];
+          map[sid].push({
+            id: a.profiles?.id ?? a.employee_id,
+            full_name: a.profiles?.full_name,
+            email: a.profiles?.email,
+          });
+        });
+
+        setAssignedMap(map);
+      } catch (e) {
+        console.error('Failed to load assignments', e);
+      }
     })();
-  }, [past.length]);
-
-  function openEdit(row: Row) {
-    setEdit({ ...row });
-    setTimeout(
-      () =>
-        document
-          .getElementById('edit-panel')
-          ?.scrollIntoView({ behavior: 'smooth' }),
-      0
-    );
-  }
-
-  async function saveEdit() {
-    if (!edit?.id) return;
-    setSaving(true);
-    try {
-      const body: any = {
-        start_time: edit.start_time || undefined,
-        end_time: edit.end_time ?? null,
-        location_name: edit.location_name ?? undefined,
-        address: edit.address ?? undefined,
-        job_type: edit.job_type ?? undefined,
-        notes: edit.notes ?? undefined,
-      };
-      // normalize to ISO if user typed local
-      if (body.start_time && !String(body.start_time).endsWith('Z')) {
-        body.start_time = new Date(body.start_time).toISOString();
-      }
-      if (body.end_time && !String(body.end_time).endsWith('Z')) {
-        body.end_time = new Date(body.end_time).toISOString();
-      }
-
-      await patch(`/api/schedule/shifts/${edit.id}`, body);
-      setEdit(null);
-      await loadRows();
-      alert('Shift updated.');
-    } catch (e: any) {
-      alert(e.message || 'Failed to save');
-    } finally {
-      setSaving(false);
-    }
-  }
+  }, [past]);
 
   async function deleteRow(id: string) {
     if (!confirm('Delete this past shift?')) return;
     try {
       await del(`/api/schedule/shifts/${id}`);
-      await loadRows();
-      alert('Shift deleted.');
+      setRows((prev) => prev.filter((r) => r.id !== id));
     } catch (e: any) {
       alert(e.message || 'Failed to delete');
     }
   }
 
   async function deleteAllPast() {
-    if (past.length === 0) return;
-    if (
-      !confirm(
-        `Delete ALL ${past.length} past shifts? This cannot be undone.`
-      )
-    )
-      return;
-    const batchSize = 10;
+    if (!confirm(`Delete all ${past.length} past shifts? This cannot be undone.`)) return;
     try {
-      for (let i = 0; i < past.length; i += batchSize) {
-        const slice = past.slice(i, i + batchSize);
-        await Promise.all(
-          slice.map((s) => del(`/api/schedule/shifts/${s.id}`))
-        );
+      for (const r of past) {
+        await del(`/api/schedule/shifts/${r.id}`);
       }
-      await loadRows();
-      alert('All past shifts deleted.');
+      setRows((prev) => prev.filter((r) => !past.includes(r)));
+      alert('All past shifts deleted');
     } catch (e: any) {
-      alert(e.message || 'Failed to delete all past shifts.');
+      alert(e.message || 'Failed to delete all');
     }
   }
 
+  if (!me) {
+    return null;
+  }
+
   return (
-    <div className="page">
-      <h1 className="page__title">Past Scheduled Shifts</h1>
+    <>
+      <Head>
+        <title>Past Scheduled Shifts - Admin</title>
+      </Head>
 
-      {/* Top controls row (no inline styles) */}
-      <div className="center past-controls-row">
-        <Link href="/admin-schedule" className="nav-link">
-          ← Back to Upcoming
-        </Link>
-        <button className="topbar-btn" onClick={loadRows}>
-          Refresh
+      <div className="app-container">
+        {/* MOBILE MENU BUTTON */}
+        <button
+          className="mobile-menu-toggle"
+          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+          aria-label="Toggle menu"
+        >
+          ☰
         </button>
-        {past.length > 0 && (
-          <button className="topbar-btn" onClick={deleteAllPast}>
-            Delete All Past
-          </button>
-        )}
+
+        {/* MOBILE OVERLAY */}
+        <div
+          className={`mobile-menu-overlay ${mobileMenuOpen ? 'active' : ''}`}
+          onClick={() => setMobileMenuOpen(false)}
+        />
+
+        {/* SIDEBAR */}
+        <aside className={`app-sidebar ${mobileMenuOpen ? 'mobile-open' : ''}`}>
+          <div className="sidebar-header">
+            <div className="sidebar-logo">
+              <div className="sidebar-logo-icon">T</div>
+              <div className="sidebar-logo-text">Timesheet</div>
+            </div>
+          </div>
+
+          <nav className="sidebar-nav">
+            <div className="sidebar-nav-section">
+              <div className="sidebar-nav-label">Main</div>
+              <a href="/dashboard" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
+                <span className="sidebar-nav-icon"><User size={18} /></span>
+                <span>My Shifts</span>
+              </a>
+              <a href="/new-shift" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
+                <span className="sidebar-nav-icon"><Plus size={18} /></span>
+                <span>Log Shift</span>
+              </a>
+              <a href="/me/schedule" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
+                <span className="sidebar-nav-icon"><Calendar size={18} /></span>
+                <span>My Schedule</span>
+              </a>
+            </div>
+
+            <div className="sidebar-nav-section">
+              <div className="sidebar-nav-label">Admin</div>
+              <a href="/admin" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
+                <span className="sidebar-nav-icon"><BarChart3 size={18} /></span>
+                <span>Admin Dashboard</span>
+              </a>
+              <a href="/admin-schedule" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
+                <span className="sidebar-nav-icon"><Calendar size={18} /></span>
+                <span>Schedule</span>
+              </a>
+              <a href="/admin-schedule-past" className="sidebar-nav-item active" onClick={() => setMobileMenuOpen(false)}>
+                <span className="sidebar-nav-icon"><Calendar size={18} /></span>
+                <span>Past Schedule</span>
+              </a>
+            </div>
+          </nav>
+
+          <div className="sidebar-footer">
+            <div className="sidebar-user">
+              <div className="sidebar-user-avatar">
+                {me?.full_name?.charAt(0) || 'A'}
+              </div>
+              <div className="sidebar-user-info">
+                <div className="sidebar-user-name">{me?.full_name || 'Admin'}</div>
+                <div className="sidebar-user-role">Administrator</div>
+              </div>
+            </div>
+            <button className="sidebar-logout" onClick={async () => {
+              await supabase.auth.signOut();
+              window.location.href = '/';
+            }}>
+              <LogOut size={16} /> Logout
+            </button>
+          </div>
+        </aside>
+
+        {/* MAIN CONTENT */}
+        <main className="app-main">
+          <header className="app-header">
+            <div className="header-content">
+              <div>
+                <h1 className="header-title">Past Scheduled Shifts</h1>
+                <p className="header-subtitle">View and manage completed shifts</p>
+              </div>
+              <div style={{ display: 'flex', gap: '12px', flexWrap: 'wrap' }}>
+                <Link href="/admin-schedule" style={{
+                  padding: '10px 20px',
+                  background: 'white',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '8px',
+                  textDecoration: 'none',
+                  color: '#334155',
+                  fontWeight: 500,
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '8px'
+                }}>
+                  ← Back to Upcoming
+                </Link>
+                <button
+                  onClick={loadRows}
+                  style={{
+                    padding: '10px 20px',
+                    background: 'white',
+                    border: '1px solid #e2e8f0',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    fontWeight: 500,
+                    display: 'inline-flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }}
+                >
+                  <RefreshCw size={16} />
+                  Refresh
+                </button>
+                {past.length > 0 && (
+                  <button
+                    onClick={deleteAllPast}
+                    style={{
+                      padding: '10px 20px',
+                      background: '#fee2e2',
+                      border: '1px solid #fecaca',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      color: '#dc2626',
+                      fontWeight: 500,
+                      display: 'inline-flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }}
+                  >
+                    <Trash2 size={16} />
+                    Delete All Past
+                  </button>
+                )}
+              </div>
+            </div>
+          </header>
+
+          <div className="app-content">
+            {err && (
+              <div style={{
+                padding: '16px',
+                background: '#fee2e2',
+                border: '1px solid #fecaca',
+                borderRadius: '8px',
+                color: '#dc2626',
+                marginBottom: '20px'
+              }}>
+                {err}
+              </div>
+            )}
+
+            {loading && (
+              <div style={{ textAlign: 'center', padding: '40px', color: '#64748b' }}>
+                Loading…
+              </div>
+            )}
+
+            {!loading && past.length === 0 && !err && (
+              <div style={{
+                padding: '60px 20px',
+                textAlign: 'center',
+                background: 'white',
+                borderRadius: '12px',
+                border: '1px solid #e2e8f0'
+              }}>
+                <div style={{ fontSize: '48px', marginBottom: '16px' }}>📅</div>
+                <div style={{ color: '#64748b', fontSize: '16px' }}>No past shifts yet.</div>
+              </div>
+            )}
+
+            {past.length > 0 && (
+              <div style={{ background: 'white', borderRadius: '12px', border: '1px solid #e2e8f0', overflow: 'hidden' }}>
+                <div style={{ overflowX: 'auto' }}>
+                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                    <thead>
+                      <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
+                        <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 600, color: '#475569', fontSize: '14px' }}>START</th>
+                        <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 600, color: '#475569', fontSize: '14px' }}>END</th>
+                        <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 600, color: '#475569', fontSize: '14px' }}>JOB</th>
+                        <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 600, color: '#475569', fontSize: '14px' }}>LOCATION</th>
+                        <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 600, color: '#475569', fontSize: '14px' }}>ADDRESS</th>
+                        <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 600, color: '#475569', fontSize: '14px' }}>ASSIGNED</th>
+                        <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 600, color: '#475569', fontSize: '14px' }}>NOTES</th>
+                        <th style={{ padding: '12px 16px', textAlign: 'left', fontWeight: 600, color: '#475569', fontSize: '14px' }}>ACTIONS</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      {past.map((r) => {
+                        const emps = assignedMap[r.id] || [];
+                        const assignedLabel = emps.length
+                          ? emps
+                              .map(
+                                (e) =>
+                                  e.full_name || e.email || e.id.slice(0, 8)
+                              )
+                              .join(', ')
+                          : '—';
+                        return (
+                          <tr key={r.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
+                            <td style={{ padding: '12px 16px', fontSize: '14px', color: '#334155' }}>{fmt(r.start_time)}</td>
+                            <td style={{ padding: '12px 16px', fontSize: '14px', color: '#334155' }}>{fmt(r.end_time)}</td>
+                            <td style={{ padding: '12px 16px', fontSize: '14px', color: '#334155' }}>{r.job_type}</td>
+                            <td style={{ padding: '12px 16px', fontSize: '14px', color: '#334155' }}>{r.location_name || '—'}</td>
+                            <td style={{ padding: '12px 16px', fontSize: '14px', color: '#334155' }}>{r.address || '—'}</td>
+                            <td style={{ padding: '12px 16px', fontSize: '14px', color: '#334155' }}>{assignedLabel}</td>
+                            <td style={{ padding: '12px 16px', fontSize: '14px', color: '#64748b' }}>{r.notes || '—'}</td>
+                            <td style={{ padding: '12px 16px' }}>
+                              <div style={{ display: 'flex', gap: '8px' }}>
+                                <Link
+                                  href={`/admin-schedule?edit=${r.id}`}
+                                  style={{
+                                    padding: '6px 12px',
+                                    background: '#eff6ff',
+                                    color: '#2563eb',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    fontSize: '13px',
+                                    cursor: 'pointer',
+                                    textDecoration: 'none',
+                                    fontWeight: 500
+                                  }}
+                                >
+                                  Edit
+                                </Link>
+                                <button
+                                  onClick={() => deleteRow(r.id)}
+                                  style={{
+                                    padding: '6px 12px',
+                                    background: '#fee2e2',
+                                    color: '#dc2626',
+                                    border: 'none',
+                                    borderRadius: '6px',
+                                    fontSize: '13px',
+                                    cursor: 'pointer',
+                                    fontWeight: 500
+                                  }}
+                                >
+                                  Delete
+                                </button>
+                              </div>
+                            </td>
+                          </tr>
+                        );
+                      })}
+                    </tbody>
+                  </table>
+                </div>
+              </div>
+            )}
+          </div>
+        </main>
       </div>
-
-      {err && <div className="alert error">{err}</div>}
-
-      {loading && <div className="toast">Loading…</div>}
-
-      {!loading && past.length === 0 && !err && (
-        <div className="card card-empty-past">
-          <div className="muted">No past shifts yet.</div>
-        </div>
-      )}
-
-      {past.length > 0 && (
-        <div className="table-wrap">
-          <table className="table table--admin">
-            <thead>
-              <tr>
-                <th>Start</th>
-                <th>End</th>
-                <th>Job</th>
-                <th>Location</th>
-                <th>Address</th>
-                <th>Assigned</th>
-                <th className="col-hide-md">Notes</th>
-                <th>Actions</th>
-              </tr>
-            </thead>
-            <tbody>
-              {past.map((r) => {
-                const emps = assignedMap[r.id] || [];
-                const assignedLabel = emps.length
-                  ? emps
-                      .map(
-                        (e) =>
-                          e.full_name || e.email || e.id.slice(0, 8)
-                      )
-                      .join(', ')
-                  : '—';
-                return (
-                  <tr key={r.id}>
-                    <td>{fmt(r.start_time)}</td>
-                    <td>{fmt(r.end_time)}</td>
-                    <td>{r.job_type}</td>
-                    <td>{r.location_name}</td>
-                    <td>{r.address}</td>
-                    <td>{assignedLabel}</td>
-                    <td className="col-hide-md">{r.notes}</td>
-                    <td>
-                      <div className="actions">
-                        <button
-                          type="button"
-                          className="btn-edit"
-                          onClick={() => openEdit(r)}
-                        >
-                          Edit
-                        </button>
-                        <button
-                          type="button"
-                          className="btn-delete"
-                          onClick={() => deleteRow(r.id)}
-                        >
-                          Delete
-                        </button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      )}
-
-      {/* Inline Edit Panel */}
-      {edit && (
-        <div id="edit-panel" className="card mt-lg edit-panel-past">
-          <div className="row between">
-            <strong>Edit Past Shift</strong>
-            <button
-              type="button"
-              className="topbar-btn"
-              onClick={() => setEdit(null)}
-            >
-              Close
-            </button>
-          </div>
-
-          <label className="mt-lg">Start</label>
-          <input
-            type="datetime-local"
-            value={
-              edit.start_time
-                ? new Date(edit.start_time).toISOString().slice(0, 16)
-                : ''
-            }
-            onChange={(e) =>
-              setEdit({ ...edit, start_time: e.target.value })
-            }
-          />
-
-          <label className="mt-lg">End (optional)</label>
-          <input
-            type="datetime-local"
-            value={
-              edit.end_time
-                ? new Date(edit.end_time).toISOString().slice(0, 16)
-                : ''
-            }
-            onChange={(e) =>
-              setEdit({ ...edit, end_time: e.target.value })
-            }
-          />
-
-          <label className="mt-lg">Location Name</label>
-          <input
-            value={edit.location_name ?? ''}
-            onChange={(e) =>
-              setEdit({ ...edit, location_name: e.target.value })
-            }
-          />
-
-          <label className="mt-lg">Address</label>
-          <input
-            value={edit.address ?? ''}
-            onChange={(e) =>
-              setEdit({ ...edit, address: e.target.value })
-            }
-          />
-
-          <label className="mt-lg">Job Type</label>
-          <select
-            value={edit.job_type ?? 'setup'}
-            onChange={(e) =>
-              setEdit({
-                ...edit,
-                job_type: e.target.value as Row['job_type'],
-              })
-            }
-          >
-            <option value="setup">Setup</option>
-            <option value="Lights">Lights</option>
-            <option value="breakdown">Breakdown</option>
-            <option value="other">Other</option>
-          </select>
-
-          <label className="mt-lg">Notes</label>
-          <textarea
-            value={edit.notes ?? ''}
-            onChange={(e) =>
-              setEdit({ ...edit, notes: e.target.value })
-            }
-          />
-
-          <div className="mt-lg">
-            <button
-              type="button"
-              className="btn-primary"
-              onClick={saveEdit}
-              disabled={saving}
-            >
-              {saving ? 'Saving…' : 'Save Changes'}
-            </button>
-          </div>
-        </div>
-      )}
-    </div>
+    </>
   );
 }
