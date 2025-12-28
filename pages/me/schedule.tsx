@@ -375,6 +375,10 @@ export default function MySchedule() {
                 <span className="sidebar-nav-icon"><Calendar size={18} /></span>
                 <span>My Schedule</span>
               </a>
+              <a href="/settings" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
+                <span className="sidebar-nav-icon"><Settings size={18} /></span>
+                <span>Settings</span>
+              </a>
             </div>
 
             {userRole === 'admin' && (

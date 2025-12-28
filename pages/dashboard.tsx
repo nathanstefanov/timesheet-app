@@ -9,7 +9,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
 import Head from 'next/head';
-import { User, Plus, Calendar, BarChart3, DollarSign, Clock, LogOut } from 'lucide-react';
+import { User, Plus, Calendar, BarChart3, DollarSign, Clock, LogOut, Settings } from 'lucide-react';
 import {
   startOfWeek,
   endOfWeek,
@@ -256,6 +256,10 @@ export default function Dashboard() {
               <a href="/me/schedule" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
                 <span className="sidebar-nav-icon"><Calendar size={18} /></span>
                 <span>My Schedule</span>
+              </a>
+              <a href="/settings" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
+                <span className="sidebar-nav-icon"><Settings size={18} /></span>
+                <span>Settings</span>
               </a>
             </div>
 
