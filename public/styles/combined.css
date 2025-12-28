@@ -1669,55 +1669,122 @@ textarea:focus {
 -----------------------------------*/
 
 .location-picker-card {
-  margin-top: 10px;
+  margin: 0;
 }
 
 .location-picker-section {
-  margin-bottom: 8px;
+  margin-bottom: var(--space-md);
 }
 
 .location-picker-label {
-  display: block;
-  margin-bottom: 4px;
+  display: flex;
+  align-items: center;
+  gap: var(--space-xs);
+  margin-bottom: var(--space-xs);
   font-weight: 600;
-  font-size: 0.85rem;
-  color: #111827;
+  font-size: 0.9375rem;
+  color: var(--text-primary);
 }
 
 .location-picker-input {
   width: 100%;
+  padding: var(--space-sm) var(--space-md);
+  padding-left: 2.75rem;
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-md);
+  font-size: 0.9375rem;
+  transition: all 0.2s ease;
+  background: white;
+  position: relative;
+}
+
+.location-picker-input:focus {
+  outline: none;
+  border-color: var(--brand-primary);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
+}
+
+.location-picker-section {
+  position: relative;
+}
+
+.location-picker-section::before {
+  content: '';
+  position: absolute;
+  left: 0.875rem;
+  top: 2.5rem;
+  width: 1.25rem;
+  height: 1.25rem;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='20' height='20' viewBox='0 0 24 24' fill='none' stroke='%236b7280' stroke-width='2' stroke-linecap='round' stroke-linejoin='round'%3E%3Ccircle cx='11' cy='11' r='8'%3E%3C/circle%3E%3Cpath d='m21 21-4.35-4.35'%3E%3C/path%3E%3C/svg%3E");
+  background-size: contain;
+  background-repeat: no-repeat;
+  pointer-events: none;
+  z-index: 1;
 }
 
 .location-picker-preds {
-  margin-top: 6px;
-  background: #ffffff;
+  margin-top: var(--space-xs);
+  background: white;
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-md);
+  overflow: hidden;
+  box-shadow: var(--shadow-lg);
 }
 
 .location-picker-fields {
   display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-  gap: 8px;
+  grid-template-columns: 1fr 1fr;
+  gap: var(--space-md);
+  margin-top: var(--space-sm);
 }
 
 .location-picker-field {
   display: flex;
   flex-direction: column;
-  gap: 4px;
+  gap: var(--space-xs);
+}
+
+.location-picker-field label {
+  font-weight: 600;
+  font-size: 0.9375rem;
+  color: var(--text-primary);
+}
+
+.location-picker-field input {
+  padding: var(--space-sm) var(--space-md);
+  border: 2px solid var(--border-color);
+  border-radius: var(--radius-md);
+  font-size: 0.9375rem;
+  transition: all 0.2s ease;
+  background: white;
+}
+
+.location-picker-field input:focus {
+  outline: none;
+  border-color: var(--brand-primary);
+  box-shadow: 0 0 0 3px rgba(139, 92, 246, 0.1);
 }
 
 .btn-list {
   width: 100%;
   text-align: left;
-  border-radius: 8px;
   border: 0;
-  background: transparent;
-  padding: 6px 8px;
+  background: white;
+  padding: var(--space-sm) var(--space-md);
   cursor: pointer;
-  color: #111827;
+  color: var(--text-primary);
+  font-size: 0.9375rem;
+  transition: all 0.15s ease;
+  border-bottom: 1px solid var(--border-color);
+}
+
+.btn-list:last-child {
+  border-bottom: none;
 }
 
 .btn-list:hover {
-  background: #eff6ff;
+  background: var(--bg-hover);
+  color: var(--brand-primary);
 }
 
 /* --------------------------------
