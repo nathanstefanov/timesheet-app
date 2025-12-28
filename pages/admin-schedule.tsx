@@ -90,20 +90,18 @@ const loadGoogleMaps = (() => {
 
       promise = (async () => {
         try {
-          const mod = await import('@googlemaps/js-api-loader');
-          const Loader =
-            (mod as any).Loader ?? (mod as any).default?.Loader ?? (mod as any).default;
-          if (!Loader) throw new Error('Could not load @googlemaps/js-api-loader');
+          // Use new functional API for @googlemaps/js-api-loader v2+
+          const { setOptions, importLibrary } = await import('@googlemaps/js-api-loader');
 
-          const loader = new Loader({
-            apiKey: key,
-            libraries: ['places'],
-            version: 'weekly',
+          setOptions({
+            key: key,
+            v: 'weekly',
           });
 
-          await loader.load();
+          await importLibrary('places');
           return window.google?.maps;
         } catch {
+          // Fallback to direct script loading
           const id = 'gmaps-js';
           if (document.getElementById(id)) return window.google?.maps;
 
