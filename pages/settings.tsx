@@ -33,6 +33,37 @@ export default function Settings() {
   const [successMsg, setSuccessMsg] = useState('');
   const [errorMsg, setErrorMsg] = useState('');
 
+  // Format phone number to E.164 format (+1XXXXXXXXXX)
+  function formatPhoneNumber(value: string): string {
+    // Remove all non-numeric characters
+    const cleaned = value.replace(/\D/g, '');
+
+    // If it starts with 1, keep it; otherwise add +1
+    if (cleaned.length === 0) return '';
+    if (cleaned.length === 11 && cleaned.startsWith('1')) {
+      return '+' + cleaned;
+    }
+    if (cleaned.length === 10) {
+      return '+1' + cleaned;
+    }
+    if (cleaned.length === 11) {
+      return '+' + cleaned;
+    }
+    // For other lengths, just add +1 prefix
+    return '+1' + cleaned;
+  }
+
+  function handlePhoneChange(value: string) {
+    // Allow user to type freely, format on blur
+    setPhone(value);
+  }
+
+  function handlePhoneBlur() {
+    if (phone) {
+      setPhone(formatPhoneNumber(phone));
+    }
+  }
+
   useEffect(() => {
     loadProfile();
   }, []);
@@ -372,7 +403,8 @@ export default function Settings() {
                   <input
                     type="tel"
                     value={phone}
-                    onChange={(e) => setPhone(e.target.value)}
+                    onChange={(e) => handlePhoneChange(e.target.value)}
+                    onBlur={handlePhoneBlur}
                     style={{
                       width: '100%',
                       padding: '10px 14px',
@@ -381,8 +413,11 @@ export default function Settings() {
                       fontSize: '14px',
                       maxWidth: '400px'
                     }}
-                    placeholder="(555) 123-4567"
+                    placeholder="+15551234567"
                   />
+                  <p style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>
+                    Will be formatted to +1XXXXXXXXXX for SMS
+                  </p>
                 </div>
 
                 <div>
