@@ -129,7 +129,11 @@ export default function MySchedule() {
       console.error('Schedule load error:', e);
       if (e instanceof ApiError) {
         if (e.statusCode === 401) {
-          setErr('Authentication error - please refresh the page or log in again');
+          // Auto sign out and redirect on auth errors
+          console.log('Auth error detected, signing out...');
+          await supabase.auth.signOut();
+          router.push('/');
+          return;
         } else {
           setErr(`Error: ${e.message}`);
         }
