@@ -1,7 +1,7 @@
 // pages/index.tsx
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/router';
-import { supabase, setSessionStorageType } from '../lib/supabaseClient';
+import { supabase } from '../lib/supabaseClient';
 
 type Mode = 'signin' | 'signup';
 
@@ -51,17 +51,11 @@ export default function AuthPage() {
         setMode('signin');
       } else {
         // Sign in with password
-        const { data, error } = await supabase.auth.signInWithPassword({
+        const { error } = await supabase.auth.signInWithPassword({
           email,
           password,
         });
         if (error) throw error;
-
-        // Handle "Remember Me" by controlling session storage
-        // rememberMe = true: use localStorage (persists after browser close)
-        // rememberMe = false: use sessionStorage (clears when tab closes)
-        setSessionStorageType(!rememberMe);
-
         r.push('/dashboard');
       }
     } catch (e: any) {
