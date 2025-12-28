@@ -85,46 +85,52 @@ export default function Payroll() {
   async function loadPayroll() {
     setLoading(true);
     try {
-      // Fetch all unpaid shifts with user profile data in one query
+      // Fetch all unpaid shifts
       const { data: shiftsData, error: shiftsError } = await supabase
         .from('shifts')
-        .select(`
-          *,
-          profiles!inner(
-            id,
-            full_name,
-            phone,
-            venmo_url
-          )
-        `)
+        .select('*')
         .eq('is_paid', false)
         .order('shift_date', { ascending: false });
 
-      if (shiftsError) throw shiftsError;
+      if (shiftsError) {
+        console.error('Error fetching shifts:', shiftsError);
+        throw shiftsError;
+      }
 
-      // Transform the data - Supabase returns profiles as an object, not array
-      const transformedShifts = (shiftsData || []).map((s: any) => ({
-        ...s,
-        // Flatten the profiles object
-        user_profile: s.profiles
-      }));
+      console.log('Unpaid shifts loaded:', shiftsData?.length || 0);
+      setShifts(shiftsData || []);
 
-      setShifts(transformedShifts);
+      // Get unique user IDs
+      const userIds = [...new Set((shiftsData || []).map((s: Shift) => s.user_id))];
+      console.log('Unique user IDs:', userIds.length);
 
-      // Build profile map from the joined data
-      const profileMap: Record<string, { name: string; email: string | null; phone: string | null; venmo: string | null }> = {};
-      transformedShifts.forEach((s: any) => {
-        if (s.user_profile && !profileMap[s.user_id]) {
-          profileMap[s.user_id] = {
-            name: s.user_profile.full_name || 'Unknown',
-            email: null, // Email not stored in profiles table
-            phone: s.user_profile.phone || null,
-            venmo: s.user_profile.venmo_url || null,
-          };
+      if (userIds.length > 0) {
+        // Fetch profiles for all employees with unpaid shifts
+        const { data: profilesData, error: profilesError } = await supabase
+          .from('profiles')
+          .select('id, full_name, phone, venmo_url')
+          .in('id', userIds);
+
+        if (profilesError) {
+          console.error('Error fetching profiles:', profilesError);
+          throw profilesError;
         }
-      });
 
-      setProfiles(profileMap);
+        console.log('Profiles loaded:', profilesData?.length || 0);
+
+        const profileMap: Record<string, { name: string; email: string | null; phone: string | null; venmo: string | null }> = {};
+        (profilesData || []).forEach((p: any) => {
+          profileMap[p.id] = {
+            name: p.full_name || 'Unknown',
+            email: null, // Email not stored in profiles table
+            phone: p.phone || null,
+            venmo: p.venmo_url || null,
+          };
+        });
+
+        console.log('Profile map created:', Object.keys(profileMap).length);
+        setProfiles(profileMap);
+      }
     } catch (error) {
       console.error('Failed to load payroll:', error);
     } finally {
