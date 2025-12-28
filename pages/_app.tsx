@@ -91,6 +91,24 @@ export default function App({ Component, pageProps }: AppProps) {
     router.replace('/');
   }
 
+  // Track route changes to prevent navbar flash during navigation
+  const [isChangingRoute, setIsChangingRoute] = useState(false);
+
+  useEffect(() => {
+    const handleStart = () => setIsChangingRoute(true);
+    const handleComplete = () => setIsChangingRoute(false);
+
+    router.events.on('routeChangeStart', handleStart);
+    router.events.on('routeChangeComplete', handleComplete);
+    router.events.on('routeChangeError', handleComplete);
+
+    return () => {
+      router.events.off('routeChangeStart', handleStart);
+      router.events.off('routeChangeComplete', handleComplete);
+      router.events.off('routeChangeError', handleComplete);
+    };
+  }, [router]);
+
   // Pages that use the new SaaS design with sidebar (no topbar needed)
   const newDesignPages = ['/admin', '/dashboard', '/new-shift', '/me/schedule', '/admin-schedule', '/admin-schedule-past'];
   const useNewDesign = newDesignPages.includes(router.pathname);
@@ -117,7 +135,7 @@ export default function App({ Component, pageProps }: AppProps) {
         `}} />
       </Head>
 
-      {!useNewDesign && (
+      {!useNewDesign && !isChangingRoute && (
         <header className="topbar">
           <div className="shell">
             <div className="brand-wrap">
