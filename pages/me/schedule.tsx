@@ -4,7 +4,7 @@ import { useRouter } from 'next/router';
 import { supabase } from '../../lib/supabaseClient';
 import { get, ApiError } from '../../lib/api';
 import Head from 'next/head';
-import { Search, Settings, RefreshCw, AlertTriangle, Calendar, User, Plus, LogOut, Clock } from 'lucide-react';
+import { Search, Settings, RefreshCw, AlertTriangle, Calendar, User, Plus, LogOut, Clock, DollarSign } from 'lucide-react';
 
 type Mate = { id: string; full_name?: string | null };
 
