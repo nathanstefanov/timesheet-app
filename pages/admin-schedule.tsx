@@ -367,6 +367,7 @@ export default function AdminSchedule() {
   const [duplicateFrom, setDuplicateFrom] = useState<SRow | null>(null);
 
   const [edit, setEdit] = useState<SRow | null>(null);
+  const [originalEdit, setOriginalEdit] = useState<SRow | null>(null); // Store original values
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [saving, setSaving] = useState(false);
 
@@ -609,6 +610,7 @@ export default function AdminSchedule() {
   // ---------- OPEN EDIT ----------
   function openEdit(row: SRow) {
     setEdit({ ...row });
+    setOriginalEdit({ ...row }); // Store original values
     setEditingSourceId(row.id);
   }
 
@@ -1280,7 +1282,13 @@ export default function AdminSchedule() {
               <input
                 type="datetime-local"
                 value={edit.start_time && edit.start_time.includes('T') && !edit.start_time.endsWith('Z') ? edit.start_time : (edit.start_time ? toLocalInput(edit.start_time) : '')}
-                onChange={(e) => setEdit({ ...edit, start_time: e.target.value })}
+                onChange={(e) => {
+                  // Don't allow clearing the value - keep original if user tries to delete
+                  if (!e.target.value && originalEdit?.start_time) {
+                    return; // Ignore the change
+                  }
+                  setEdit({ ...edit, start_time: e.target.value });
+                }}
                 style={{
                   width: '100%',
                   padding: '8px 12px',
@@ -1298,7 +1306,13 @@ export default function AdminSchedule() {
               <input
                 type="datetime-local"
                 value={edit.end_time && edit.end_time.includes('T') && !edit.end_time.endsWith('Z') ? edit.end_time : (edit.end_time ? toLocalInput(edit.end_time) : '')}
-                onChange={(e) => setEdit({ ...edit, end_time: e.target.value })}
+                onChange={(e) => {
+                  // Allow clearing end_time since it's optional, but if original had a value, preserve it
+                  if (!e.target.value && originalEdit?.end_time) {
+                    return; // Ignore the change
+                  }
+                  setEdit({ ...edit, end_time: e.target.value });
+                }}
                 style={{
                   width: '100%',
                   padding: '8px 12px',
