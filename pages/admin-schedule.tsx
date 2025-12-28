@@ -10,7 +10,7 @@ import {
   extractTimeInTz,
   formatForDisplay
 } from '../lib/timezone';
-import { User, Calendar, LogOut, Plus, BarChart3, Clock, RefreshCw, FileText } from 'lucide-react';
+import { User, Calendar, LogOut, Plus, BarChart3, Clock, RefreshCw, FileText, Zap, MapPin } from 'lucide-react';
 
 type Emp = {
   id: string;
@@ -906,7 +906,7 @@ export default function AdminSchedule() {
                   setDuplicateFrom(null);
                 }}
               >
-                <span className="admin-shift-btn-icon">⚡</span>
+                <Zap size={16} />
                 Start Now
               </button>
             </div>
@@ -919,92 +919,99 @@ export default function AdminSchedule() {
             )}
 
             <div className="admin-shift-form-body">
-              <div className="admin-shift-form-row">
-                <div className="admin-shift-form-group">
-                  <label className="admin-shift-label">
-                    <span className="admin-shift-label-text">Start Date</span>
-                    <span className="admin-shift-label-required">*</span>
-                  </label>
-                  <div className="admin-shift-input-wrapper">
-                    <span className="admin-shift-input-icon"><Calendar size={18} /></span>
-                    <input
-                      className="admin-shift-input"
-                      type="date"
-                      value={form.start_date}
-                      onChange={(e) => setForm({ ...form, start_date: e.target.value })}
-                      required
-                    />
+              {/* Date & Time Section */}
+              <div className="admin-shift-form-section">
+                <h3 className="admin-shift-section-title">Date & Time</h3>
+                <div className="admin-shift-form-row">
+                  <div className="admin-shift-form-group">
+                    <label className="admin-shift-label">
+                      <span className="admin-shift-label-text">Start Date</span>
+                      <span className="admin-shift-label-required">*</span>
+                    </label>
+                    <div className="admin-shift-input-wrapper">
+                      <span className="admin-shift-input-icon"><Calendar size={18} /></span>
+                      <input
+                        className="admin-shift-input"
+                        type="date"
+                        value={form.start_date}
+                        onChange={(e) => setForm({ ...form, start_date: e.target.value })}
+                        required
+                      />
+                    </div>
+                  </div>
+
+                  <div className="admin-shift-form-group">
+                    <label className="admin-shift-label">
+                      <span className="admin-shift-label-text">Start Time</span>
+                      <span className="admin-shift-label-required">*</span>
+                    </label>
+                    <div className="admin-shift-input-wrapper">
+                      <span className="admin-shift-input-icon"><Clock size={18} /></span>
+                      <input
+                        className="admin-shift-input"
+                        type="time"
+                        value={form.start_time}
+                        onChange={(e) => setForm({ ...form, start_time: e.target.value })}
+                        required
+                      />
+                    </div>
                   </div>
                 </div>
 
-                <div className="admin-shift-form-group">
-                  <label className="admin-shift-label">
-                    <span className="admin-shift-label-text">Start Time</span>
-                    <span className="admin-shift-label-required">*</span>
-                  </label>
-                  <div className="admin-shift-input-wrapper">
-                    <span className="admin-shift-input-icon"><Clock size={18} /></span>
-                    <input
-                      className="admin-shift-input"
-                      type="time"
-                      value={form.start_time}
-                      onChange={(e) => setForm({ ...form, start_time: e.target.value })}
-                      required
-                    />
+                <div className="admin-shift-form-row">
+                  <div className="admin-shift-form-group">
+                    <label className="admin-shift-label">
+                      <span className="admin-shift-label-text">End Date</span>
+                      <span className="admin-shift-label-required">*</span>
+                    </label>
+                    <div className="admin-shift-input-wrapper">
+                      <span className="admin-shift-input-icon"><Calendar size={18} /></span>
+                      <input
+                        className="admin-shift-input"
+                        type="date"
+                        value={form.end_date}
+                        onChange={(e) => setForm({ ...form, end_date: e.target.value })}
+                        required
+                      />
+                    </div>
                   </div>
-                </div>
 
-                <div className="admin-shift-form-group">
-                  <label className="admin-shift-label">
-                    <span className="admin-shift-label-text">End Date</span>
-                    <span className="admin-shift-label-required">*</span>
-                  </label>
-                  <div className="admin-shift-input-wrapper">
-                    <span className="admin-shift-input-icon"><Calendar size={18} /></span>
-                    <input
-                      className="admin-shift-input"
-                      type="date"
-                      value={form.end_date}
-                      onChange={(e) => setForm({ ...form, end_date: e.target.value })}
-                      required
-                    />
-                  </div>
-                </div>
-
-                <div className="admin-shift-form-group">
-                  <label className="admin-shift-label">
-                    <span className="admin-shift-label-text">End Time</span>
-                    <span className="admin-shift-label-optional">(Optional)</span>
-                  </label>
-                  <div className="admin-shift-input-wrapper">
-                    <span className="admin-shift-input-icon"><Clock size={18} /></span>
-                    <input
-                      className="admin-shift-input"
-                      type="time"
-                      value={form.end_time}
-                      onChange={(e) => setForm({ ...form, end_time: e.target.value })}
-                    />
+                  <div className="admin-shift-form-group">
+                    <label className="admin-shift-label">
+                      <span className="admin-shift-label-text">End Time</span>
+                      <span className="admin-shift-label-optional">(Optional)</span>
+                    </label>
+                    <div className="admin-shift-input-wrapper">
+                      <span className="admin-shift-input-icon"><Clock size={18} /></span>
+                      <input
+                        className="admin-shift-input"
+                        type="time"
+                        value={form.end_time}
+                        onChange={(e) => setForm({ ...form, end_time: e.target.value })}
+                      />
+                    </div>
                   </div>
                 </div>
               </div>
 
-              {/* CREATE: editable + Google search */}
-              <div className="admin-shift-form-group full-width">
-                <LocationPicker
-                  label="Location"
-                  name={form.location_name}
-                  address={form.address}
-                  onChangeName={(v) => setForm((f) => ({ ...f, location_name: v }))}
-                  onChangeAddress={(v) => setForm((f) => ({ ...f, address: v }))}
-                  onSelect={({ name, address }) => setForm((f) => ({ ...f, location_name: name, address }))}
-                />
+              {/* Location Section */}
+              <div className="admin-shift-form-section">
+                <h3 className="admin-shift-section-title">Location</h3>
+                <div className="admin-shift-form-group full-width">
+                  <LocationPicker
+                    label="Location"
+                    name={form.location_name}
+                    address={form.address}
+                    onChangeName={(v) => setForm((f) => ({ ...f, location_name: v }))}
+                    onChangeAddress={(v) => setForm((f) => ({ ...f, address: v }))}
+                    onSelect={({ name, address }) => setForm((f) => ({ ...f, location_name: name, address }))}
+                  />
+                </div>
               </div>
 
-              <div className="admin-shift-form-group full-width">
-                <label className="admin-shift-label">
-                  <span className="admin-shift-label-text">Job Type</span>
-                  <span className="admin-shift-label-required">*</span>
-                </label>
+              {/* Job Type Section */}
+              <div className="admin-shift-form-section">
+                <h3 className="admin-shift-section-title">Job Type <span className="admin-shift-label-required">*</span></h3>
                 <div className="admin-shift-job-types">
                   {JOB_TYPES.map((jt) => (
                     <button
@@ -1019,11 +1026,9 @@ export default function AdminSchedule() {
                 </div>
               </div>
 
-              <div className="admin-shift-form-group full-width">
-                <label className="admin-shift-label">
-                  <span className="admin-shift-label-text">Notes</span>
-                  <span className="admin-shift-label-optional">(Optional)</span>
-                </label>
+              {/* Notes Section */}
+              <div className="admin-shift-form-section">
+                <h3 className="admin-shift-section-title">Notes <span className="admin-shift-label-optional">(Optional)</span></h3>
                 <div className="admin-shift-textarea-wrapper">
                   <textarea
                     className="admin-shift-textarea"
