@@ -1229,43 +1229,87 @@ export default function AdminSchedule() {
 
       {/* EDIT PANEL */}
       {edit && (
-        <div id="edit-panel" className="card card--tight full mt-lg">
-          <div className="row between wrap align-items-center mb-md">
-            <strong>Edit Scheduled Shift</strong>
+        <div id="edit-panel" style={{
+          background: 'white',
+          borderRadius: '12px',
+          border: '1px solid #e2e8f0',
+          padding: '24px',
+          marginTop: '24px'
+        }}>
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '20px',
+            flexWrap: 'wrap',
+            gap: '12px'
+          }}>
+            <h3 style={{ fontSize: '18px', fontWeight: 600, color: '#1e293b', margin: 0 }}>
+              Edit Scheduled Shift
+            </h3>
             <button
               type="button"
-              className="topbar-btn"
               onClick={() => {
                 const id = editingSourceId;
                 setEdit(null);
                 scrollToShiftRow(id);
+              }}
+              style={{
+                padding: '8px 16px',
+                background: 'white',
+                border: '1px solid #e2e8f0',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: 500
               }}
             >
               Close
             </button>
           </div>
 
-          <div className="edit-grid">
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+            gap: '16px'
+          }}>
             <div>
-              <label>Start</label>
+              <label style={{ display: 'block', fontSize: '14px', fontWeight: 500, color: '#475569', marginBottom: '6px' }}>
+                Start
+              </label>
               <input
                 type="datetime-local"
-                value={edit.start_time ? toLocalInput(edit.start_time) : ''}
+                value={edit.start_time && edit.start_time.includes('T') && !edit.start_time.endsWith('Z') ? edit.start_time : (edit.start_time ? toLocalInput(edit.start_time) : '')}
                 onChange={(e) => setEdit({ ...edit, start_time: e.target.value })}
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '6px',
+                  fontSize: '14px'
+                }}
               />
             </div>
 
             <div>
-              <label>End (optional)</label>
+              <label style={{ display: 'block', fontSize: '14px', fontWeight: 500, color: '#475569', marginBottom: '6px' }}>
+                End (optional)
+              </label>
               <input
                 type="datetime-local"
-                value={edit.end_time ? toLocalInput(edit.end_time) : ''}
+                value={edit.end_time && edit.end_time.includes('T') && !edit.end_time.endsWith('Z') ? edit.end_time : (edit.end_time ? toLocalInput(edit.end_time) : '')}
                 onChange={(e) => setEdit({ ...edit, end_time: e.target.value })}
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '6px',
+                  fontSize: '14px'
+                }}
               />
             </div>
 
-            <div className="edit-full">
-              {/* EDIT: editable + Google search */}
+            <div style={{ gridColumn: '1 / -1' }}>
               <LocationPicker
                 label="Location"
                 name={edit.location_name ?? ''}
@@ -1278,11 +1322,20 @@ export default function AdminSchedule() {
               />
             </div>
 
-            <div className="edit-full">
-              <label>Job Type</label>
+            <div style={{ gridColumn: '1 / -1' }}>
+              <label style={{ display: 'block', fontSize: '14px', fontWeight: 500, color: '#475569', marginBottom: '6px' }}>
+                Job Type
+              </label>
               <select
                 value={edit.job_type ?? 'setup'}
                 onChange={(e) => setEdit({ ...edit, job_type: e.target.value as JobType })}
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '6px',
+                  fontSize: '14px'
+                }}
               >
                 <option value="setup">Setup</option>
                 <option value="lights">Lights</option>
@@ -1291,16 +1344,42 @@ export default function AdminSchedule() {
               </select>
             </div>
 
-            <div className="edit-full">
-              <label>Notes</label>
+            <div style={{ gridColumn: '1 / -1' }}>
+              <label style={{ display: 'block', fontSize: '14px', fontWeight: 500, color: '#475569', marginBottom: '6px' }}>
+                Notes
+              </label>
               <textarea
                 value={edit.notes ?? ''}
                 onChange={(e) => setEdit({ ...edit, notes: e.target.value })}
+                style={{
+                  width: '100%',
+                  padding: '8px 12px',
+                  border: '1px solid #e2e8f0',
+                  borderRadius: '6px',
+                  fontSize: '14px',
+                  minHeight: '80px',
+                  resize: 'vertical'
+                }}
               />
             </div>
           </div>
 
-          <button type="button" className="btn-primary mt-md" onClick={saveEdit} disabled={saving}>
+          <button
+            type="button"
+            onClick={saveEdit}
+            disabled={saving}
+            style={{
+              marginTop: '20px',
+              padding: '10px 24px',
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: saving ? 'not-allowed' : 'pointer',
+              fontSize: '14px',
+              fontWeight: 600
+            }}
+          >
             {saving ? 'Saving…' : 'Save Changes'}
           </button>
         </div>
@@ -1308,18 +1387,39 @@ export default function AdminSchedule() {
 
       {/* ASSIGN PANEL */}
       {assignShift && (
-        <div id="assign-panel" className="card card--tight full mt-lg">
-          <div className="row between wrap align-items-center mb-md">
-            <strong>
+        <div id="assign-panel" style={{
+          background: 'white',
+          borderRadius: '12px',
+          border: '1px solid #e2e8f0',
+          padding: '24px',
+          marginTop: '24px'
+        }}>
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '20px',
+            flexWrap: 'wrap',
+            gap: '12px'
+          }}>
+            <h3 style={{ fontSize: '18px', fontWeight: 600, color: '#1e293b', margin: 0 }}>
               Assign Employees — {assignShift.location_name || 'Shift'} ({fmtDate(assignShift.start_time)})
-            </strong>
+            </h3>
             <button
               type="button"
-              className="topbar-btn"
               onClick={() => {
                 const id = assignSourceId;
                 setAssignShift(null);
                 scrollToShiftRow(id);
+              }}
+              style={{
+                padding: '8px 16px',
+                background: 'white',
+                border: '1px solid #e2e8f0',
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: 500
               }}
             >
               Close
@@ -1327,30 +1427,71 @@ export default function AdminSchedule() {
           </div>
 
           <input
-            className="mt-sm"
             placeholder="Search name or ID…"
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            style={{
+              width: '100%',
+              padding: '10px 14px',
+              border: '1px solid #e2e8f0',
+              borderRadius: '8px',
+              fontSize: '14px',
+              marginBottom: '16px'
+            }}
           />
 
-          <div className="assign-grid mt-md">
+          <div style={{
+            display: 'grid',
+            gridTemplateColumns: 'repeat(auto-fill, minmax(200px, 1fr))',
+            gap: '12px',
+            marginBottom: '20px'
+          }}>
             {employees
               .filter((e) =>
                 [e.full_name ?? '', e.id].some((v) => v?.toLowerCase().includes(search.toLowerCase()))
               )
               .map((e) => (
-                <label key={e.id} className="inline-check card">
+                <label
+                  key={e.id}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '12px',
+                    background: assignees.includes(e.id) ? '#f0f4ff' : 'white',
+                    border: `1px solid ${assignees.includes(e.id) ? '#667eea' : '#e2e8f0'}`,
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    fontSize: '14px',
+                    fontWeight: 500,
+                    color: '#334155'
+                  }}
+                >
                   <input
                     type="checkbox"
                     checked={assignees.includes(e.id)}
                     onChange={() => toggleEmp(e.id)}
+                    style={{ width: '16px', height: '16px', cursor: 'pointer' }}
                   />
                   <span>{e.full_name || e.id.slice(0, 8)}</span>
                 </label>
               ))}
           </div>
 
-          <button type="button" className="btn-primary mt-md" onClick={saveAssignments}>
+          <button
+            type="button"
+            onClick={saveAssignments}
+            style={{
+              padding: '10px 24px',
+              background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+              color: 'white',
+              border: 'none',
+              borderRadius: '8px',
+              cursor: 'pointer',
+              fontSize: '14px',
+              fontWeight: 600
+            }}
+          >
             Save Assignments
           </button>
         </div>
