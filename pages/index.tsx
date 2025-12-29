@@ -3,7 +3,7 @@ import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
 
-type Mode = 'signin' | 'signup';
+type Mode = 'signin';
 
 // 👉 drop your logo URL here (or leave blank to hide)
 const LOGO_URL =
@@ -38,25 +38,15 @@ export default function AuthPage() {
     setLoading(true);
     try {
       if (!email) throw new Error('Enter your email');
-      if (mode === 'signup' && password.length < 8)
-        throw new Error('Password must be at least 8 characters');
-      if (mode === 'signin' && !password)
-        throw new Error('Enter your password');
+      if (!password) throw new Error('Enter your password');
 
-      if (mode === 'signup') {
-        const { error } = await supabase.auth.signUp({ email, password });
-        if (error) throw error;
-        setMsg('Account created. You can sign in now.');
-        setMode('signin');
-      } else {
-        // Sign in with password
-        const { error } = await supabase.auth.signInWithPassword({
-          email,
-          password,
-        });
-        if (error) throw error;
-        r.push('/dashboard');
-      }
+      // Sign in with password
+      const { error } = await supabase.auth.signInWithPassword({
+        email,
+        password,
+      });
+      if (error) throw error;
+      r.push('/dashboard');
     } catch (e: any) {
       setErr(e.message || 'Something went wrong');
     } finally {
@@ -123,22 +113,6 @@ export default function AuthPage() {
             <h1 className="title">Timesheet</h1>
           </div>
 
-          <div className="tabs">
-            <button
-              className={`tab ${mode === 'signin' ? 'active' : ''}`}
-              onClick={() => setMode('signin')}
-              aria-pressed={mode === 'signin'}
-            >
-              Sign In
-            </button>
-            <button
-              className={`tab ${mode === 'signup' ? 'active' : ''}`}
-              onClick={() => setMode('signup')}
-              aria-pressed={mode === 'signup'}
-            >
-              Create Account
-            </button>
-          </div>
 
           <form onSubmit={onFormSubmit} autoComplete="on">
             <label className="label" htmlFor="email">
@@ -158,7 +132,7 @@ export default function AuthPage() {
             />
 
             <label className="label" htmlFor="password">
-              Password {mode === 'signup' ? '(min 8 chars)' : ''}
+              Password
             </label>
             <div className="pwrow">
               <input
@@ -166,8 +140,8 @@ export default function AuthPage() {
                 name="password"
                 className="input"
                 type={showPw ? 'text' : 'password'}
-                autoComplete={mode === 'signin' ? 'current-password' : 'new-password'}
-                placeholder={mode === 'signin' ? 'Your password' : 'Create a password'}
+                autoComplete="current-password"
+                placeholder="Your password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
               />
@@ -186,11 +160,7 @@ export default function AuthPage() {
             {msg && <div className="alert ok">{msg}</div>}
 
             <button className="btn primary" type="submit" disabled={loading}>
-              {loading
-                ? 'Working…'
-                : mode === 'signin'
-                ? 'Sign In'
-                : 'Create Account'}
+              {loading ? 'Working…' : 'Sign In'}
             </button>
           </form>
 
