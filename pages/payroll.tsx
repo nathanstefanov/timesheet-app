@@ -154,9 +154,7 @@ export default function Payroll() {
 
   // Calculate pay with $50 minimum for Breakdown shifts
   const calculatePay = (shift: Shift): number => {
-    const hours = Number(shift.hours_worked ?? 0);
-    const rate = Number(shift.pay_rate ?? 25); // Default rate if not set
-    const base = shift.pay_due != null ? Number(shift.pay_due) : hours * rate;
+    const base = shift.pay_due != null ? Number(shift.pay_due) : 0;
     const isBreakdown = String(shift.shift_type || '').toLowerCase() === 'breakdown';
     return isBreakdown ? Math.max(base, 50) : base;
   };
