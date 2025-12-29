@@ -130,6 +130,7 @@ export default function Admin() {
   const [rangeTo, setRangeTo] = useState<string | null>(null);
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+  const [adminSectionExpanded, setAdminSectionExpanded] = useState(true);
 
   const [noteModal, setNoteModal] = useState<{ open: boolean; row: Shift | null }>({
     open: false,
@@ -511,10 +512,6 @@ export default function Admin() {
           <nav className="sidebar-nav">
             <div className="sidebar-nav-section">
               <div className="sidebar-nav-label">Main</div>
-              <a href="/admin" className="sidebar-nav-item active" onClick={() => setMobileMenuOpen(false)}>
-                <span className="sidebar-nav-icon"><BarChart3 size={18} /></span>
-                <span>Admin Dashboard</span>
-              </a>
               <a href="/dashboard" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
                 <span className="sidebar-nav-icon"><User size={18} /></span>
                 <span>My Shifts</span>
@@ -527,6 +524,10 @@ export default function Admin() {
                 <span className="sidebar-nav-icon"><Calendar size={18} /></span>
                 <span>My Schedule</span>
               </a>
+              <a href="/calendar" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
+                <span className="sidebar-nav-icon"><Calendar size={18} /></span>
+                <span>Calendar</span>
+              </a>
               <a href="/reports" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
                 <span className="sidebar-nav-icon"><BarChart3 size={18} /></span>
                 <span>Reports</span>
@@ -538,19 +539,38 @@ export default function Admin() {
             </div>
 
             <div className="sidebar-nav-section">
-              <div className="sidebar-nav-label">Admin</div>
-              <a href="/admin-schedule" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
-                <span className="sidebar-nav-icon"><Calendar size={18} /></span>
-                <span>Schedule</span>
-              </a>
-              <a href="/admin-schedule-past" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
-                <span className="sidebar-nav-icon"><Calendar size={18} /></span>
-                <span>Past Schedule</span>
-              </a>
-              <a href="/payroll" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
-                <span className="sidebar-nav-icon"><DollarSign size={18} /></span>
-                <span>Payroll</span>
-              </a>
+              <div
+                className="sidebar-nav-label"
+                onClick={() => setAdminSectionExpanded(!adminSectionExpanded)}
+                style={{ cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}
+              >
+                <span>Admin</span>
+                <span style={{ fontSize: '12px', transition: 'transform 0.2s', transform: adminSectionExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}>▼</span>
+              </div>
+              {adminSectionExpanded && (
+                <>
+                  <a href="/admin" className="sidebar-nav-item active" onClick={() => setMobileMenuOpen(false)}>
+                    <span className="sidebar-nav-icon"><BarChart3 size={18} /></span>
+                    <span>Admin Dashboard</span>
+                  </a>
+                  <a href="/admin-schedule" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
+                    <span className="sidebar-nav-icon"><Calendar size={18} /></span>
+                    <span>Schedule</span>
+                  </a>
+                  <a href="/admin-schedule-past" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
+                    <span className="sidebar-nav-icon"><Calendar size={18} /></span>
+                    <span>Past Schedule</span>
+                  </a>
+                  <a href="/payroll" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
+                    <span className="sidebar-nav-icon"><DollarSign size={18} /></span>
+                    <span>Payroll</span>
+                  </a>
+                  <a href="/employees" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
+                    <span className="sidebar-nav-icon"><User size={18} /></span>
+                    <span>Employees</span>
+                  </a>
+                </>
+              )}
             </div>
           </nav>
 

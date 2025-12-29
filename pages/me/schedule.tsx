@@ -375,6 +375,10 @@ export default function MySchedule() {
                 <span className="sidebar-nav-icon"><Calendar size={18} /></span>
                 <span>My Schedule</span>
               </a>
+              <a href="/calendar" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
+                <span className="sidebar-nav-icon"><Calendar size={18} /></span>
+                <span>Calendar</span>
+              </a>
               <a href="/reports" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
                 <span className="sidebar-nav-icon"><BarChart3 size={18} /></span>
                 <span>Reports</span>
@@ -403,6 +407,10 @@ export default function MySchedule() {
                 <a href="/payroll" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
                   <span className="sidebar-nav-icon"><DollarSign size={18} /></span>
                   <span>Payroll</span>
+                </a>
+                <a href="/employees" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
+                  <span className="sidebar-nav-icon"><User size={18} /></span>
+                  <span>Employees</span>
                 </a>
               </div>
             )}

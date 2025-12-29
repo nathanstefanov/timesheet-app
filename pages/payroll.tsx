@@ -152,6 +152,15 @@ export default function Payroll() {
     return result;
   }, [shifts, startDate, endDate]);
 
+  // Calculate pay with $50 minimum for Breakdown shifts
+  const calculatePay = (shift: Shift): number => {
+    const hours = Number(shift.hours_worked ?? 0);
+    const rate = Number(shift.pay_rate ?? 25); // Default rate if not set
+    const base = shift.pay_due != null ? Number(shift.pay_due) : hours * rate;
+    const isBreakdown = String(shift.shift_type || '').toLowerCase() === 'breakdown';
+    return isBreakdown ? Math.max(base, 50) : base;
+  };
+
   const employeePayrolls = useMemo(() => {
     const map = new Map<string, EmployeePayroll>();
 
@@ -173,7 +182,7 @@ export default function Payroll() {
       const emp = map.get(shift.user_id)!;
       emp.shifts.push(shift);
       emp.totalHours += shift.hours_worked || 0;
-      emp.totalPay += shift.pay_due || 0;
+      emp.totalPay += calculatePay(shift); // Apply $50 minimum for Breakdown shifts
     });
 
     let result = Array.from(map.values());
@@ -365,6 +374,10 @@ export default function Payroll() {
                 <span className="sidebar-nav-icon"><Calendar size={18} /></span>
                 <span>My Schedule</span>
               </a>
+              <a href="/calendar" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
+                <span className="sidebar-nav-icon"><Calendar size={18} /></span>
+                <span>Calendar</span>
+              </a>
               <a href="/reports" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
                 <span className="sidebar-nav-icon"><BarChart3 size={18} /></span>
                 <span>Reports</span>
@@ -392,6 +405,10 @@ export default function Payroll() {
               <a href="/payroll" className="sidebar-nav-item active" onClick={() => setMobileMenuOpen(false)}>
                 <span className="sidebar-nav-icon"><DollarSign size={18} /></span>
                 <span>Payroll</span>
+              </a>
+              <a href="/employees" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
+                <span className="sidebar-nav-icon"><User size={18} /></span>
+                <span>Employees</span>
               </a>
             </div>
           </nav>
