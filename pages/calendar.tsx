@@ -246,8 +246,18 @@ export default function Calendar() {
   }
 
   async function handleAddEvent() {
-    if (!title || !eventDate) {
-      error('Title and date are required');
+    if (!title.trim()) {
+      error('Please enter an event title');
+      return;
+    }
+
+    if (!eventDate) {
+      error('Please select an event date');
+      return;
+    }
+
+    if (startTime && endTime && startTime >= endTime) {
+      error('End time must be after start time');
       return;
     }
 
@@ -256,12 +266,12 @@ export default function Calendar() {
       const { error: insertError } = await supabase
         .from('calendar_events')
         .insert({
-          title,
-          description: description || null,
+          title: title.trim(),
+          description: description.trim() || null,
           event_date: eventDate,
           start_time: startTime || null,
           end_time: endTime || null,
-          location: location || null,
+          location: location.trim() || null,
           created_by: profile!.id,
         });
 
@@ -279,8 +289,18 @@ export default function Calendar() {
   }
 
   async function handleUpdateEvent() {
-    if (!title || !eventDate || !editingEvent) {
-      error('Title and date are required');
+    if (!title.trim()) {
+      error('Please enter an event title');
+      return;
+    }
+
+    if (!eventDate || !editingEvent) {
+      error('Please select an event date');
+      return;
+    }
+
+    if (startTime && endTime && startTime >= endTime) {
+      error('End time must be after start time');
       return;
     }
 
@@ -289,12 +309,12 @@ export default function Calendar() {
       const { error: updateError } = await supabase
         .from('calendar_events')
         .update({
-          title,
-          description: description || null,
+          title: title.trim(),
+          description: description.trim() || null,
           event_date: eventDate,
           start_time: startTime || null,
           end_time: endTime || null,
-          location: location || null,
+          location: location.trim() || null,
         })
         .eq('id', editingEvent.id);
 
