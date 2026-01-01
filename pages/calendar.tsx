@@ -677,8 +677,21 @@ export default function Calendar() {
                         marginBottom: '12px',
                         paddingBottom: '8px',
                         borderBottom: '2px solid #e2e8f0',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px',
                       }}>
                         {formattedDate}
+                        <span style={{
+                          fontSize: '14px',
+                          fontWeight: 500,
+                          color: '#64748b',
+                          background: '#f1f5f9',
+                          padding: '2px 8px',
+                          borderRadius: '12px',
+                        }}>
+                          {dateEvents.length}
+                        </span>
                       </h2>
 
                       <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
