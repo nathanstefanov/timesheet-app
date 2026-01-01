@@ -101,8 +101,7 @@ export default function PaymentHistory() {
           admin_note
         `)
         .eq('is_paid', true)
-        .not('paid_at', 'is', null)
-        .order('paid_at', { ascending: false });
+        .order('shift_date', { ascending: false });
 
       if (shiftsError) throw shiftsError;
 
@@ -166,7 +165,7 @@ export default function PaymentHistory() {
       shift.shift_type,
       shift.hours_worked?.toFixed(2) || '0.00',
       `$${(shift.pay_due || 0).toFixed(2)}`,
-      new Date(shift.paid_at).toLocaleString(),
+      shift.paid_at ? new Date(shift.paid_at).toLocaleString() : 'Not recorded',
       shift.admin_note || '',
     ]);
 
@@ -612,7 +611,7 @@ export default function PaymentHistory() {
                             ${(shift.pay_due || 0).toFixed(2)}
                           </td>
                           <td style={{ padding: '16px', fontSize: '14px', color: '#64748b' }}>
-                            {new Date(shift.paid_at).toLocaleString()}
+                            {shift.paid_at ? new Date(shift.paid_at).toLocaleString() : 'Not recorded'}
                           </td>
                           <td style={{ padding: '16px', textAlign: 'center' }}>
                             <button
