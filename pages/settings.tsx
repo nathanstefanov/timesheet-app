@@ -32,34 +32,41 @@ export default function Settings() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
 
-  // Format phone number to E.164 format (+1XXXXXXXXXX)
-  function formatPhoneNumber(value: string): string {
-    // Remove all non-numeric characters
+  // Format phone number for display (555) 555-5555
+  function formatPhoneDisplay(value: string): string {
     const cleaned = value.replace(/\D/g, '');
 
-    // If it starts with 1, keep it; otherwise add +1
     if (cleaned.length === 0) return '';
-    if (cleaned.length === 11 && cleaned.startsWith('1')) {
-      return '+' + cleaned;
-    }
-    if (cleaned.length === 10) {
-      return '+1' + cleaned;
-    }
-    if (cleaned.length === 11) {
-      return '+' + cleaned;
-    }
-    // For other lengths, just add +1 prefix
-    return '+1' + cleaned;
+    if (cleaned.length <= 3) return `(${cleaned}`;
+    if (cleaned.length <= 6) return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3)}`;
+    if (cleaned.length <= 10) return `(${cleaned.slice(0, 3)}) ${cleaned.slice(3, 6)}-${cleaned.slice(6, 10)}`;
+
+    // Handle 11 digits (with country code)
+    const withoutCountry = cleaned.startsWith('1') ? cleaned.slice(1) : cleaned.slice(0, 10);
+    return `(${withoutCountry.slice(0, 3)}) ${withoutCountry.slice(3, 6)}-${withoutCountry.slice(6, 10)}`;
+  }
+
+  // Format phone number to E.164 format for storage (+1XXXXXXXXXX)
+  function formatPhoneE164(value: string): string {
+    const cleaned = value.replace(/\D/g, '');
+    if (cleaned.length === 0) return '';
+    if (cleaned.length === 11 && cleaned.startsWith('1')) return '+' + cleaned;
+    if (cleaned.length === 10) return '+1' + cleaned;
+    return '+1' + cleaned.slice(-10); // Take last 10 digits
   }
 
   function handlePhoneChange(value: string) {
-    // Allow user to type freely, format on blur
-    setPhone(value);
+    // Format as user types
+    const formatted = formatPhoneDisplay(value);
+    setPhone(formatted);
   }
 
   function handlePhoneBlur() {
+    // Convert to E.164 on blur for validation
     if (phone) {
-      setPhone(formatPhoneNumber(phone));
+      const e164 = formatPhoneE164(phone);
+      // Show display format but store E.164
+      setPhone(formatPhoneDisplay(phone));
     }
   }
 
@@ -89,7 +96,7 @@ export default function Settings() {
       } as Profile);
 
       setFullName(profileData.full_name || '');
-      setPhone(profileData.phone || '');
+      setPhone(profileData.phone ? formatPhoneDisplay(profileData.phone) : '');
       setVenmo(profileData.venmo_url || '');
     } catch (err: any) {
       console.error('Failed to load profile:', err);
@@ -102,22 +109,35 @@ export default function Settings() {
   async function handleSaveProfile() {
     if (!profile) return;
 
+    // Validation
+    if (!fullName.trim()) {
+      error('Please enter your full name');
+      return;
+    }
+
+    if (phone && phone.replace(/\D/g, '').length !== 10 && phone.replace(/\D/g, '').length !== 11) {
+      error('Please enter a valid 10-digit phone number');
+      return;
+    }
+
     setSaving(true);
 
     try {
+      const phoneE164 = phone ? formatPhoneE164(phone) : null;
+
       const { error: updateError } = await supabase
         .from('profiles')
         .update({
-          full_name: fullName,
-          phone: phone || null,
-          venmo_url: venmo || null,
+          full_name: fullName.trim(),
+          phone: phoneE164,
+          venmo_url: venmo.trim() || null,
         })
         .eq('id', profile.id);
 
       if (updateError) throw updateError;
 
       success('Profile updated successfully!');
-      setProfile({ ...profile, full_name: fullName, phone: phone || null, venmo_url: venmo || null });
+      setProfile({ ...profile, full_name: fullName.trim(), phone: phoneE164, venmo_url: venmo.trim() || null });
     } catch (err: any) {
       console.error('Failed to save profile:', err);
       error(err.message || 'Failed to save profile');
@@ -386,6 +406,7 @@ export default function Settings() {
                     value={phone}
                     onChange={(e) => handlePhoneChange(e.target.value)}
                     onBlur={handlePhoneBlur}
+                    maxLength={14}
                     style={{
                       width: '100%',
                       padding: '10px 14px',
@@ -394,7 +415,7 @@ export default function Settings() {
                       fontSize: '14px',
                       maxWidth: '400px'
                     }}
-                    placeholder="+15551234567"
+                    placeholder="(555) 555-1234"
                   />
                   <p style={{ fontSize: '12px', color: '#64748b', marginTop: '4px' }}>
                     Will be formatted to +1XXXXXXXXXX for SMS
