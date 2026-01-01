@@ -87,23 +87,17 @@ export default function PaymentHistory() {
     try {
       const { data: shiftsData, error: shiftsError } = await supabase
         .from('shifts')
-        .select(`
-          id,
-          user_id,
-          shift_date,
-          shift_type,
-          time_in,
-          time_out,
-          hours_worked,
-          pay_due,
-          is_paid,
-          paid_at,
-          admin_note
-        `)
+        .select('*')
         .eq('is_paid', true)
         .order('shift_date', { ascending: false });
 
-      if (shiftsError) throw shiftsError;
+      if (shiftsError) {
+        console.error('Error fetching paid shifts:', shiftsError);
+        throw shiftsError;
+      }
+
+      console.log('Payment History - Raw shifts data:', shiftsData);
+      console.log('Payment History - Number of paid shifts:', shiftsData?.length || 0);
 
       // Get employee names
       const userIds = [...new Set(shiftsData.map(s => s.user_id))];
