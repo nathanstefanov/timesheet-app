@@ -32,6 +32,34 @@ type Profile = {
   email: string | null;
 };
 
+// Location display component that enriches addresses with business names
+function LocationDisplay({ location, enrichLocation }: { location: string; enrichLocation: (addr: string) => Promise<string> }) {
+  const [displayLocation, setDisplayLocation] = useState(location);
+
+  useEffect(() => {
+    let mounted = true;
+    enrichLocation(location).then(enriched => {
+      if (mounted) {
+        setDisplayLocation(enriched);
+      }
+    });
+    return () => { mounted = false; };
+  }, [location, enrichLocation]);
+
+  return (
+    <div style={{
+      display: 'flex',
+      alignItems: 'center',
+      gap: '8px',
+      color: '#64748b',
+      fontSize: '14px',
+    }}>
+      <MapPin size={16} />
+      <span>{displayLocation}</span>
+    </div>
+  );
+}
+
 // Google Maps loader (singleton pattern)
 const loadGoogleMaps = (() => {
   let promise: Promise<any> | null = null;
@@ -98,6 +126,9 @@ export default function Calendar() {
   // View state
   const [currentMonth, setCurrentMonth] = useState(new Date());
 
+  // Cache for enriched locations
+  const [locationCache, setLocationCache] = useState<Record<string, string>>({});
+
   // Google Maps refs
   const addLocationInputRef = useRef<HTMLInputElement>(null);
   const editLocationInputRef = useRef<HTMLInputElement>(null);
@@ -133,6 +164,75 @@ export default function Calendar() {
       return () => clearTimeout(timer);
     }
   }, [showEditModal, profile]);
+
+  async function enrichLocation(address: string): Promise<string> {
+    // Return from cache if available
+    if (locationCache[address]) {
+      return locationCache[address];
+    }
+
+    // If location already has a comma (likely already enriched), return as-is
+    const commaParts = address.split(',');
+    if (commaParts.length >= 3) {
+      // Likely already has "Name, Address" format or is detailed
+      setLocationCache(prev => ({ ...prev, [address]: address }));
+      return address;
+    }
+
+    try {
+      const maps = await loadGoogleMaps();
+      if (!maps || !window.google?.maps?.places) {
+        return address;
+      }
+
+      const geocoder = new window.google.maps.Geocoder();
+      const result = await new Promise<any>((resolve, reject) => {
+        geocoder.geocode({ address }, (results: any, status: any) => {
+          if (status === 'OK' && results?.[0]) {
+            resolve(results[0]);
+          } else {
+            reject(new Error('Geocoding failed'));
+          }
+        });
+      });
+
+      // Try to get place details for the first result
+      if (result.place_id) {
+        const service = new window.google.maps.places.PlacesService(document.createElement('div'));
+        const placeDetails = await new Promise<any>((resolve, reject) => {
+          service.getDetails({ placeId: result.place_id, fields: ['name', 'formatted_address'] }, (place: any, status: any) => {
+            if (status === 'OK' && place) {
+              resolve(place);
+            } else {
+              reject(new Error('Place details failed'));
+            }
+          });
+        });
+
+        if (placeDetails.name && placeDetails.formatted_address) {
+          // Check if name is already in address
+          if (placeDetails.formatted_address.includes(placeDetails.name)) {
+            const enriched = placeDetails.formatted_address;
+            setLocationCache(prev => ({ ...prev, [address]: enriched }));
+            return enriched;
+          } else {
+            const enriched = `${placeDetails.name}, ${placeDetails.formatted_address}`;
+            setLocationCache(prev => ({ ...prev, [address]: enriched }));
+            return enriched;
+          }
+        }
+      }
+
+      // Fallback to original address
+      setLocationCache(prev => ({ ...prev, [address]: address }));
+      return address;
+    } catch (err) {
+      console.log('Failed to enrich location:', err);
+      // Cache the original to avoid repeated lookups
+      setLocationCache(prev => ({ ...prev, [address]: address }));
+      return address;
+    }
+  }
 
   async function initAutocomplete(inputElement: HTMLInputElement, autocompleteRefObj: React.MutableRefObject<any>) {
     try {
@@ -639,16 +739,7 @@ export default function Calendar() {
                               )}
 
                               {event.location && (
-                                <div style={{
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '8px',
-                                  color: '#64748b',
-                                  fontSize: '14px',
-                                }}>
-                                  <MapPin size={16} />
-                                  <span>{event.location}</span>
-                                </div>
+                                <LocationDisplay location={event.location} enrichLocation={enrichLocation} />
                               )}
                             </div>
 
