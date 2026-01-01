@@ -164,7 +164,17 @@ export default function Calendar() {
       autocomplete.addListener('place_changed', () => {
         const place = autocomplete.getPlace();
         console.log('Place selected:', place);
-        if (place.formatted_address) {
+
+        // Combine name and address if both are available
+        if (place.name && place.formatted_address) {
+          // If the name is already part of the address, just use the address
+          if (place.formatted_address.includes(place.name)) {
+            setLocation(place.formatted_address);
+          } else {
+            // Otherwise combine: "Business Name, Address"
+            setLocation(`${place.name}, ${place.formatted_address}`);
+          }
+        } else if (place.formatted_address) {
           setLocation(place.formatted_address);
         } else if (place.name) {
           setLocation(place.name);
