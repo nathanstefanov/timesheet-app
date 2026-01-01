@@ -684,13 +684,10 @@ export default function Calendar() {
                         {formattedDate}
                         <span style={{
                           fontSize: '14px',
-                          fontWeight: 500,
-                          color: '#64748b',
-                          background: '#f1f5f9',
-                          padding: '2px 8px',
-                          borderRadius: '12px',
+                          fontWeight: 700,
+                          color: '#94a3b8',
                         }}>
-                          {dateEvents.length}
+                          ({dateEvents.length})
                         </span>
                       </h2>
 
