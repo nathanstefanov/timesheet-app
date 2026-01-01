@@ -30,7 +30,7 @@ type Profile = {
 
 export default function AuditLogs() {
   const router = useRouter();
-  const { success, error } = useToast();
+  const { success, error, toasts, closeToast } = useToast();
 
   const [profile, setProfile] = useState<Profile | null>(null);
   const [loading, setLoading] = useState(true);
@@ -617,7 +617,7 @@ export default function AuditLogs() {
           </div>
         </main>
       </div>
-      <ToastContainer />
+      <ToastContainer toasts={toasts} onClose={closeToast} />
     </>
   );
 }
