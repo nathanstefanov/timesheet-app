@@ -6,6 +6,7 @@ export async function getServerSideProps() {
 import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../../lib/supabaseClient';
+import { logShiftUpdated, logShiftDeleted } from '../../lib/auditLog';
 
 type ShiftType = 'Setup' | 'Breakdown' | 'Shop';
 
@@ -27,6 +28,7 @@ export default function EditShift() {
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
   const [err, setErr] = useState<string | undefined>();
+  const [userId, setUserId] = useState<string | null>(null);
 
   const [date, setDate] = useState('');
   const [type, setType] = useState<ShiftType>('Setup');
@@ -41,6 +43,15 @@ export default function EditShift() {
     (async () => {
       if (!id) return;
       setLoading(true);
+
+      // Get current user
+      const { data: { user } } = await supabase.auth.getUser();
+      if (!user) {
+        r.replace('/');
+        return;
+      }
+      setUserId(user.id);
+
       const { data, error } = await supabase.from('shifts').select('*').eq('id', id).single();
       if (error) { setErr(error.message); setLoading(false); return; }
       if (!data) { setErr('Shift not found'); setLoading(false); return; }
@@ -64,6 +75,7 @@ export default function EditShift() {
     setSaving(true);
     try {
       if (!date || !tin || !tout) throw new Error('Date, Time In, and Time Out are required.');
+      if (!userId) throw new Error('User not authenticated');
 
       const inDt = buildLocal(date, tin);
       let outDt = buildLocal(date, tout);
@@ -84,6 +96,12 @@ export default function EditShift() {
       const { error } = await supabase.from('shifts').update(patch).eq('id', id!);
       if (error) throw error;
 
+      // Log the shift update
+      const changes = Object.keys(patch)
+        .map(key => `${key}: ${patch[key as keyof typeof patch]}`)
+        .join(', ');
+      await logShiftUpdated(userId, id!, changes);
+
       r.back();
     } catch (e: any) {
       setErr(e.message || 'Failed to save shift.');
@@ -94,8 +112,14 @@ export default function EditShift() {
 
   async function del() {
     if (!confirm('Delete this shift?')) return;
+    if (!userId) return alert('User not authenticated');
+
     const { error } = await supabase.from('shifts').delete().eq('id', id!);
     if (error) return alert(error.message);
+
+    // Log the shift deletion
+    await logShiftDeleted(userId, id!, type);
+
     r.push('/dashboard');
   }
 

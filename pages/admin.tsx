@@ -7,6 +7,7 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
+import { logShiftDeleted } from '../lib/auditLog';
 import Head from 'next/head';
 import { User, Plus, Calendar, BarChart3, DollarSign, CheckCircle, Clock, LogOut, Settings, Shield } from 'lucide-react';
 
@@ -441,11 +442,17 @@ export default function Admin() {
   async function deleteRow(row: Shift) {
     const name = names[row.user_id] || 'employee';
     if (!confirm(`Delete shift for ${name} on ${row.shift_date}?`)) return;
+    if (!me?.id) return;
+
     const { error } = await supabase.from('shifts').delete().eq('id', row.id);
     if (error) {
       alert(error.message);
       return;
     }
+
+    // Log the shift deletion
+    await logShiftDeleted(me.id, row.id, row.shift_type);
+
     setShifts(prev => prev.filter(s => s.id !== row.id));
   }
 

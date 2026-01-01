@@ -8,6 +8,7 @@ import { useEffect, useMemo, useState } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
+import { logShiftDeleted } from '../lib/auditLog';
 import Head from 'next/head';
 import { User, Plus, Calendar, BarChart3, DollarSign, Clock, LogOut, Settings, AlertCircle, X, Shield } from 'lucide-react';
 import {
@@ -208,11 +209,22 @@ export default function Dashboard() {
 
   async function delShift(id: string) {
     if (!confirm('Delete this shift?')) return;
+    if (!user?.id) return;
+
+    // Find the shift to get its type before deleting
+    const shift = shifts.find(s => s.id === id);
+
     const { error } = await supabase.from('shifts').delete().eq('id', id);
     if (error) {
       alert(error.message);
       return;
     }
+
+    // Log the shift deletion
+    if (shift) {
+      await logShiftDeleted(user.id, id, shift.shift_type);
+    }
+
     setShifts(prev => prev.filter(x => x.id !== id));
   }
 

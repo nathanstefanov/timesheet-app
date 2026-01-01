@@ -8,6 +8,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
 import { combineLocalWithTz, calculateHours } from '../lib/timezone';
+import { logShiftCreated } from '../lib/auditLog';
 import Head from 'next/head';
 import { User, Plus, Calendar, BarChart3, LogOut, Settings, DollarSign, Shield } from 'lucide-react';
 
@@ -74,7 +75,7 @@ export default function NewShift() {
 
       setSaving(true);
 
-      const { error } = await supabase.from('shifts').insert({
+      const { data: newShift, error } = await supabase.from('shifts').insert({
         user_id: userId,
         shift_date: date,
         shift_type: type,
@@ -82,9 +83,14 @@ export default function NewShift() {
         time_out: timeOut.toISOString(),
         pay_rate: userPayRate,
         notes,
-      });
+      }).select().single();
 
       if (error) throw error;
+
+      // Log the shift creation
+      if (newShift?.id) {
+        await logShiftCreated(userId, newShift.id, type);
+      }
 
       r.push('/dashboard');
     } catch (e: any) {
