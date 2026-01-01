@@ -9,7 +9,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
 import Head from 'next/head';
-import { User, Plus, Calendar, BarChart3, DollarSign, Clock, LogOut, Settings } from 'lucide-react';
+import { User, Plus, Calendar, BarChart3, DollarSign, Clock, LogOut, Settings, AlertCircle, X } from 'lucide-react';
 import {
   startOfWeek,
   endOfWeek,
@@ -38,7 +38,7 @@ type Shift = {
 
 export default function Dashboard() {
   const router = useRouter();
-  const [user, setUser] = useState<{ id: string; full_name?: string; role?: string } | null>(null);
+  const [user, setUser] = useState<{ id: string; full_name?: string; role?: string; phone?: string | null; venmo?: string | null } | null>(null);
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [loading, setLoading] = useState(true);
   const [mode, setMode] = useState<Mode>('all');
@@ -49,6 +49,7 @@ export default function Dashboard() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [viewOptionsExpanded, setViewOptionsExpanded] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [showProfilePrompt, setShowProfilePrompt] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -63,11 +64,22 @@ export default function Dashboard() {
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('id, full_name, role')
+        .select('id, full_name, role, phone, venmo')
         .eq('id', session.user.id)
         .single();
 
-      setUser({ id: session.user.id, full_name: profile?.full_name, role: profile?.role });
+      setUser({
+        id: session.user.id,
+        full_name: profile?.full_name,
+        role: profile?.role,
+        phone: profile?.phone,
+        venmo: profile?.venmo
+      });
+
+      // Check if phone or venmo is missing and show prompt
+      if (!profile?.phone || !profile?.venmo) {
+        setShowProfilePrompt(true);
+      }
     })();
   }, []);
 
@@ -334,6 +346,65 @@ export default function Dashboard() {
             {err && (
               <div className="alert-new alert-error-new">
                 Error: {err}
+              </div>
+            )}
+
+            {/* PROFILE COMPLETION PROMPT */}
+            {showProfilePrompt && (!user?.phone || !user?.venmo) && (
+              <div style={{
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                border: '1px solid rgba(255, 255, 255, 0.2)',
+                borderRadius: '12px',
+                padding: '16px 20px',
+                marginBottom: '24px',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '12px',
+                color: 'white',
+                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
+              }}>
+                <AlertCircle size={24} style={{ flexShrink: 0 }} />
+                <div style={{ flex: 1 }}>
+                  <div style={{ fontWeight: 600, fontSize: '15px', marginBottom: '4px' }}>
+                    Complete Your Profile
+                  </div>
+                  <div style={{ fontSize: '14px', opacity: 0.95 }}>
+                    {!user?.phone && !user?.venmo && 'Please add your phone number and Venmo username to receive payments.'}
+                    {!user?.phone && user?.venmo && 'Please add your phone number to stay connected.'}
+                    {user?.phone && !user?.venmo && 'Please add your Venmo username to receive payments.'}
+                  </div>
+                </div>
+                <button
+                  onClick={() => router.push('/settings')}
+                  style={{
+                    background: 'white',
+                    color: '#667eea',
+                    border: 'none',
+                    borderRadius: '8px',
+                    padding: '10px 20px',
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    cursor: 'pointer',
+                    flexShrink: 0,
+                  }}
+                >
+                  Go to Settings
+                </button>
+                <button
+                  onClick={() => setShowProfilePrompt(false)}
+                  style={{
+                    background: 'transparent',
+                    border: 'none',
+                    cursor: 'pointer',
+                    padding: '4px',
+                    color: 'white',
+                    opacity: 0.8,
+                    flexShrink: 0,
+                  }}
+                  aria-label="Dismiss"
+                >
+                  <X size={20} />
+                </button>
               </div>
             )}
 
