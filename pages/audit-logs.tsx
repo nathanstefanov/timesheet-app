@@ -5,6 +5,7 @@ import { supabase } from '../lib/supabaseClient';
 import Head from 'next/head';
 import { Shield, Download, Search, Filter, User, Calendar, DollarSign, LogOut, Settings, BarChart3, Plus } from 'lucide-react';
 import { useToast } from '../hooks/useToast';
+import { ToastContainer } from '../components/Toast';
 
 type AuditLog = {
   id: string;
@@ -324,20 +325,25 @@ export default function AuditLogs() {
 
         {/* MAIN CONTENT */}
         <main className="app-main">
-          <div className="page-header">
-            <div>
-              <h1 className="page-title">Audit Logs</h1>
-              <p className="page-subtitle">Track all admin actions and employee logins for compliance</p>
+          <header className="app-header">
+            <div className="header-content">
+              <div>
+                <h1 className="header-title">Audit Logs</h1>
+                <p className="header-subtitle">Track all admin actions and employee logins for compliance</p>
+              </div>
+              <button
+                onClick={exportToCSV}
+                className="btn-primary"
+                disabled={filteredLogs.length === 0}
+                style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
+              >
+                <Download size={18} />
+                Export to CSV
+              </button>
             </div>
-            <button
-              onClick={exportToCSV}
-              className="button-primary"
-              disabled={filteredLogs.length === 0}
-            >
-              <Download size={18} />
-              Export to CSV
-            </button>
-          </div>
+          </header>
+
+          <div className="app-content">
 
           {/* FILTERS */}
           <div style={{
@@ -608,8 +614,10 @@ export default function AuditLogs() {
               </div>
             )}
           </div>
+          </div>
         </main>
       </div>
+      <ToastContainer />
     </>
   );
 }
