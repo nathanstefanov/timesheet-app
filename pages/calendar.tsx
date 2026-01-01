@@ -683,9 +683,9 @@ export default function Calendar() {
                       }}>
                         {formattedDate}
                         <span style={{
-                          fontSize: '14px',
+                          fontSize: '16px',
                           fontWeight: 700,
-                          color: '#94a3b8',
+                          color: '#000000ff',
                         }}>
                           ({dateEvents.length})
                         </span>
