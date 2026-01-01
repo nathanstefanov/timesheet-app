@@ -2,6 +2,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
+import { logLogin } from '../lib/auditLog';
 
 type Mode = 'signin';
 
@@ -41,11 +42,17 @@ export default function AuthPage() {
       if (!password) throw new Error('Enter your password');
 
       // Sign in with password
-      const { error } = await supabase.auth.signInWithPassword({
+      const { data, error } = await supabase.auth.signInWithPassword({
         email,
         password,
       });
       if (error) throw error;
+
+      // Log the login event
+      if (data.user) {
+        await logLogin(data.user.id);
+      }
+
       r.push('/dashboard');
     } catch (e: any) {
       setErr(e.message || 'Something went wrong');
