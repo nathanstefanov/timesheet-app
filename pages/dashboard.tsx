@@ -38,7 +38,7 @@ type Shift = {
 
 export default function Dashboard() {
   const router = useRouter();
-  const [user, setUser] = useState<{ id: string; full_name?: string; role?: string; phone?: string | null; venmo?: string | null } | null>(null);
+  const [user, setUser] = useState<{ id: string; full_name?: string; role?: string; phone?: string | null; venmo_url?: string | null } | null>(null);
   const [shifts, setShifts] = useState<Shift[]>([]);
   const [loading, setLoading] = useState(true);
   const [mode, setMode] = useState<Mode>('all');
@@ -64,7 +64,7 @@ export default function Dashboard() {
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('id, full_name, role, phone, venmo')
+        .select('id, full_name, role, phone, venmo_url')
         .eq('id', session.user.id)
         .single();
 
@@ -73,11 +73,11 @@ export default function Dashboard() {
         full_name: profile?.full_name,
         role: profile?.role,
         phone: profile?.phone,
-        venmo: profile?.venmo
+        venmo_url: profile?.venmo_url
       });
 
       // Check if phone or venmo is missing and show prompt
-      if (!profile?.phone || !profile?.venmo) {
+      if (!profile?.phone || !profile?.venmo_url) {
         setShowProfilePrompt(true);
       }
     })();
@@ -354,7 +354,7 @@ export default function Dashboard() {
             )}
 
             {/* PROFILE COMPLETION PROMPT */}
-            {showProfilePrompt && (!user?.phone || !user?.venmo) && (
+            {showProfilePrompt && (!user?.phone || !user?.venmo_url) && (
               <div style={{
                 background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                 border: '1px solid rgba(255, 255, 255, 0.2)',
@@ -373,9 +373,9 @@ export default function Dashboard() {
                     Complete Your Profile
                   </div>
                   <div style={{ fontSize: '14px', opacity: 0.95 }}>
-                    {!user?.phone && !user?.venmo && 'Please add your phone number and Venmo username to receive payments.'}
-                    {!user?.phone && user?.venmo && 'Please add your phone number to stay connected.'}
-                    {user?.phone && !user?.venmo && 'Please add your Venmo username to receive payments.'}
+                    {!user?.phone && !user?.venmo_url && 'Please add your phone number and Venmo username to receive payments.'}
+                    {!user?.phone && user?.venmo_url && 'Please add your phone number to stay connected.'}
+                    {user?.phone && !user?.venmo_url && 'Please add your Venmo username to receive payments.'}
                   </div>
                 </div>
                 <button
