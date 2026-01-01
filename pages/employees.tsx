@@ -408,6 +408,10 @@ export default function Employees() {
                   <span className="sidebar-nav-icon"><DollarSign size={18} /></span>
                   <span>Payroll</span>
                 </a>
+                <a href="/payment-history" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
+                  <span className="sidebar-nav-icon"><DollarSign size={18} /></span>
+                  <span>Payment History</span>
+                </a>
                 <a href="/employees" className="sidebar-nav-item active" onClick={() => setMobileMenuOpen(false)}>
                   <span className="sidebar-nav-icon"><User size={18} /></span>
                   <span>Employees</span>
