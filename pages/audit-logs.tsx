@@ -310,15 +310,23 @@ export default function AuditLogs() {
           </nav>
 
           <div className="sidebar-footer">
+            <div className="sidebar-user">
+              <div className="sidebar-user-avatar">
+                {profile?.full_name?.charAt(0) || 'A'}
+              </div>
+              <div className="sidebar-user-info">
+                <div className="sidebar-user-name">{profile?.full_name || 'Admin'}</div>
+                <div className="sidebar-user-role">Administrator</div>
+              </div>
+            </div>
             <button
-              className="sidebar-footer-button"
+              className="sidebar-logout"
               onClick={async () => {
                 await supabase.auth.signOut();
                 router.push('/');
               }}
             >
-              <LogOut size={18} />
-              <span>Logout</span>
+              <LogOut size={16} /> Logout
             </button>
           </div>
         </aside>
