@@ -99,16 +99,32 @@ export default function PaymentHistory() {
       console.log('Payment History - Raw shifts data:', shiftsData);
       console.log('Payment History - Number of paid shifts:', shiftsData?.length || 0);
 
+      // If no shifts, set empty array and return
+      if (!shiftsData || shiftsData.length === 0) {
+        setShifts([]);
+        return;
+      }
+
       // Get employee names
       const userIds = [...new Set(shiftsData.map(s => s.user_id))];
+
+      // Only query profiles if we have user IDs
+      if (userIds.length === 0) {
+        setShifts([]);
+        return;
+      }
+
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
         .select('id, full_name, email')
         .in('id', userIds);
 
-      if (profilesError) throw profilesError;
+      if (profilesError) {
+        console.error('Error fetching profiles:', profilesError);
+        throw profilesError;
+      }
 
-      const profileMap = profiles.reduce((acc, p) => {
+      const profileMap = (profiles || []).reduce((acc, p) => {
         acc[p.id] = { name: p.full_name || 'Unknown', email: p.email };
         return acc;
       }, {} as Record<string, { name: string; email: string | null }>);
