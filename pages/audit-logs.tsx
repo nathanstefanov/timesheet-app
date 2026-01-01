@@ -127,7 +127,7 @@ export default function AuditLogs() {
   }
 
   function exportToCSV() {
-    const headers = ['Timestamp', 'User', 'Email', 'Action Type', 'Description', 'Resource Type', 'Resource ID', 'IP Address'];
+    const headers = ['Timestamp', 'User', 'Email', 'Action Type', 'Description', 'Resource Type', 'Resource ID', 'IP Address', 'User Agent'];
     const rows = filteredLogs.map(log => [
       new Date(log.created_at).toLocaleString(),
       log.user_name,
@@ -137,6 +137,7 @@ export default function AuditLogs() {
       log.resource_type || '',
       log.resource_id || '',
       log.ip_address || '',
+      log.user_agent || '',
     ]);
 
     const csvContent = [
@@ -537,6 +538,9 @@ export default function AuditLogs() {
                       <th style={{ padding: '16px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                         IP Address
                       </th>
+                      <th style={{ padding: '16px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: '#475569', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
+                        User Agent
+                      </th>
                     </tr>
                   </thead>
                   <tbody>
@@ -579,6 +583,23 @@ export default function AuditLogs() {
                         </td>
                         <td style={{ padding: '16px', fontSize: '14px', color: '#64748b', fontFamily: 'monospace' }}>
                           {log.ip_address || '—'}
+                        </td>
+                        <td style={{ padding: '16px', fontSize: '12px', color: '#64748b', maxWidth: '200px' }}>
+                          {log.user_agent ? (
+                            <div
+                              title={log.user_agent}
+                              style={{
+                                overflow: 'hidden',
+                                textOverflow: 'ellipsis',
+                                whiteSpace: 'nowrap',
+                                cursor: 'help',
+                              }}
+                            >
+                              {log.user_agent}
+                            </div>
+                          ) : (
+                            '—'
+                          )}
                         </td>
                       </tr>
                     ))}

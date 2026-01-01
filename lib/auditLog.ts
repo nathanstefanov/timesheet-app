@@ -1,5 +1,6 @@
 // lib/auditLog.ts
 import { supabase } from './supabaseClient';
+import { getClientIpAddress, getClientUserAgent } from './requestInfo';
 
 type AuditLogParams = {
   userId: string;
@@ -40,14 +41,19 @@ export async function createAuditLog(params: AuditLogParams) {
 
 /**
  * Log a user login
+ * Automatically fetches IP address and user agent if not provided
  */
 export async function logLogin(userId: string, ipAddress?: string, userAgent?: string) {
+  // If IP/UA not provided, try to fetch them from client side
+  const finalIpAddress = ipAddress || await getClientIpAddress();
+  const finalUserAgent = userAgent || getClientUserAgent();
+
   await createAuditLog({
     userId,
     actionType: 'login',
     actionDescription: 'User logged in',
-    ipAddress,
-    userAgent,
+    ipAddress: finalIpAddress,
+    userAgent: finalUserAgent,
   });
 }
 

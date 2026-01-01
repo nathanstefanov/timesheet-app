@@ -3,6 +3,7 @@ import type { NextApiResponse } from 'next';
 import { z } from 'zod';
 import { supabaseAdmin } from '../../../lib/supabaseAdmin';
 import { requireAdmin, type AuthenticatedRequest } from '../../../lib/middleware';
+import { logEmployeeUpdatedServer, logEmployeeDeactivatedServer } from '../../../lib/auditLogServer';
 
 const UpdateEmployeeSchema = z.object({
   full_name: z.string().min(1).max(200).optional(),
@@ -46,6 +47,19 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse) {
       // Get email from auth
       const { data: userData } = await supabaseAdmin.auth.admin.getUserById(id);
 
+      // Log the employee update with IP and user agent
+      const changes = Object.keys(updates)
+        .map(key => `${key}: ${JSON.stringify(updates[key as keyof typeof updates])}`)
+        .join(', ');
+
+      await logEmployeeUpdatedServer(
+        req,
+        req.user.id,
+        id,
+        profile.full_name || 'Unknown',
+        changes
+      );
+
       return res.status(200).json({
         ...profile,
         email: userData.user?.email || null,
@@ -71,6 +85,14 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse) {
         console.error('Failed to deactivate employee:', profileError);
         return res.status(500).json({ error: profileError.message });
       }
+
+      // Log the employee deactivation with IP and user agent
+      await logEmployeeDeactivatedServer(
+        req,
+        req.user.id,
+        id,
+        profile.full_name || 'Unknown'
+      );
 
       return res.status(200).json({ ok: true, profile });
     } catch (error: any) {
