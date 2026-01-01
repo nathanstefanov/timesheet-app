@@ -116,7 +116,7 @@ export default function PaymentHistory() {
 
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select('id, full_name, email')
+        .select('id, full_name, Email')
         .in('id', userIds);
 
       if (profilesError) {
@@ -125,7 +125,7 @@ export default function PaymentHistory() {
       }
 
       const profileMap = (profiles || []).reduce((acc, p) => {
-        acc[p.id] = { name: p.full_name || 'Unknown', email: p.email };
+        acc[p.id] = { name: p.full_name || 'Unknown', email: (p as any).Email };
         return acc;
       }, {} as Record<string, { name: string; email: string | null }>);
 
