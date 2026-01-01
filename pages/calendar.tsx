@@ -3,7 +3,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
 import Head from 'next/head';
-import { Calendar as CalendarIcon, Plus, Edit2, Trash2, X, MapPin, Clock, FileText, User, LogOut, Settings, BarChart3, DollarSign } from 'lucide-react';
+import { Calendar as CalendarIcon, Plus, Edit2, Trash2, X, MapPin, Clock, FileText, User, LogOut, Settings, BarChart3, DollarSign, Shield } from 'lucide-react';
 import { useToast } from '../hooks/useToast';
 
 declare global {
@@ -586,6 +586,10 @@ export default function Calendar() {
                     <a href="/employees" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
                       <span className="sidebar-nav-icon"><User size={18} /></span>
                       <span>Employees</span>
+                    </a>
+                    <a href="/audit-logs" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
+                      <span className="sidebar-nav-icon"><Shield size={18} /></span>
+                      <span>Audit Logs</span>
                     </a>
                   </>
                 )}

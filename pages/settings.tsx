@@ -3,7 +3,7 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
 import Head from 'next/head';
-import { User, Plus, Calendar, BarChart3, LogOut, Save, Mail, Phone, Key, DollarSign, Settings as SettingsIcon } from 'lucide-react';
+import { User, Plus, Calendar, BarChart3, LogOut, Save, Mail, Phone, Key, DollarSign, Settings as SettingsIcon, Shield } from 'lucide-react';
 import { useToast } from '../hooks/useToast';
 import { ToastContainer } from '../components/Toast';
 
@@ -278,6 +278,10 @@ export default function Settings() {
                 <a href="/employees" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
                   <span className="sidebar-nav-icon"><User size={18} /></span>
                   <span>Employees</span>
+                </a>
+                <a href="/audit-logs" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
+                  <span className="sidebar-nav-icon"><Shield size={18} /></span>
+                  <span>Audit Logs</span>
                 </a>
               </div>
             )}

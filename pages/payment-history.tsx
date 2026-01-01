@@ -3,8 +3,9 @@ import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
 import Head from 'next/head';
-import { User, Calendar, BarChart3, LogOut, Settings, DollarSign, Download, Search, X, RotateCcw, Filter } from 'lucide-react';
+import { User, Calendar, BarChart3, LogOut, Settings, DollarSign, Download, Search, X, RotateCcw, Filter, Shield } from 'lucide-react';
 import { useToast } from '../hooks/useToast';
+import { logUndoPayment } from '../lib/auditLog';
 
 type PaidShift = {
   id: string;
@@ -157,6 +158,11 @@ export default function PaymentHistory() {
         .eq('id', shiftId);
 
       if (updateError) throw updateError;
+
+      // Log the undo payment action
+      if (profile?.id) {
+        await logUndoPayment(profile.id, shiftId, employeeName);
+      }
 
       success('Payment undone successfully!');
       await loadPaidShifts();
@@ -336,6 +342,10 @@ export default function PaymentHistory() {
                   <a href="/employees" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
                     <span className="sidebar-nav-icon"><User size={18} /></span>
                     <span>Employees</span>
+                  </a>
+                  <a href="/audit-logs" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
+                    <span className="sidebar-nav-icon"><Shield size={18} /></span>
+                    <span>Audit Logs</span>
                   </a>
                 </>
               )}

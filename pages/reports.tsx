@@ -3,7 +3,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
 import Head from 'next/head';
-import { User, Plus, Calendar, BarChart3, LogOut, Settings, DollarSign, TrendingUp, Clock, Users, PieChart } from 'lucide-react';
+import { User, Plus, Calendar, BarChart3, LogOut, Settings, DollarSign, TrendingUp, Clock, Users, PieChart, Shield } from 'lucide-react';
 
 type Shift = {
   id: string;
@@ -298,6 +298,10 @@ export default function Reports() {
                 <a href="/employees" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
                   <span className="sidebar-nav-icon"><User size={18} /></span>
                   <span>Employees</span>
+                </a>
+                <a href="/audit-logs" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
+                  <span className="sidebar-nav-icon"><Shield size={18} /></span>
+                  <span>Audit Logs</span>
                 </a>
               </div>
             )}

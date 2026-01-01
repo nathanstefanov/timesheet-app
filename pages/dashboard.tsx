@@ -9,7 +9,7 @@ import Link from 'next/link';
 import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
 import Head from 'next/head';
-import { User, Plus, Calendar, BarChart3, DollarSign, Clock, LogOut, Settings, AlertCircle, X } from 'lucide-react';
+import { User, Plus, Calendar, BarChart3, DollarSign, Clock, LogOut, Settings, AlertCircle, X, Shield } from 'lucide-react';
 import {
   startOfWeek,
   endOfWeek,
@@ -309,6 +309,10 @@ export default function Dashboard() {
                 <a href="/employees" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
                   <span className="sidebar-nav-icon"><User size={18} /></span>
                   <span>Employees</span>
+                </a>
+                <a href="/audit-logs" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
+                  <span className="sidebar-nav-icon"><Shield size={18} /></span>
+                  <span>Audit Logs</span>
                 </a>
               </div>
             )}

@@ -8,7 +8,7 @@ import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
 import Head from 'next/head';
-import { User, Plus, Calendar, BarChart3, DollarSign, CheckCircle, Clock, LogOut, Settings } from 'lucide-react';
+import { User, Plus, Calendar, BarChart3, DollarSign, CheckCircle, Clock, LogOut, Settings, Shield } from 'lucide-react';
 
 type Tab = 'unpaid' | 'paid' | 'all';
 type SortBy = 'name' | 'hours' | 'pay' | 'unpaid';
@@ -572,6 +572,10 @@ export default function Admin() {
                   <a href="/employees" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
                     <span className="sidebar-nav-icon"><User size={18} /></span>
                     <span>Employees</span>
+                  </a>
+                  <a href="/audit-logs" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
+                    <span className="sidebar-nav-icon"><Shield size={18} /></span>
+                    <span>Audit Logs</span>
                   </a>
                 </>
               )}

@@ -4,7 +4,7 @@ import { useRouter } from 'next/router';
 import { supabase } from '../../lib/supabaseClient';
 import { get, ApiError } from '../../lib/api';
 import Head from 'next/head';
-import { Search, Settings, RefreshCw, AlertTriangle, Calendar, User, Plus, LogOut, Clock, DollarSign, BarChart3 } from 'lucide-react';
+import { Search, Settings, RefreshCw, AlertTriangle, Calendar, User, Plus, LogOut, Clock, DollarSign, BarChart3, Shield } from 'lucide-react';
 
 type Mate = { id: string; full_name?: string | null };
 
@@ -415,6 +415,10 @@ export default function MySchedule() {
                 <a href="/employees" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
                   <span className="sidebar-nav-icon"><User size={18} /></span>
                   <span>Employees</span>
+                </a>
+                <a href="/audit-logs" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
+                  <span className="sidebar-nav-icon"><Shield size={18} /></span>
+                  <span>Audit Logs</span>
                 </a>
               </div>
             )}

@@ -9,7 +9,7 @@ import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
 import { combineLocalWithTz, calculateHours } from '../lib/timezone';
 import Head from 'next/head';
-import { User, Plus, Calendar, BarChart3, LogOut, Settings, DollarSign } from 'lucide-react';
+import { User, Plus, Calendar, BarChart3, LogOut, Settings, DollarSign, Shield } from 'lucide-react';
 
 type ShiftType = 'Setup' | 'Breakdown' | 'Shop';
 
@@ -18,6 +18,7 @@ export default function NewShift() {
   const [userId, setUserId] = useState<string | null>(null);
   const [userName, setUserName] = useState<string>('');
   const [userRole, setUserRole] = useState<string>('employee');
+  const [userPayRate, setUserPayRate] = useState<number>(25);
 
   const [date, setDate] = useState('');
   const [type, setType] = useState<ShiftType>('Setup');
@@ -40,13 +41,14 @@ export default function NewShift() {
 
       const { data: profile } = await supabase
         .from('profiles')
-        .select('id, full_name, role')
+        .select('id, full_name, role, pay_rate')
         .eq('id', user.id)
         .single();
 
       setUserId(user.id);
       setUserName(profile?.full_name || 'User');
       setUserRole(profile?.role || 'employee');
+      setUserPayRate(profile?.pay_rate || 25);
     })();
   }, [r]);
 
@@ -78,6 +80,7 @@ export default function NewShift() {
         shift_type: type,
         time_in: timeIn.toISOString(),
         time_out: timeOut.toISOString(),
+        pay_rate: userPayRate,
         notes,
       });
 
@@ -182,6 +185,10 @@ export default function NewShift() {
                 <a href="/employees" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
                   <span className="sidebar-nav-icon"><User size={18} /></span>
                   <span>Employees</span>
+                </a>
+                <a href="/audit-logs" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
+                  <span className="sidebar-nav-icon"><Shield size={18} /></span>
+                  <span>Audit Logs</span>
                 </a>
               </div>
             )}

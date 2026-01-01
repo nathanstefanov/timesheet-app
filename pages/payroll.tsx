@@ -3,7 +3,8 @@ import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
 import Head from 'next/head';
-import { User, Plus, Calendar, BarChart3, LogOut, DollarSign, CheckCircle, RefreshCw, Settings } from 'lucide-react';
+import { User, Plus, Calendar, BarChart3, LogOut, DollarSign, CheckCircle, RefreshCw, Settings, Shield } from 'lucide-react';
+import { logPayment } from '../lib/auditLog';
 
 type Shift = {
   id: string;
@@ -262,6 +263,10 @@ export default function Payroll() {
       const now = new Date().toISOString();
       const shiftIds = Array.from(selectedShifts);
 
+      // Calculate total amount being paid
+      const selectedShiftObjects = shifts.filter(s => selectedShifts.has(s.id));
+      const totalAmount = selectedShiftObjects.reduce((sum, shift) => sum + (shift.pay_due || 0), 0);
+
       const { error } = await supabase
         .from('shifts')
         .update({
@@ -272,6 +277,11 @@ export default function Payroll() {
         .in('id', shiftIds);
 
       if (error) throw error;
+
+      // Log the payment action
+      if (me?.id) {
+        await logPayment(me.id, shiftIds, totalAmount);
+      }
 
       // Remove paid shifts from the list
       setShifts(shifts.filter(s => !selectedShifts.has(s.id)));
@@ -411,6 +421,10 @@ export default function Payroll() {
               <a href="/employees" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
                 <span className="sidebar-nav-icon"><User size={18} /></span>
                 <span>Employees</span>
+              </a>
+              <a href="/audit-logs" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
+                <span className="sidebar-nav-icon"><Shield size={18} /></span>
+                <span>Audit Logs</span>
               </a>
             </div>
           </nav>
