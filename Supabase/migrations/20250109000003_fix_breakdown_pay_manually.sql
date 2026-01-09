@@ -1,4 +1,4 @@
--- Supabase/migrations/20250109000003_fix_breakdown_pay_manually.sql
+-- migrations/20250109000003_fix_breakdown_pay_manually.sql
 -- Manual fix for existing Breakdown shifts since columns are generated
 -- This deletes and recreates the shifts to force recalculation
 
