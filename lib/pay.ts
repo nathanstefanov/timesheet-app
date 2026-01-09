@@ -13,9 +13,11 @@ export function calcPayRow(s: ShiftRow): number {
   const hours = Number(s.hours_worked ?? 0);
   const rate  = Number(s.pay_rate ?? 25);
 
-  // Breakdown shifts have a $50 minimum regardless of hours worked
+  // Breakdown shifts: under 2 hours = $50 flat, 2+ hours = normal rate
   if (s.shift_type === 'Breakdown') {
-    return Math.max(hours * rate, 50);
+    if (hours < 2) {
+      return 50;
+    }
   }
 
   return hours * rate;

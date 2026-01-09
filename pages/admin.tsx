@@ -57,8 +57,8 @@ function payInfo(s: Shift): { pay: number; minApplied: boolean; base: number } {
   const baseCalc = hours * rate;
   const isBreakdown = String(s.shift_type || '').toLowerCase() === 'breakdown';
 
-  // Minimum is applied when it's a Breakdown shift and calculated pay < $50
-  return { pay, minApplied: isBreakdown && baseCalc < 50, base: baseCalc };
+  // Minimum ($50) is applied when it's a Breakdown shift under 2 hours
+  return { pay, minApplied: isBreakdown && hours < 2, base: baseCalc };
 }
 
 function isAutoFlag(s: Shift) {

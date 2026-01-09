@@ -151,12 +151,12 @@ export function calculatePay(
   payRate: number,
   shiftType?: string | null
 ): number {
-  const basePay = hours * payRate;
-
-  // Apply $50 minimum for Breakdown shifts regardless of hours worked
+  // Breakdown shifts: under 2 hours = $50 flat, 2+ hours = normal rate
   if (shiftType?.toLowerCase() === 'breakdown') {
-    return Math.max(basePay, 50);
+    if (hours < 2) {
+      return 50;
+    }
   }
 
-  return basePay;
+  return hours * payRate;
 }
