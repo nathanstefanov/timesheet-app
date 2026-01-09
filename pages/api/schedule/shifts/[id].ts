@@ -1,7 +1,7 @@
 import type { NextApiResponse } from 'next';
 import { z } from 'zod';
 import { supabaseAdmin } from '../../../../lib/supabaseAdmin';
-import { requireAdmin, type AuthenticatedRequest } from '../../../../lib/middleware';
+import { requireAdmin, type AuthenticatedRequest, handleApiError } from '../../../../lib/middleware';
 
 // IMPORTANT: twilio must only run server-side
 import twilio from 'twilio';
@@ -105,48 +105,49 @@ async function sendSms(to: string, body: string) {
 
 // ---------- handler ----------
 async function handler(req: AuthenticatedRequest, res: NextApiResponse) {
-  const id = req.query.id as string;
-  if (!id) return res.status(400).json({ error: 'Missing id' });
+  try {
+    const id = req.query.id as string;
+    if (!id) return res.status(400).json({ error: 'Missing id' });
 
-  if (req.method === 'PATCH') {
-    const parsed = PatchSchema.safeParse(req.body);
-    if (!parsed.success) return res.status(400).json({ error: parsed.error.message });
+    if (req.method === 'PATCH') {
+      const parsed = PatchSchema.safeParse(req.body);
+      if (!parsed.success) return res.status(400).json({ error: parsed.error.message });
 
-    const p = parsed.data;
+      const p = parsed.data;
 
-    if (p.start_time && p.end_time && new Date(p.end_time) <= new Date(p.start_time)) {
-      return res.status(400).json({ error: 'end_time must be after start_time' });
-    }
+      if (p.start_time && p.end_time && new Date(p.end_time) <= new Date(p.start_time)) {
+        return res.status(400).json({ error: 'end_time must be after start_time' });
+      }
 
-    // 1) Fetch BEFORE
-    const beforeRes = await supabaseAdmin
-      .from('schedule_shifts')
-      .select('id, start_time, end_time, location_name, address, job_type, notes')
-      .eq('id', id)
-      .single();
+      // 1) Fetch BEFORE
+      const beforeRes = await supabaseAdmin
+        .from('schedule_shifts')
+        .select('id, start_time, end_time, location_name, address, job_type, notes')
+        .eq('id', id)
+        .single();
 
-    if (beforeRes.error || !beforeRes.data) {
-      console.error('[PATCH /api/schedule/shifts/[id]] Failed to fetch shift:', beforeRes.error);
-      return res.status(404).json({ error: 'Shift not found' });
-    }
+      if (beforeRes.error || !beforeRes.data) {
+        console.error('[PATCH /api/schedule/shifts/[id]] Failed to fetch shift:', beforeRes.error);
+        throw beforeRes.error || new Error('Shift not found');
+      }
 
-    const before = beforeRes.data;
+      const before = beforeRes.data;
 
-    // 2) Update
-    const update: Record<string, any> = {};
-    for (const k of Object.keys(p) as (keyof typeof p)[]) update[k] = (p as any)[k];
+      // 2) Update
+      const update: Record<string, any> = {};
+      for (const k of Object.keys(p) as (keyof typeof p)[]) update[k] = (p as any)[k];
 
-    const afterRes = await supabaseAdmin
-      .from('schedule_shifts')
-      .update(update)
-      .eq('id', id)
-      .select('id, start_time, end_time, location_name, address, job_type, notes')
-      .single();
+      const afterRes = await supabaseAdmin
+        .from('schedule_shifts')
+        .update(update)
+        .eq('id', id)
+        .select('id, start_time, end_time, location_name, address, job_type, notes')
+        .single();
 
-    if (afterRes.error || !afterRes.data) {
-      console.error('[PATCH /api/schedule/shifts/[id]] Update failed:', afterRes.error);
-      return res.status(500).json({ error: 'Update failed' });
-    }
+      if (afterRes.error || !afterRes.data) {
+        console.error('[PATCH /api/schedule/shifts/[id]] Update failed:', afterRes.error);
+        throw afterRes.error || new Error('Update failed');
+      }
 
     const after = afterRes.data;
 
@@ -205,21 +206,24 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse) {
       }
     }
 
-    // Return the updated shift
-    return res.status(200).json(after);
-  }
-
-  if (req.method === 'DELETE') {
-    const { error } = await supabaseAdmin.from('schedule_shifts').delete().eq('id', id);
-    if (error) {
-      console.error('[DELETE /api/schedule/shifts/[id]] Delete failed:', error);
-      return res.status(500).json({ error: 'Delete failed' });
+      // Return the updated shift
+      return res.status(200).json(after);
     }
-    return res.status(200).json({ ok: true });
-  }
 
-  res.setHeader('Allow', ['PATCH', 'DELETE']);
-  return res.status(405).json({ error: 'Method Not Allowed' });
+    if (req.method === 'DELETE') {
+      const { error } = await supabaseAdmin.from('schedule_shifts').delete().eq('id', id);
+      if (error) {
+        console.error('[DELETE /api/schedule/shifts/[id]] Delete failed:', error);
+        throw error;
+      }
+      return res.status(200).json({ ok: true });
+    }
+
+    res.setHeader('Allow', ['PATCH', 'DELETE']);
+    return res.status(405).json({ error: 'Method Not Allowed' });
+  } catch (error) {
+    return handleApiError(error, res, 'Updating or deleting schedule shift');
+  }
 }
 
 export default requireAdmin(handler);

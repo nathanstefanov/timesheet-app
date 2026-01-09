@@ -2,7 +2,7 @@
 import type { NextApiResponse } from 'next';
 import { z } from 'zod';
 import { supabaseAdmin } from '../../../lib/supabaseAdmin';
-import { requireAdmin, type AuthenticatedRequest } from '../../../lib/middleware';
+import { requireAdmin, type AuthenticatedRequest, handleApiError } from '../../../lib/middleware';
 import { logEmployeeUpdatedServer, logEmployeeDeactivatedServer } from '../../../lib/auditLogServer';
 
 const UpdateEmployeeSchema = z.object({
@@ -15,15 +15,15 @@ const UpdateEmployeeSchema = z.object({
 });
 
 async function handler(req: AuthenticatedRequest, res: NextApiResponse) {
-  const { id } = req.query;
+  try {
+    const { id } = req.query;
 
-  if (!id || typeof id !== 'string') {
-    return res.status(400).json({ error: 'Missing employee ID' });
-  }
+    if (!id || typeof id !== 'string') {
+      return res.status(400).json({ error: 'Missing employee ID' });
+    }
 
-  // PATCH - Update employee
-  if (req.method === 'PATCH') {
-    try {
+    // PATCH - Update employee
+    if (req.method === 'PATCH') {
       const parsed = UpdateEmployeeSchema.safeParse(req.body);
       if (!parsed.success) {
         return res.status(400).json({ error: parsed.error.message });
@@ -41,7 +41,7 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse) {
 
       if (profileError) {
         console.error('Failed to update profile:', profileError);
-        return res.status(500).json({ error: profileError.message });
+        throw profileError;
       }
 
       // Get email from auth
@@ -64,15 +64,10 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse) {
         ...profile,
         email: userData.user?.email || null,
       });
-    } catch (error: any) {
-      console.error('Failed to update employee:', error);
-      return res.status(500).json({ error: error.message || 'Failed to update employee' });
     }
-  }
 
-  // DELETE - Delete employee (soft delete by setting is_active = false)
-  if (req.method === 'DELETE') {
-    try {
+    // DELETE - Delete employee (soft delete by setting is_active = false)
+    if (req.method === 'DELETE') {
       // Soft delete: set is_active to false
       const { data: profile, error: profileError } = await supabaseAdmin
         .from('profiles')
@@ -83,7 +78,7 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse) {
 
       if (profileError) {
         console.error('Failed to deactivate employee:', profileError);
-        return res.status(500).json({ error: profileError.message });
+        throw profileError;
       }
 
       // Log the employee deactivation with IP and user agent
@@ -95,14 +90,13 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse) {
       );
 
       return res.status(200).json({ ok: true, profile });
-    } catch (error: any) {
-      console.error('Failed to delete employee:', error);
-      return res.status(500).json({ error: error.message || 'Failed to delete employee' });
     }
-  }
 
-  res.setHeader('Allow', ['PATCH', 'DELETE']);
-  return res.status(405).json({ error: 'Method Not Allowed' });
+    res.setHeader('Allow', ['PATCH', 'DELETE']);
+    return res.status(405).json({ error: 'Method Not Allowed' });
+  } catch (error) {
+    return handleApiError(error, res, 'Managing employee');
+  }
 }
 
 export default requireAdmin(handler);

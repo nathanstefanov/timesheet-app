@@ -2,7 +2,7 @@
 import type { NextApiResponse } from 'next';
 import { z } from 'zod';
 import { supabaseAdmin } from '../../../lib/supabaseAdmin';
-import { requireAdmin, type AuthenticatedRequest } from '../../../lib/middleware';
+import { requireAdmin, type AuthenticatedRequest, handleApiError } from '../../../lib/middleware';
 
 // Generate a secure random password
 function generateSecurePassword(): string {
@@ -36,9 +36,9 @@ const CreateEmployeeSchema = z.object({
 });
 
 async function handler(req: AuthenticatedRequest, res: NextApiResponse) {
-  // GET - List all employees
-  if (req.method === 'GET') {
-    try {
+  try {
+    // GET - List all employees
+    if (req.method === 'GET') {
       const { data: profiles, error } = await supabaseAdmin
         .from('profiles')
         .select('id, full_name, role, phone, venmo_url, pay_rate, is_active, created_at')
@@ -61,15 +61,10 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse) {
       }));
 
       return res.status(200).json(enrichedProfiles);
-    } catch (error: any) {
-      console.error('Failed to fetch employees:', error);
-      return res.status(500).json({ error: 'Failed to fetch employees' });
     }
-  }
 
-  // POST - Create new employee
-  if (req.method === 'POST') {
-    try {
+    // POST - Create new employee
+    if (req.method === 'POST') {
       const parsed = CreateEmployeeSchema.safeParse(req.body);
       if (!parsed.success) {
         return res.status(400).json({ error: parsed.error.message });
@@ -118,11 +113,11 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse) {
 
         if (authError) {
           console.error('Failed to create auth user:', authError);
-          return res.status(500).json({ error: authError.message });
+          throw authError;
         }
 
         if (!newAuthData.user) {
-          return res.status(500).json({ error: 'User creation failed' });
+          throw new Error('User creation failed');
         }
 
         authData = newAuthData;
@@ -147,7 +142,7 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse) {
         console.error('Failed to create profile:', profileError);
         // Rollback: delete auth user if profile creation fails
         await supabaseAdmin.auth.admin.deleteUser(authData.user.id);
-        return res.status(500).json({ error: profileError.message });
+        throw profileError;
       }
 
       // 3. Send invite email if requested
@@ -197,14 +192,13 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse) {
         invite_sent: emailSent,
         reactivated: isReactivation,
       });
-    } catch (error: any) {
-      console.error('Failed to create employee:', error);
-      return res.status(500).json({ error: error.message || 'Failed to create employee' });
     }
-  }
 
-  res.setHeader('Allow', ['GET', 'POST']);
-  return res.status(405).json({ error: 'Method Not Allowed' });
+    res.setHeader('Allow', ['GET', 'POST']);
+    return res.status(405).json({ error: 'Method Not Allowed' });
+  } catch (error) {
+    return handleApiError(error, res, 'Managing employees');
+  }
 }
 
 export default requireAdmin(handler);

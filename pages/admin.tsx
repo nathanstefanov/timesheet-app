@@ -11,6 +11,7 @@ import { logShiftDeleted } from '../lib/auditLog';
 import { calcPayRow } from '../lib/pay';
 import Head from 'next/head';
 import { User, Plus, Calendar, BarChart3, DollarSign, CheckCircle, Clock, LogOut, Settings, Shield } from 'lucide-react';
+import { requireServerAdmin } from '../lib/middleware';
 
 type Tab = 'unpaid' | 'paid' | 'all';
 type SortBy = 'name' | 'hours' | 'pay' | 'unpaid';
@@ -173,11 +174,12 @@ export default function Admin() {
     }
   }, [noteDraft, noteModal.row]);
 
-  // Auth check
+  // Load current user profile (server-side already verified admin role)
   useEffect(() => {
-    async function checkAuth() {
+    async function loadProfile() {
       const { data, error } = await supabase.auth.getSession();
       if (error || !data?.session?.user) {
+        // Server-side auth failed somehow, redirect
         router.push('/login');
         return;
       }
@@ -188,16 +190,13 @@ export default function Admin() {
         .eq('id', data.session.user.id)
         .maybeSingle();
 
-      if (!profile || profile.role !== 'admin') {
-        router.push('/dashboard');
-        return;
+      if (profile) {
+        setMe(profile);
       }
-
-      setMe(profile);
       setChecking(false);
     }
 
-    checkAuth();
+    loadProfile();
   }, [router]);
 
   // Auto sort defaults per tab
@@ -1196,6 +1195,8 @@ export default function Admin() {
   );
 }
 
-export async function getServerSideProps() {
+// Server-side authentication - redirects unauthorized users before page loads
+export const getServerSideProps = requireServerAdmin(async (ctx) => {
+  // User is guaranteed to be an admin at this point
   return { props: {} };
-}
+});

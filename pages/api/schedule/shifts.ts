@@ -1,7 +1,7 @@
 import type { NextApiResponse } from 'next';
 import { z } from 'zod';
 import { supabaseAdmin } from '../../../lib/supabaseAdmin';
-import { requireAdmin, type AuthenticatedRequest } from '../../../lib/middleware';
+import { requireAdmin, type AuthenticatedRequest, handleApiError } from '../../../lib/middleware';
 
 const CreateSchema = z.object({
 	start_time: z.string().datetime(),
@@ -14,51 +14,62 @@ const CreateSchema = z.object({
 });
 
 async function handler(req: AuthenticatedRequest, res: NextApiResponse) {
+	try {
+		if (req.method === 'POST') {
+			const parsed = CreateSchema.safeParse(req.body);
+			if (!parsed.success) {
+				return res.status(400).json({
+					error: 'Invalid request data',
+					code: 'VALIDATION_ERROR'
+				});
+			}
 
-	if (req.method === 'POST') {
-		const parsed = CreateSchema.safeParse(req.body);
-		if (!parsed.success) return res.status(400).json({ error: parsed.error.message });
+			const {
+				start_time, end_time, location_name, address,
+				job_type, notes, status
+			} = parsed.data;
 
-		const {
-			start_time, end_time, location_name, address,
-			job_type, notes, status
-		} = parsed.data;
+			if (end_time && new Date(end_time) <= new Date(start_time)) {
+				return res.status(400).json({
+					error: 'End time must be after start time',
+					code: 'VALIDATION_ERROR'
+				});
+			}
 
-		if (end_time && new Date(end_time) <= new Date(start_time)) {
-			return res.status(400).json({ error: 'end_time must be after start_time' });
+			const { data, error } = await supabaseAdmin
+				.from('schedule_shifts')
+				.insert([{
+					start_time,
+					end_time: end_time ?? null,
+					location_name: location_name ?? null,
+					address: address ?? null,
+					job_type: job_type ?? 'setup',
+					notes: notes ?? null,
+					status: status ?? 'draft',
+					created_by: req.user.id
+				}])
+				.select()
+				.single();
+
+			if (error) throw error;
+			return res.status(200).json(data);
 		}
 
-		const { data, error } = await supabaseAdmin
-			.from('schedule_shifts')
-			.insert([{
-				start_time,
-				end_time: end_time ?? null,
-				location_name: location_name ?? null,
-				address: address ?? null,
-				job_type: job_type ?? 'setup',
-				notes: notes ?? null,
-				status: status ?? 'draft',
-				created_by: req.user.id
-			}])
-			.select()
-			.single();
+		if (req.method === 'GET') {
+			const { data, error } = await supabaseAdmin
+				.from('schedule_shifts')
+				.select('*')
+				.order('start_time', { ascending: true });
 
-		if (error) return res.status(500).json({ error: error.message });
-		return res.status(200).json(data);
+			if (error) throw error;
+			return res.status(200).json(data ?? []);
+		}
+
+		res.setHeader('Allow', ['GET','POST','OPTIONS']);
+		return res.status(405).json({ error: 'Method Not Allowed' });
+	} catch (error) {
+		return handleApiError(error, res, 'Schedule shifts operation');
 	}
-
-	if (req.method === 'GET') {
-		const { data, error } = await supabaseAdmin
-			.from('schedule_shifts')
-			.select('*')
-			.order('start_time', { ascending: true });
-
-		if (error) return res.status(500).json({ error: error.message });
-		return res.status(200).json(data ?? []);
-	}
-
-	res.setHeader('Allow', ['GET','POST','OPTIONS']);
-	return res.status(405).json({ error: 'Method Not Allowed' });
 }
 
 export default requireAdmin(handler);

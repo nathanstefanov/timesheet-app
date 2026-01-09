@@ -2,7 +2,7 @@
 import type { NextApiResponse } from 'next';
 import twilio from 'twilio';
 import { supabaseAdmin } from '../../../../../lib/supabaseAdmin';
-import { requireAdmin, type AuthenticatedRequest } from '../../../../../lib/middleware';
+import { requireAdmin, type AuthenticatedRequest, handleApiError } from '../../../../../lib/middleware';
 
 type ApiResponse = { ok: true } | { error: string };
 
@@ -53,51 +53,52 @@ async function handler(
   req: AuthenticatedRequest,
   res: NextApiResponse<ApiResponse>
 ) {
-  const { id } = req.query;
+  try {
+    const { id } = req.query;
 
-  if (!id || typeof id !== 'string') {
-    return res.status(400).json({ error: 'Missing schedule_shift_id in URL.' });
-  }
-
-  // ADD ASSIGNMENTS (+ SMS ONLY TO NEW ADDS)
-  if (req.method === 'POST') {
-    const { employee_ids } = req.body as { employee_ids?: string[] };
-
-    if (!Array.isArray(employee_ids) || employee_ids.length === 0) {
-      return res.status(400).json({ error: 'employee_ids array is required.' });
+    if (!id || typeof id !== 'string') {
+      return res.status(400).json({ error: 'Missing schedule_shift_id in URL.' });
     }
 
-    const uniqueIds = Array.from(new Set(employee_ids));
+    // ADD ASSIGNMENTS (+ SMS ONLY TO NEW ADDS)
+    if (req.method === 'POST') {
+      const { employee_ids } = req.body as { employee_ids?: string[] };
 
-    // 1) Find who is ALREADY assigned (so we don't re-text them)
-    const { data: existing, error: existingErr } = await supabaseAdmin
-      .from('schedule_assignments')
-      .select('employee_id')
-      .eq('schedule_shift_id', id)
-      .in('employee_id', uniqueIds);
+      if (!Array.isArray(employee_ids) || employee_ids.length === 0) {
+        return res.status(400).json({ error: 'employee_ids array is required.' });
+      }
 
-    if (existingErr) {
-      console.error('assign POST existing check error', existingErr);
-      return res.status(500).json({ error: existingErr.message });
-    }
+      const uniqueIds = Array.from(new Set(employee_ids));
 
-    const existingSet = new Set((existing || []).map((r: any) => r.employee_id as string));
-    const newlyAddedIds = uniqueIds.filter((empId) => !existingSet.has(empId));
+      // 1) Find who is ALREADY assigned (so we don't re-text them)
+      const { data: existing, error: existingErr } = await supabaseAdmin
+        .from('schedule_assignments')
+        .select('employee_id')
+        .eq('schedule_shift_id', id)
+        .in('employee_id', uniqueIds);
 
-    // 2) Upsert assignments
-    const rows = uniqueIds.map((empId) => ({
-      schedule_shift_id: id,
-      employee_id: empId,
-    }));
+      if (existingErr) {
+        console.error('assign POST existing check error', existingErr);
+        throw existingErr;
+      }
 
-    const { error: upsertErr } = await supabaseAdmin
-      .from('schedule_assignments')
-      .upsert(rows, { onConflict: 'schedule_shift_id,employee_id' });
+      const existingSet = new Set((existing || []).map((r: any) => r.employee_id as string));
+      const newlyAddedIds = uniqueIds.filter((empId) => !existingSet.has(empId));
 
-    if (upsertErr) {
-      console.error('assign POST upsert error', upsertErr);
-      return res.status(500).json({ error: upsertErr.message });
-    }
+      // 2) Upsert assignments
+      const rows = uniqueIds.map((empId) => ({
+        schedule_shift_id: id,
+        employee_id: empId,
+      }));
+
+      const { error: upsertErr } = await supabaseAdmin
+        .from('schedule_assignments')
+        .upsert(rows, { onConflict: 'schedule_shift_id,employee_id' });
+
+      if (upsertErr) {
+        console.error('assign POST upsert error', upsertErr);
+        throw upsertErr;
+      }
 
     // 3) If nobody newly added, done (no SMS)
     if (newlyAddedIds.length === 0) {
@@ -183,35 +184,38 @@ async function handler(
       }
     });
 
-    await Promise.allSettled(sendPromises);
+      await Promise.allSettled(sendPromises);
 
-    return res.status(200).json({ ok: true });
-  }
-
-  // REMOVE ASSIGNMENTS (NO SMS)
-  if (req.method === 'DELETE') {
-    const { employee_ids } = req.body as { employee_ids?: string[] };
-
-    if (!Array.isArray(employee_ids) || employee_ids.length === 0) {
-      return res.status(400).json({ error: 'employee_ids array is required.' });
+      return res.status(200).json({ ok: true });
     }
 
-    const { error } = await supabaseAdmin
-      .from('schedule_assignments')
-      .delete()
-      .eq('schedule_shift_id', id)
-      .in('employee_id', employee_ids);
+    // REMOVE ASSIGNMENTS (NO SMS)
+    if (req.method === 'DELETE') {
+      const { employee_ids } = req.body as { employee_ids?: string[] };
 
-    if (error) {
-      console.error('assign DELETE error', error);
-      return res.status(500).json({ error: error.message });
+      if (!Array.isArray(employee_ids) || employee_ids.length === 0) {
+        return res.status(400).json({ error: 'employee_ids array is required.' });
+      }
+
+      const { error } = await supabaseAdmin
+        .from('schedule_assignments')
+        .delete()
+        .eq('schedule_shift_id', id)
+        .in('employee_id', employee_ids);
+
+      if (error) {
+        console.error('assign DELETE error', error);
+        throw error;
+      }
+
+      return res.status(200).json({ ok: true });
     }
 
-    return res.status(200).json({ ok: true });
+    res.setHeader('Allow', 'POST, DELETE, OPTIONS');
+    return res.status(405).json({ error: 'Method Not Allowed' });
+  } catch (error) {
+    return handleApiError(error, res, 'Managing shift assignments');
   }
-
-  res.setHeader('Allow', 'POST, DELETE, OPTIONS');
-  return res.status(405).json({ error: 'Method Not Allowed' });
 }
 
 export default requireAdmin(handler);

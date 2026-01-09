@@ -6,6 +6,7 @@ import { calcPayRow } from '../lib/pay';
 import Head from 'next/head';
 import { User, Plus, Calendar, BarChart3, LogOut, DollarSign, CheckCircle, RefreshCw, Settings, Shield } from 'lucide-react';
 import { logPayment } from '../lib/auditLog';
+import { requireServerAdmin } from '../lib/middleware';
 
 type Shift = {
   id: string;
@@ -55,11 +56,12 @@ export default function Payroll() {
   const [endDate, setEndDate] = useState('');
   const [searchQuery, setSearchQuery] = useState('');
 
+  // Load current user profile (server-side already verified admin role)
   useEffect(() => {
     (async () => {
       const { data } = await supabase.auth.getSession();
       if (!data.session?.user) {
-        router.push('/');
+        router.push('/login');
         return;
       }
 
@@ -69,12 +71,9 @@ export default function Payroll() {
         .eq('id', data.session.user.id)
         .maybeSingle();
 
-      if (!profile || profile.role !== 'admin') {
-        router.push('/dashboard');
-        return;
+      if (profile) {
+        setMe(profile);
       }
-
-      setMe(profile);
     })();
   }, [router]);
 
@@ -788,3 +787,9 @@ export default function Payroll() {
     </>
   );
 }
+
+// Server-side authentication - redirects unauthorized users before page loads
+export const getServerSideProps = requireServerAdmin(async (ctx) => {
+  // User is guaranteed to be an admin at this point
+  return { props: {} };
+});

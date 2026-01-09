@@ -10,6 +10,7 @@ import Head from 'next/head';
 import { User, Plus, Calendar, BarChart3, DollarSign, LogOut, Settings, Search, Edit2, UserX, UserCheck, Mail, Phone, X, Shield } from 'lucide-react';
 import { useToast } from '../hooks/useToast';
 import { ToastContainer } from '../components/Toast';
+import { requireServerAdmin } from '../lib/middleware';
 
 type Profile = {
   id: string;
@@ -75,11 +76,12 @@ export default function Employees() {
     filterEmployees();
   }, [employees, searchQuery, statusFilter, roleFilter]);
 
+  // Load current user profile (server-side already verified admin role)
   async function loadProfile() {
     try {
       const { data: { session } } = await supabase.auth.getSession();
       if (!session?.user) {
-        router.replace('/');
+        router.replace('/login');
         return;
       }
 
@@ -90,11 +92,6 @@ export default function Employees() {
         .single();
 
       if (profileError) throw profileError;
-
-      if (profileData.role !== 'admin') {
-        router.replace('/dashboard');
-        return;
-      }
 
       setProfile({
         ...profileData,
@@ -1129,3 +1126,9 @@ export default function Employees() {
     </>
   );
 }
+
+// Server-side authentication - redirects unauthorized users before page loads
+export const getServerSideProps = requireServerAdmin(async (ctx) => {
+  // User is guaranteed to be an admin at this point
+  return { props: {} };
+});

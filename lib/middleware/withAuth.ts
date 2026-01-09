@@ -30,7 +30,7 @@ export interface AuthOptions {
  * @returns Wrapped handler with authentication
  */
 export function withAuth(
-  handler: (req: AuthenticatedRequest, res: NextApiResponse) => Promise<void>,
+  handler: (req: AuthenticatedRequest, res: NextApiResponse) => Promise<void | NextApiResponse>,
   options: AuthOptions = { requireAuth: true }
 ) {
   return async (req: NextApiRequest, res: NextApiResponse) => {
@@ -120,7 +120,7 @@ export function withAuth(
  * Helper to check if user is admin
  */
 export function requireAdmin(
-  handler: (req: AuthenticatedRequest, res: NextApiResponse) => Promise<void>
+  handler: (req: AuthenticatedRequest, res: NextApiResponse) => Promise<void | NextApiResponse>
 ) {
   return withAuth(handler, { requireAuth: true, requiredRole: 'admin' });
 }
@@ -129,7 +129,7 @@ export function requireAdmin(
  * Helper to check if user is employee (or admin)
  */
 export function requireEmployee(
-  handler: (req: AuthenticatedRequest, res: NextApiResponse) => Promise<void>
+  handler: (req: AuthenticatedRequest, res: NextApiResponse) => Promise<void | NextApiResponse>
 ) {
   return withAuth(handler, { requireAuth: true, requiredRole: 'employee' });
 }

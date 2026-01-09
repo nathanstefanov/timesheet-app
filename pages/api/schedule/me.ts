@@ -1,7 +1,7 @@
 // pages/api/schedule/me.ts
 import type { NextApiResponse } from 'next';
 import { supabaseAdmin } from '../../../lib/supabaseAdmin';
-import { withAuth, type AuthenticatedRequest } from '../../../lib/middleware';
+import { withAuth, type AuthenticatedRequest, handleApiError } from '../../../lib/middleware';
 
 async function handler(
   req: AuthenticatedRequest,
@@ -16,7 +16,7 @@ async function handler(
       .select('schedule_shift_id')
       .eq('employee_id', userId);
 
-    if (aErr) return res.status(500).json({ error: aErr.message });
+    if (aErr) throw aErr;
 
     const ids = (assigns ?? []).map((r: any) => r.schedule_shift_id);
     if (ids.length === 0) return res.status(200).json([]);
@@ -30,7 +30,7 @@ async function handler(
       .in('id', ids)
       .order('start_time', { ascending: true });
 
-    if (sErr) return res.status(500).json({ error: sErr.message });
+    if (sErr) throw sErr;
 
     // Load teammates for each shift
     const result = await Promise.all(
@@ -62,8 +62,8 @@ async function handler(
     );
 
     return res.status(200).json(result);
-  } catch (e: any) {
-    return res.status(500).json({ error: e.message || 'Unexpected error' });
+  } catch (error) {
+    return handleApiError(error, res, 'Loading employee schedule');
   }
 }
 
