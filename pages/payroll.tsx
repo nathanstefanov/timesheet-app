@@ -2,6 +2,7 @@
 import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
+import { calcPayRow } from '../lib/pay';
 import Head from 'next/head';
 import { User, Plus, Calendar, BarChart3, LogOut, DollarSign, CheckCircle, RefreshCw, Settings, Shield } from 'lucide-react';
 import { logPayment } from '../lib/auditLog';
@@ -154,10 +155,9 @@ export default function Payroll() {
   }, [shifts, startDate, endDate]);
 
   // Calculate pay with $50 minimum for Breakdown shifts
+  // Use centralized pay calculation from lib/pay.ts
   const calculatePay = (shift: Shift): number => {
-    const base = shift.pay_due != null ? Number(shift.pay_due) : 0;
-    const isBreakdown = String(shift.shift_type || '').toLowerCase() === 'breakdown';
-    return isBreakdown ? Math.max(base, 50) : base;
+    return calcPayRow(shift);
   };
 
   const employeePayrolls = useMemo(() => {

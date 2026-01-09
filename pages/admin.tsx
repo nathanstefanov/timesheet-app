@@ -8,6 +8,7 @@ import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
 import { logShiftDeleted } from '../lib/auditLog';
+import { calcPayRow } from '../lib/pay';
 import Head from 'next/head';
 import { User, Plus, Calendar, BarChart3, DollarSign, CheckCircle, Clock, LogOut, Settings, Shield } from 'lucide-react';
 
@@ -47,11 +48,15 @@ type TotalRow = {
 
 // ---- Helpers ----
 function payInfo(s: Shift): { pay: number; minApplied: boolean; base: number } {
+  // Use centralized pay calculation from lib/pay.ts
+  const pay = calcPayRow(s);
+
+  // Calculate base for min-applied detection
   const rate = Number((s as any).pay_rate ?? 25);
   const hours = Number(s.hours_worked ?? 0);
   const base = s.pay_due != null ? Number(s.pay_due) : hours * rate;
   const isBreakdown = String(s.shift_type || '').toLowerCase() === 'breakdown';
-  const pay = isBreakdown ? Math.max(base, 50) : base;
+
   return { pay, minApplied: isBreakdown && base < 50, base };
 }
 
