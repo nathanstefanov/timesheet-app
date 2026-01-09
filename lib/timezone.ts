@@ -153,9 +153,9 @@ export function calculatePay(
 ): number {
   const basePay = hours * payRate;
 
-  // Apply $50 minimum for Breakdown shifts
-  if (shiftType?.toLowerCase() === 'breakdown' && basePay < 50) {
-    return 50;
+  // Apply $50 minimum for Breakdown shifts regardless of hours worked
+  if (shiftType?.toLowerCase() === 'breakdown') {
+    return Math.max(basePay, 50);
   }
 
   return basePay;

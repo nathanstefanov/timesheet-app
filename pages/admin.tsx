@@ -51,13 +51,14 @@ function payInfo(s: Shift): { pay: number; minApplied: boolean; base: number } {
   // Use centralized pay calculation from lib/pay.ts
   const pay = calcPayRow(s);
 
-  // Calculate base for min-applied detection
+  // Calculate base pay (hours * rate) for min-applied detection
   const rate = Number((s as any).pay_rate ?? 25);
   const hours = Number(s.hours_worked ?? 0);
-  const base = s.pay_due != null ? Number(s.pay_due) : hours * rate;
+  const baseCalc = hours * rate;
   const isBreakdown = String(s.shift_type || '').toLowerCase() === 'breakdown';
 
-  return { pay, minApplied: isBreakdown && base < 50, base };
+  // Minimum is applied when it's a Breakdown shift and calculated pay < $50
+  return { pay, minApplied: isBreakdown && baseCalc < 50, base: baseCalc };
 }
 
 function isAutoFlag(s: Shift) {

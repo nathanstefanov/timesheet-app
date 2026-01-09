@@ -154,7 +154,7 @@ export default function Payroll() {
     return result;
   }, [shifts, startDate, endDate]);
 
-  // Calculate pay with $50 minimum for Breakdown shifts
+  // Calculate pay with $50 minimum for Breakdown shifts regardless of hours worked
   // Use centralized pay calculation from lib/pay.ts
   const calculatePay = (shift: Shift): number => {
     return calcPayRow(shift);

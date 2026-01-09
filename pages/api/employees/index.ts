@@ -46,16 +46,19 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse) {
 
       if (error) throw error;
 
-      // Also get email from auth.users for each profile
-      const enrichedProfiles = await Promise.all(
-        (profiles || []).map(async (profile) => {
-          const { data: userData } = await supabaseAdmin.auth.admin.getUserById(profile.id);
-          return {
-            ...profile,
-            email: userData.user?.email || null,
-          };
-        })
+      // Fetch all users in one batch query instead of N+1 individual queries
+      const { data: allUsersData } = await supabaseAdmin.auth.admin.listUsers();
+
+      // Create a Map for O(1) email lookup by user ID
+      const usersById = new Map(
+        (allUsersData?.users || []).map(user => [user.id, user])
       );
+
+      // Enrich profiles with emails from the Map
+      const enrichedProfiles = (profiles || []).map(profile => ({
+        ...profile,
+        email: usersById.get(profile.id)?.email || null,
+      }));
 
       return res.status(200).json(enrichedProfiles);
     } catch (error: any) {

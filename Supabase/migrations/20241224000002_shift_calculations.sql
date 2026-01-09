@@ -20,9 +20,9 @@ BEGIN
   IF NEW.hours_worked IS NOT NULL AND NEW.hours_worked > 0 THEN
     NEW.pay_due := NEW.hours_worked * COALESCE(NEW.pay_rate, 25);
 
-    -- Apply $50 minimum for Breakdown shifts
-    IF NEW.shift_type = 'Breakdown' AND NEW.pay_due < 50 THEN
-      NEW.pay_due := 50;
+    -- Apply $50 minimum for Breakdown shifts regardless of hours worked
+    IF NEW.shift_type = 'Breakdown' THEN
+      NEW.pay_due := GREATEST(NEW.pay_due, 50);
     END IF;
   END IF;
 
@@ -66,7 +66,7 @@ ALTER TABLE shifts
 COMMENT ON FUNCTION calculate_shift_pay IS
   'Automatically calculates hours_worked and pay_due for shifts.
    Sets default pay_rate of $25/hour if not provided.
-   Applies $50 minimum for Breakdown shifts.';
+   Applies $50 minimum for Breakdown shifts regardless of hours worked.';
 
 COMMENT ON TRIGGER calculate_shift_pay_trigger ON shifts IS
   'Triggers before INSERT or UPDATE to automatically calculate shift pay';
