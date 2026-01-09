@@ -7,13 +7,23 @@ import { supabase } from '../lib/supabaseClient';
 import { validateEnv, EnvValidationError } from '../lib/env';
 import Head from 'next/head';
 
-// Validate environment variables at startup (only in browser)
+// Validate client-side environment variables at startup (only in browser)
 if (typeof window !== 'undefined') {
   try {
-    validateEnv();
+    // Only validate NEXT_PUBLIC_ variables that are available in the browser
+    const supabaseUrl = process.env.NEXT_PUBLIC_SUPABASE_URL;
+    const supabaseKey = process.env.NEXT_PUBLIC_SUPABASE_ANON_KEY;
+
+    if (!supabaseUrl || !supabaseKey) {
+      throw new EnvValidationError('Missing required Supabase configuration');
+    }
+
+    if (!supabaseUrl.startsWith('https://')) {
+      throw new EnvValidationError('Invalid Supabase URL format');
+    }
   } catch (error) {
     if (error instanceof EnvValidationError) {
-      console.error(error.message);
+      console.error('Environment validation error:', error.message);
       // Show user-friendly error in production
       if (process.env.NODE_ENV === 'production') {
         alert('Application configuration error. Please contact support.');
