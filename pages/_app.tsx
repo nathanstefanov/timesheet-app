@@ -4,7 +4,23 @@ import Link from 'next/link';
 import { useEffect, useRef, useState } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
+import { validateEnv, EnvValidationError } from '../lib/env';
 import Head from 'next/head';
+
+// Validate environment variables at startup (only in browser)
+if (typeof window !== 'undefined') {
+  try {
+    validateEnv();
+  } catch (error) {
+    if (error instanceof EnvValidationError) {
+      console.error(error.message);
+      // Show user-friendly error in production
+      if (process.env.NODE_ENV === 'production') {
+        alert('Application configuration error. Please contact support.');
+      }
+    }
+  }
+}
 
 type Profile = { id: string; full_name?: string | null; role: 'employee' | 'admin' };
 

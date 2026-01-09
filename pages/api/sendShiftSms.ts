@@ -1,13 +1,21 @@
 // pages/api/sendShiftSms.ts
 import type { NextApiResponse } from 'next';
+import { z } from 'zod';
 import Twilio from 'twilio';
 import { requireAdmin, type AuthenticatedRequest } from '../../lib/middleware';
 import { supabaseAdmin } from '../../lib/supabaseAdmin';
+import { isTwilioConfigured } from '../../lib/env';
 
-const twilio = Twilio(
+// Zod schema for request validation
+const SendShiftSmsSchema = z.object({
+  shift_id: z.string().uuid('shift_id must be a valid UUID'),
+  employee_ids: z.array(z.string().uuid('employee_id must be a valid UUID')).min(1, 'At least one employee_id is required'),
+});
+
+const twilio = isTwilioConfigured() ? Twilio(
   process.env.TWILIO_ACCOUNT_SID!,
   process.env.TWILIO_AUTH_TOKEN!,
-);
+) : null;
 
 async function handler(
   req: AuthenticatedRequest,
@@ -17,14 +25,21 @@ async function handler(
     return res.status(405).json({ error: 'Method not allowed' });
   }
 
-  const { shift_id, employee_ids } = req.body as {
-    shift_id?: string;
-    employee_ids?: string[];
-  };
-
-  if (!shift_id || !employee_ids || employee_ids.length === 0) {
-    return res.status(400).json({ error: 'Missing shift_id or employee_ids' });
+  // Check if Twilio is configured
+  if (!twilio) {
+    return res.status(503).json({ error: 'SMS service is not configured' });
   }
+
+  // Validate request body with Zod
+  const parsed = SendShiftSmsSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({
+      error: 'Invalid request data',
+      details: parsed.error.errors.map(e => e.message).join(', ')
+    });
+  }
+
+  const { shift_id, employee_ids } = parsed.data;
 
   // Get shift details
   const { data: shift, error: shiftErr } = await supabaseAdmin
@@ -34,7 +49,8 @@ async function handler(
     .single();
 
   if (shiftErr || !shift) {
-    return res.status(500).json({ error: 'Shift not found' });
+    console.error('[sendShiftSms] Failed to load shift:', shiftErr);
+    return res.status(404).json({ error: 'Shift not found' });
   }
 
   // Get ONLY the newly added employees
@@ -45,6 +61,7 @@ async function handler(
     .eq('sms_opt_in', true);
 
   if (empErr) {
+    console.error('[sendShiftSms] Failed to load employees:', empErr);
     return res.status(500).json({ error: 'Failed to load employees' });
   }
 

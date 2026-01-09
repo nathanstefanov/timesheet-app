@@ -126,7 +126,8 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse) {
       .single();
 
     if (beforeRes.error || !beforeRes.data) {
-      return res.status(404).json({ error: beforeRes.error?.message || 'Shift not found' });
+      console.error('[PATCH /api/schedule/shifts/[id]] Failed to fetch shift:', beforeRes.error);
+      return res.status(404).json({ error: 'Shift not found' });
     }
 
     const before = beforeRes.data;
@@ -143,7 +144,8 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse) {
       .single();
 
     if (afterRes.error || !afterRes.data) {
-      return res.status(500).json({ error: afterRes.error?.message || 'Update failed' });
+      console.error('[PATCH /api/schedule/shifts/[id]] Update failed:', afterRes.error);
+      return res.status(500).json({ error: 'Update failed' });
     }
 
     const after = afterRes.data;
@@ -209,7 +211,10 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse) {
 
   if (req.method === 'DELETE') {
     const { error } = await supabaseAdmin.from('schedule_shifts').delete().eq('id', id);
-    if (error) return res.status(500).json({ error: error.message });
+    if (error) {
+      console.error('[DELETE /api/schedule/shifts/[id]] Delete failed:', error);
+      return res.status(500).json({ error: 'Delete failed' });
+    }
     return res.status(200).json({ ok: true });
   }
 

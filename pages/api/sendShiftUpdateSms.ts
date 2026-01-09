@@ -1,13 +1,34 @@
 // pages/api/sendShiftUpdateSms.ts
 import type { NextApiResponse } from 'next';
+import { z } from 'zod';
 import Twilio from 'twilio';
 import { requireAdmin, type AuthenticatedRequest } from '../../lib/middleware';
 import { supabaseAdmin } from '../../lib/supabaseAdmin';
+import { isTwilioConfigured } from '../../lib/env';
 
-const twilio = Twilio(
+// Zod schema for request validation
+const ChangeSchema = z.object({
+  from: z.string().nullable().optional(),
+  to: z.string().nullable().optional(),
+});
+
+const SendShiftUpdateSmsSchema = z.object({
+  shift_id: z.string().uuid('shift_id must be a valid UUID'),
+  changes: z.object({
+    start_time: ChangeSchema.optional(),
+    end_time: ChangeSchema.optional(),
+    location_name: ChangeSchema.optional(),
+    address: ChangeSchema.optional(),
+  }).refine(
+    (data) => Object.keys(data).length > 0,
+    { message: 'At least one change must be provided' }
+  ),
+});
+
+const twilio = isTwilioConfigured() ? Twilio(
   process.env.TWILIO_ACCOUNT_SID!,
   process.env.TWILIO_AUTH_TOKEN!,
-);
+) : null;
 
 function fmt(dtIso?: string | null) {
   if (!dtIso) return '';
@@ -20,19 +41,21 @@ function fmt(dtIso?: string | null) {
 async function handler(req: AuthenticatedRequest, res: NextApiResponse) {
   if (req.method !== 'POST') return res.status(405).json({ error: 'Method not allowed' });
 
-  const { shift_id, changes } = req.body as {
-    shift_id?: string;
-    changes?: {
-      start_time?: { from: string | null; to: string | null };
-      end_time?: { from: string | null; to: string | null };
-      location_name?: { from: string | null; to: string | null };
-      address?: { from: string | null; to: string | null };
-    };
-  };
-
-  if (!shift_id || !changes) {
-    return res.status(400).json({ error: 'Missing shift_id or changes' });
+  // Check if Twilio is configured
+  if (!twilio) {
+    return res.status(503).json({ error: 'SMS service is not configured' });
   }
+
+  // Validate request body with Zod
+  const parsed = SendShiftUpdateSmsSchema.safeParse(req.body);
+  if (!parsed.success) {
+    return res.status(400).json({
+      error: 'Invalid request data',
+      details: parsed.error.errors.map(e => e.message).join(', ')
+    });
+  }
+
+  const { shift_id, changes } = parsed.data;
 
   // Pull current assignments for this shift
   const { data: assigns, error: aErr } = await supabaseAdmin
@@ -40,7 +63,10 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse) {
     .select('employee_id')
     .eq('schedule_shift_id', shift_id);
 
-  if (aErr) return res.status(500).json({ error: 'Failed to load assignments' });
+  if (aErr) {
+    console.error('[sendShiftUpdateSms] Failed to load assignments:', aErr);
+    return res.status(500).json({ error: 'Failed to load assignments' });
+  }
 
   const employeeIds = (assigns || []).map((x: any) => x.employee_id);
   if (employeeIds.length === 0) return res.status(200).json({ success: true, sent: 0 });
@@ -52,7 +78,10 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse) {
     .eq('id', shift_id)
     .single();
 
-  if (sErr || !shift) return res.status(500).json({ error: 'Shift not found' });
+  if (sErr || !shift) {
+    console.error('[sendShiftUpdateSms] Failed to load shift:', sErr);
+    return res.status(404).json({ error: 'Shift not found' });
+  }
 
   // Load employee phone numbers (ONLY opt-in)
   const { data: emps, error: eErr } = await supabaseAdmin
@@ -61,7 +90,10 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse) {
     .in('id', employeeIds)
     .eq('sms_opt_in', true);
 
-  if (eErr) return res.status(500).json({ error: 'Failed to load employees' });
+  if (eErr) {
+    console.error('[sendShiftUpdateSms] Failed to load employees:', eErr);
+    return res.status(500).json({ error: 'Failed to load employees' });
+  }
 
   // Build a compact “what changed” block
   const lines: string[] = [];
