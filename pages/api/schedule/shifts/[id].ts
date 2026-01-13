@@ -27,16 +27,13 @@ function hasTwilioEnv() {
 
 function fmtWhen(shift: any) {
   const start = shift.start_time ? new Date(shift.start_time) : null;
-  const end = shift.end_time ? new Date(shift.end_time) : null;
 
-  const startStr = start
-    ? start.toLocaleString(undefined, { dateStyle: 'short', timeStyle: 'short' })
-    : 'TBD';
+  if (!start) return 'TBD';
 
-  if (!end) return startStr;
+  const date = start.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  const time = start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
 
-  const endStr = end.toLocaleTimeString(undefined, { timeStyle: 'short' });
-  return `${startStr} – ${endStr}`;
+  return `${date}, ${time}`;
 }
 
 function buildShiftUpdatedMessage(params: {
@@ -55,33 +52,37 @@ function buildShiftUpdatedMessage(params: {
   const beforeAddr = before.address || '';
   const afterAddr = after.address || '';
 
-  // Keep it short + carrier-safe
-  let msg = `Shift updated${employeeFirst ? `, ${employeeFirst}` : ''}.\n\n`;
+  // Build context line
+  const contextLine = afterLoc ? `at ${afterLoc}` : 'for your shift';
 
+  // Start message
+  let msg = `⚠️ Shift Update - ${contextLine}\n\n`;
+
+  // Show what changed
   if (beforeWhen !== afterWhen) {
-    msg += `When: ${beforeWhen} → ${afterWhen}\n`;
-  } else {
-    msg += `When: ${afterWhen}\n`;
+    msg += `🕒 Time:\n`;
+    msg += `   Was: ${beforeWhen}\n`;
+    msg += `   Now: ${afterWhen}\n`;
   }
 
   if (beforeLoc !== afterLoc) {
-    msg += `Location: ${beforeLoc || '—'} → ${afterLoc || '—'}\n`;
-  } else if (afterLoc) {
-    msg += `Location: ${afterLoc}\n`;
+    msg += `📍 Location:\n`;
+    msg += `   Was: ${beforeLoc || 'Not set'}\n`;
+    msg += `   Now: ${afterLoc || 'Not set'}\n`;
   }
 
   if (beforeAddr !== afterAddr) {
-    // address changes can be long; keep it readable
-    msg += `Address updated.\n`;
-  } else if (afterAddr) {
-    msg += `Address: ${afterAddr}\n`;
+    msg += `🗺️  Address:\n`;
+    msg += `   Was: ${beforeAddr || 'Not set'}\n`;
+    msg += `   Now: ${afterAddr || 'Not set'}\n`;
   }
 
   if (scheduleUrl) {
-    msg += `\nView schedule: ${scheduleUrl}\n`;
+    msg += `\nView full schedule:\n${scheduleUrl}\n`;
   }
 
-  msg += `\nReply STOP to opt out.`;
+  msg += `\nQuestions? Contact your supervisor.\n`;
+  msg += `Text STOP to unsubscribe.`;
   return msg;
 }
 

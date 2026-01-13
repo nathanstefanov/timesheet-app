@@ -148,30 +148,43 @@ async function handler(
     const baseUrl = getBaseUrl(req);
     const scheduleUrl = `${baseUrl}/me/schedule`;
 
-    const { date, startTime, endTime } = fmtShiftText(shift);
+    // Format date and time in readable format
+    const startDate = shift?.start_time ? new Date(shift.start_time) : null;
+    const dateStr = startDate
+      ? startDate.toLocaleDateString('en-US', {
+          weekday: 'short',
+          month: 'short',
+          day: 'numeric',
+        })
+      : 'TBD';
+    const timeStr = startDate
+      ? startDate.toLocaleTimeString('en-US', {
+          hour: 'numeric',
+          minute: '2-digit',
+          hour12: true,
+        })
+      : 'TBD';
 
-    const locationLine = shift.location_name
-      ? shift.address
-        ? `${shift.location_name} — ${shift.address}`
-        : `${shift.location_name}`
-      : shift.address
-      ? shift.address
-      : 'Location TBD';
+    // Build location line (include address if available)
+    const locationLine = shift.address
+      ? `📍 ${shift.location_name ?? 'Location'}\n   ${shift.address}`
+      : `📍 ${shift.location_name ?? 'Location TBD'}`;
 
-    const job = shift.job_type ? String(shift.job_type).toUpperCase() : 'SHIFT';
+    const jobType = shift.job_type ?? 'General';
 
     const sendPromises = (people || []).map(async (p: any) => {
       const phone = (p.phone || '').toString().trim();
       if (!phone) return;
 
-      const name = (p.full_name || 'there').toString().trim();
-
       const body =
-        `Hi ${name} — you were assigned a ${job}.\n` +
-        `${date} • ${startTime}${endTime ? `–${endTime}` : ''}\n` +
-        `${locationLine}\n` +
-        `View schedule: ${scheduleUrl}\n` +
-        `Reply STOP to opt out.`;
+        `🔔 New Shift Assignment\n\n` +
+        `${locationLine}\n\n` +
+        `📅 ${dateStr}\n` +
+        `🕒 ${timeStr}\n` +
+        `👷 ${jobType}\n\n` +
+        `View full details:\n${scheduleUrl}\n\n` +
+        `Questions? Contact your supervisor.\n` +
+        `Text STOP to unsubscribe.`;
 
       try {
         await client.messages.create({
