@@ -31,11 +31,11 @@ const twilio = isTwilioConfigured() ? Twilio(
 ) : null;
 
 function fmt(dtIso?: string | null) {
-  if (!dtIso) return '';
-  return new Date(dtIso).toLocaleString(undefined, {
-    dateStyle: 'short',
-    timeStyle: 'short',
-  });
+  if (!dtIso) return 'Not set';
+  const dt = new Date(dtIso);
+  const date = dt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
+  const time = dt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
+  return `${date}, ${time}`;
 }
 
 async function handler(req: AuthenticatedRequest, res: NextApiResponse) {
@@ -96,14 +96,35 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse) {
       throw eErr;
     }
 
-    // Build a compact "what changed" block
+    // Build a detailed "what changed" block with better formatting
     const lines: string[] = [];
-    if (changes.start_time) lines.push(`Start: ${fmt(changes.start_time.from)} → ${fmt(changes.start_time.to)}`);
-    if (changes.end_time) lines.push(`End: ${fmt(changes.end_time.from)} → ${fmt(changes.end_time.to)}`);
-    if (changes.location_name) lines.push(`Location: ${changes.location_name.from || '—'} → ${changes.location_name.to || '—'}`);
-    if (changes.address) lines.push(`Address: ${changes.address.from || '—'} → ${changes.address.to || '—'}`);
+    if (changes.start_time) {
+      lines.push(`🕒 Start Time:`);
+      lines.push(`   Was: ${fmt(changes.start_time.from)}`);
+      lines.push(`   Now: ${fmt(changes.start_time.to)}`);
+    }
+    if (changes.end_time) {
+      lines.push(`🕒 End Time:`);
+      lines.push(`   Was: ${fmt(changes.end_time.from)}`);
+      lines.push(`   Now: ${fmt(changes.end_time.to)}`);
+    }
+    if (changes.location_name) {
+      lines.push(`📍 Location:`);
+      lines.push(`   Was: ${changes.location_name.from || 'Not set'}`);
+      lines.push(`   Now: ${changes.location_name.to || 'Not set'}`);
+    }
+    if (changes.address) {
+      lines.push(`🗺️  Address:`);
+      lines.push(`   Was: ${changes.address.from || 'Not set'}`);
+      lines.push(`   Now: ${changes.address.to || 'Not set'}`);
+    }
 
     const changeBlock = lines.join('\n');
+
+    // Format shift context for reference
+    const shiftContext = shift.location_name
+      ? `at ${shift.location_name}`
+      : `on ${new Date(shift.start_time).toLocaleDateString('en-US', { month: 'short', day: 'numeric' })}`;
 
     // Optional schedule link (recommended)
     const baseUrl = process.env.NEXT_PUBLIC_APP_URL || process.env.APP_BASE_URL || '';
@@ -115,10 +136,11 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse) {
       if (!emp.phone) continue;
 
       const msg =
-        `Shift updated.\n\n` +
+        `⚠️ Shift Update - ${shiftContext}\n\n` +
         `${changeBlock}\n\n` +
-        (scheduleLink ? `View schedule: ${scheduleLink}\n\n` : '') +
-        `Reply STOP to opt out.`;
+        (scheduleLink ? `View full schedule:\n${scheduleLink}\n\n` : '') +
+        `Questions? Contact your supervisor.\n` +
+        `Text STOP to unsubscribe.`;
 
       try {
         await twilio.messages.create({

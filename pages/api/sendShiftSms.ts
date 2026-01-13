@@ -66,20 +66,38 @@ async function handler(
       throw empErr;
     }
 
-    const when = new Date(shift.start_time).toLocaleString();
+    // Format date and time in a more readable way
+    const shiftDate = new Date(shift.start_time);
+    const dateStr = shiftDate.toLocaleDateString('en-US', {
+      weekday: 'short',
+      month: 'short',
+      day: 'numeric',
+    });
+    const timeStr = shiftDate.toLocaleTimeString('en-US', {
+      hour: 'numeric',
+      minute: '2-digit',
+      hour12: true,
+    });
 
     const results = [];
 
     for (const emp of employees || []) {
       if (!emp.phone) continue;
 
+      // Build location line (include address if available)
+      const locationLine = shift.address
+        ? `📍 ${shift.location_name ?? 'Location'}\n   ${shift.address}`
+        : `📍 ${shift.location_name ?? 'Location'}`;
+
       const message =
-        `You've been scheduled for a shift.\n\n` +
-        `${shift.location_name ?? 'Location'}\n` +
-        `${when}\n` +
-        `Role: ${shift.job_type ?? 'Shift'}\n\n` +
-        `View schedule: ${process.env.NEXT_PUBLIC_APP_URL}/me/schedule\n\n` +
-        `Reply STOP to opt out.`;
+        `🔔 New Shift Assignment\n\n` +
+        `${locationLine}\n\n` +
+        `📅 ${dateStr}\n` +
+        `🕒 ${timeStr}\n` +
+        `👷 ${shift.job_type ?? 'General'}\n\n` +
+        `View full details:\n${process.env.NEXT_PUBLIC_APP_URL}/me/schedule\n\n` +
+        `Questions? Contact your supervisor.\n` +
+        `Text STOP to unsubscribe.`;
 
       try {
         const msg = await twilio.messages.create({
