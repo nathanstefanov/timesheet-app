@@ -2,6 +2,7 @@ import type { NextApiResponse } from 'next';
 import { z } from 'zod';
 import { supabaseAdmin } from '../../../../lib/supabaseAdmin';
 import { requireAdmin, type AuthenticatedRequest, handleApiError } from '../../../../lib/middleware';
+import { formatForDisplay } from '../../../../lib/timezone';
 
 // IMPORTANT: twilio must only run server-side
 import twilio from 'twilio';
@@ -26,14 +27,10 @@ function hasTwilioEnv() {
 }
 
 function fmtWhen(shift: any) {
-  const start = shift.start_time ? new Date(shift.start_time) : null;
+  if (!shift.start_time) return 'TBD';
 
-  if (!start) return 'TBD';
-
-  const date = start.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-  const time = start.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-
-  return `${date}, ${time}`;
+  // Format date and time in user's timezone (America/Chicago)
+  return formatForDisplay(shift.start_time, 'EEE, MMM d, h:mm a');
 }
 
 function buildShiftUpdatedMessage(params: {

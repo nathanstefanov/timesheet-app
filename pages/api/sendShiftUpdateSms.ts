@@ -5,6 +5,7 @@ import Twilio from 'twilio';
 import { requireAdmin, type AuthenticatedRequest, handleApiError } from '../../lib/middleware';
 import { supabaseAdmin } from '../../lib/supabaseAdmin';
 import { isTwilioConfigured } from '../../lib/env';
+import { formatForDisplay } from '../../lib/timezone';
 
 // Zod schema for request validation
 const ChangeSchema = z.object({
@@ -32,10 +33,8 @@ const twilio = isTwilioConfigured() ? Twilio(
 
 function fmt(dtIso?: string | null) {
   if (!dtIso) return 'Not set';
-  const dt = new Date(dtIso);
-  const date = dt.toLocaleDateString('en-US', { weekday: 'short', month: 'short', day: 'numeric' });
-  const time = dt.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit', hour12: true });
-  return `${date}, ${time}`;
+  // Format date and time in user's timezone (America/Chicago)
+  return formatForDisplay(dtIso, 'EEE, MMM d, h:mm a');
 }
 
 async function handler(req: AuthenticatedRequest, res: NextApiResponse) {

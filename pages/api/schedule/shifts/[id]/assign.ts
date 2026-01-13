@@ -3,6 +3,7 @@ import type { NextApiResponse } from 'next';
 import twilio from 'twilio';
 import { supabaseAdmin } from '../../../../../lib/supabaseAdmin';
 import { requireAdmin, type AuthenticatedRequest, handleApiError } from '../../../../../lib/middleware';
+import { formatForDisplay } from '../../../../../lib/timezone';
 
 type ApiResponse = { ok: true } | { error: string };
 
@@ -148,21 +149,12 @@ async function handler(
     const baseUrl = getBaseUrl(req);
     const scheduleUrl = `${baseUrl}/me/schedule`;
 
-    // Format date and time in readable format
-    const startDate = shift?.start_time ? new Date(shift.start_time) : null;
-    const dateStr = startDate
-      ? startDate.toLocaleDateString('en-US', {
-          weekday: 'short',
-          month: 'short',
-          day: 'numeric',
-        })
+    // Format date and time in user's timezone (America/Chicago)
+    const dateStr = shift?.start_time
+      ? formatForDisplay(shift.start_time, 'EEE, MMM d')
       : 'TBD';
-    const timeStr = startDate
-      ? startDate.toLocaleTimeString('en-US', {
-          hour: 'numeric',
-          minute: '2-digit',
-          hour12: true,
-        })
+    const timeStr = shift?.start_time
+      ? formatForDisplay(shift.start_time, 'h:mm a')
       : 'TBD';
 
     // Build location line (include address if available)

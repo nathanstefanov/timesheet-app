@@ -5,6 +5,7 @@ import Twilio from 'twilio';
 import { requireAdmin, type AuthenticatedRequest, handleApiError } from '../../lib/middleware';
 import { supabaseAdmin } from '../../lib/supabaseAdmin';
 import { isTwilioConfigured } from '../../lib/env';
+import { formatForDisplay } from '../../lib/timezone';
 
 // Zod schema for request validation
 const SendShiftSmsSchema = z.object({
@@ -66,18 +67,9 @@ async function handler(
       throw empErr;
     }
 
-    // Format date and time in a more readable way
-    const shiftDate = new Date(shift.start_time);
-    const dateStr = shiftDate.toLocaleDateString('en-US', {
-      weekday: 'short',
-      month: 'short',
-      day: 'numeric',
-    });
-    const timeStr = shiftDate.toLocaleTimeString('en-US', {
-      hour: 'numeric',
-      minute: '2-digit',
-      hour12: true,
-    });
+    // Format date and time in user's timezone (America/Chicago)
+    const dateStr = formatForDisplay(shift.start_time, 'EEE, MMM d');
+    const timeStr = formatForDisplay(shift.start_time, 'h:mm a');
 
     const results = [];
 
@@ -96,7 +88,7 @@ async function handler(
         `🕒 ${timeStr}\n` +
         `👷 ${shift.job_type ?? 'General'}\n\n` +
         `View full details:\n${process.env.NEXT_PUBLIC_APP_URL}/me/schedule\n\n` +
-        `Questions? Contact your supervisor.\n` +
+        `Questions? Contact Lance.\n` +
         `Text STOP to unsubscribe.`;
 
       try {
