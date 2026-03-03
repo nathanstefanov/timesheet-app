@@ -8610,3 +8610,168 @@ img, video {
   }
 }
 
+
+/* ================================================================
+   COMPREHENSIVE MOBILE RESPONSIVE OVERHAUL
+   ================================================================ */
+
+/* ---- HIDE COLUMNS ON MOBILE ---- */
+@media (max-width: 640px) {
+  .col-hide-mobile { display: none !important; }
+}
+
+/* ---- PRO-TABLE COMPACT ON MOBILE ---- */
+@media (max-width: 768px) {
+  .pro-table thead th {
+    padding: 8px 10px !important;
+    font-size: 10.5px !important;
+  }
+  .pro-table tbody td {
+    padding: 9px 10px !important;
+    font-size: 13px !important;
+  }
+  /* Prevent date & primary cells from wrapping */
+  .pro-table .cell-primary,
+  .pro-table td:first-child {
+    white-space: nowrap !important;
+  }
+  /* Touch-friendly action buttons */
+  .icon-btn { width: 34px !important; height: 34px !important; }
+  /* Smaller pills in table */
+  .pill { font-size: 11px !important; padding: 2px 7px !important; }
+}
+
+/* Scroll hint: fade on right edge */
+@media (max-width: 768px) {
+  .table-scroll {
+    -webkit-overflow-scrolling: touch !important;
+    scroll-snap-type: x proximity;
+  }
+  .table-card { overflow: hidden !important; border-radius: 12px !important; }
+  .table-card-header {
+    padding: 12px 14px !important;
+  }
+}
+
+/* ---- ADMIN DATA-TABLE COMPACT ---- */
+@media (max-width: 768px) {
+  .data-table th, .shift-detail-table th,
+  .data-table td, .shift-detail-table td,
+  .shift-history-table th, .shift-history-table td,
+  .employee-totals-table th, .employee-totals-table td {
+    padding: 8px 8px !important;
+    font-size: 12.5px !important;
+  }
+}
+
+/* ---- FORM ROW STACKS TO 1 COLUMN ON MOBILE ---- */
+@media (max-width: 640px) {
+  .log-shift-form-row {
+    grid-template-columns: 1fr !important;
+    gap: 0 !important;
+  }
+  .log-shift-form-card { padding: 16px !important; }
+  /* Reduce input padding slightly on mobile */
+  .log-shift-input,
+  .log-shift-select {
+    padding: 0.75rem 0.875rem 0.75rem 2.75rem !important;
+    font-size: 15px !important; /* prevents iOS zoom */
+  }
+}
+
+/* ---- FILTER BAR WRAPS CLEANLY ON MOBILE ---- */
+@media (max-width: 640px) {
+  .filter-bar {
+    gap: 6px !important;
+    padding: 10px !important;
+  }
+  .filter-bar-search {
+    flex: 1 1 100% !important;
+    width: 100% !important;
+    min-width: 0 !important;
+  }
+  .filter-bar select,
+  .filter-bar input[type="date"] {
+    flex: 1 !important;
+    min-width: 80px !important;
+    font-size: 13px !important;
+  }
+  .filter-bar-label {
+    display: none !important; /* save space on small screens */
+  }
+  .filter-bar-range-label {
+    font-size: 11px !important;
+    white-space: nowrap !important;
+  }
+  .filter-bar-nav button {
+    padding: 4px 8px !important;
+    font-size: 12px !important;
+  }
+}
+
+/* ---- STAT MINI CARDS COMPACT ON MOBILE ---- */
+@media (max-width: 768px) {
+  .stat-mini { padding: 10px 12px !important; gap: 8px !important; }
+  .stat-mini-icon { width: 36px !important; height: 36px !important; flex-shrink: 0 !important; }
+  .stat-mini-value { font-size: 1.05rem !important; }
+  .stat-mini-label { font-size: 11px !important; }
+}
+@media (max-width: 400px) {
+  .stat-mini-grid { grid-template-columns: 1fr 1fr !important; gap: 8px !important; }
+}
+
+/* ---- APP CONTENT TIGHTER PADDING ON MOBILE ---- */
+@media (max-width: 768px) {
+  .app-content { padding: 12px !important; }
+}
+
+/* ---- EXPORT / SECONDARY HEADER BUTTONS ---- */
+.btn-export {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+  padding: 9px 16px;
+  background: #6366f1;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+  min-height: 40px;
+  white-space: nowrap;
+}
+.btn-export:hover { background: #4f46e5; }
+.btn-export:disabled { background: #94a3b8; cursor: not-allowed; opacity: 0.7; }
+
+/* ---- TABLE CARD HEADER ACTIONS ROW ---- */
+.table-card-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+/* ---- GENERAL MOBILE PADDING TIGHTENING ---- */
+@media (max-width: 768px) {
+  .table-card-header { flex-wrap: wrap !important; gap: 6px !important; }
+  /* Better spacing in page sections */
+  .stat-mini-grid { margin-bottom: 12px !important; }
+  .filter-bar { margin-bottom: 12px !important; }
+}
+
+/* ---- ADMIN HEADER ACTIONS FIX (buttons don't go full width) ---- */
+@media (max-width: 768px) {
+  .header-actions {
+    display: flex !important;
+    flex-wrap: wrap !important;
+    gap: 6px !important;
+  }
+  .header-actions button,
+  .header-actions a {
+    width: auto !important;
+    flex-shrink: 0 !important;
+  }
+}

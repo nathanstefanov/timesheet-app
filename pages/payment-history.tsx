@@ -372,25 +372,10 @@ export default function PaymentHistory() {
                 <button
                   onClick={exportToCSV}
                   disabled={filteredShifts.length === 0}
-                  style={{
-                    padding: '10px 20px',
-                    background: filteredShifts.length === 0 ? '#94a3b8' : '#6366f1',
-                    color: 'white',
-                    border: 'none',
-                    borderRadius: '8px',
-                    cursor: filteredShifts.length === 0 ? 'not-allowed' : 'pointer',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    gap: '8px',
-                    fontSize: '14px',
-                    fontWeight: 600,
-                    minHeight: '44px',
-                    width: '100%',
-                  }}
+                  className="btn-export"
                 >
-                  <Download size={18} />
-                  Export to CSV
+                  <Download size={16} />
+                  Export CSV
                 </button>
               </div>
             </div>
@@ -491,7 +476,7 @@ export default function PaymentHistory() {
                         <th>Shift Type</th>
                         <th className="col-right">Hours</th>
                         <th className="col-right">Amount</th>
-                        <th>Paid At</th>
+                        <th className="col-hide-mobile">Paid At</th>
                         <th className="col-center">Actions</th>
                       </tr>
                     </thead>
@@ -508,7 +493,7 @@ export default function PaymentHistory() {
                           <td><span className="pill pill-type">{shift.shift_type}</span></td>
                           <td className="col-right">{shift.hours_worked?.toFixed(2) || '0.00'}h</td>
                           <td className="col-right amount-green">${(shift.pay_due || 0).toFixed(2)}</td>
-                          <td>{shift.paid_at ? new Date(shift.paid_at).toLocaleString() : 'Not recorded'}</td>
+                          <td className="col-hide-mobile">{shift.paid_at ? new Date(shift.paid_at).toLocaleString() : 'Not recorded'}</td>
                           <td className="col-center">
                             <button
                               type="button"

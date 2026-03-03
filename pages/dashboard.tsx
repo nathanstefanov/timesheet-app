@@ -488,8 +488,8 @@ export default function Dashboard() {
                       <tr>
                         <th>Date</th>
                         <th>Type</th>
-                        <th>Time In</th>
-                        <th>Time Out</th>
+                        <th className="col-hide-mobile">Time In</th>
+                        <th className="col-hide-mobile">Time Out</th>
                         <th className="col-right">Hours</th>
                         <th className="col-right">Pay</th>
                         <th>Status</th>
@@ -503,8 +503,8 @@ export default function Dashboard() {
                           <tr key={s.id}>
                             <td className="cell-primary">{s.shift_date}</td>
                             <td><span className="pill pill-type">{s.shift_type}</span></td>
-                            <td>{s.time_in ? formatForDisplay(s.time_in, 'h:mm a') : '—'}</td>
-                            <td>{s.time_out ? formatForDisplay(s.time_out, 'h:mm a') : '—'}</td>
+                            <td className="col-hide-mobile">{s.time_in ? formatForDisplay(s.time_in, 'h:mm a') : '—'}</td>
+                            <td className="col-hide-mobile">{s.time_out ? formatForDisplay(s.time_out, 'h:mm a') : '—'}</td>
                             <td className="col-right">{Number(s.hours_worked ?? 0).toFixed(1)}h</td>
                             <td className="col-right amount-green">${Number(s.pay_due ?? 0).toFixed(2)}</td>
                             <td>

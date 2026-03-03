@@ -923,8 +923,8 @@ export default function Admin() {
                             <tr>
                               <th>Date</th>
                               <th>Type</th>
-                              <th>In</th>
-                              <th>Out</th>
+                              <th className="col-hide-mobile">In</th>
+                              <th className="col-hide-mobile">Out</th>
                               <th>Hours</th>
                               <th>Pay</th>
                               <th>Status</th>
@@ -947,7 +947,7 @@ export default function Admin() {
                                       {s.shift_type}
                                     </span>
                                   </td>
-                                  <td>
+                                  <td className="col-hide-mobile">
                                     {s.time_in
                                       ? new Date(s.time_in).toLocaleTimeString([], {
                                           hour: '2-digit',
@@ -955,7 +955,7 @@ export default function Admin() {
                                         })
                                       : '—'}
                                   </td>
-                                  <td>
+                                  <td className="col-hide-mobile">
                                     {s.time_out
                                       ? new Date(s.time_out).toLocaleTimeString([], {
                                           hour: '2-digit',
