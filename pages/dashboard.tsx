@@ -10,7 +10,7 @@ import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
 import { logShiftDeleted } from '../lib/auditLog';
 import Head from 'next/head';
-import { User, Plus, Calendar, BarChart3, DollarSign, Clock, LogOut, Settings, AlertCircle, X, Shield, ChevronDown } from 'lucide-react';
+import { User, Plus, Calendar, BarChart3, DollarSign, Clock, LogOut, Settings, AlertCircle, X, Shield, ChevronDown, Pencil, Trash2 } from 'lucide-react';
 import {
   startOfWeek,
   endOfWeek,
@@ -221,18 +221,21 @@ export default function Dashboard() {
     const paid = Boolean(s.is_paid);
     return (
       <div key={s.id} className={`shift-card-item ${paid ? 'paid-card' : 'unpaid-card'}`}>
+        {/* Top row: type pill + amount */}
         <div className="shift-card-row">
           <span className="pill pill-type">{s.shift_type}</span>
           <span className="shift-card-pay">${Number(s.pay_due ?? 0).toFixed(2)}</span>
         </div>
+        {/* Middle row: date + status */}
         <div className="shift-card-row">
           <span className="shift-card-date">{fmtDate(s.shift_date)}</span>
           {paid
-            ? <span className="pill pill-paid">✓ Paid</span>
+            ? <span className="pill pill-paid">Paid</span>
             : <span className="pill pill-unpaid">Unpaid</span>
           }
         </div>
-        {(s.time_in || s.hours_worked) && (
+        {/* Bottom row: time/hours meta + actions */}
+        <div className="shift-card-bottom">
           <div className="shift-card-meta">
             {s.time_in && s.time_out && (
               <span>{formatForDisplay(s.time_in, 'h:mm a')} – {formatForDisplay(s.time_out, 'h:mm a')}</span>
@@ -240,10 +243,10 @@ export default function Dashboard() {
             {s.time_in && s.hours_worked ? <span className="shift-card-meta-sep"> · </span> : null}
             {s.hours_worked ? <span>{Number(s.hours_worked).toFixed(1)}h</span> : null}
           </div>
-        )}
-        <div className="shift-card-actions">
-          <Link href={`/shift/${s.id}`} className="icon-btn icon-btn-edit" aria-label="Edit shift">✏️</Link>
-          <button type="button" className="icon-btn icon-btn-delete" onClick={() => delShift(s.id)} aria-label="Delete shift">🗑️</button>
+          <div className="shift-card-actions">
+            <Link href={`/shift/${s.id}`} className="sca-edit" aria-label="Edit shift"><Pencil size={14} /></Link>
+            <button type="button" className="sca-delete" onClick={() => delShift(s.id)} aria-label="Delete shift"><Trash2 size={14} /></button>
+          </div>
         </div>
       </div>
     );

@@ -8897,12 +8897,50 @@ img, video {
   margin: 0 2px;
 }
 
-.shift-card-actions {
-  display: flex !important;
-  gap: 8px !important;
-  justify-content: flex-end !important;
-  padding-top: 4px;
+/* Bottom row: meta + actions side by side */
+.shift-card-bottom {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 2px;
 }
+.shift-card-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+/* Edit button */
+.sca-edit {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: transparent;
+  color: #94a3b8;
+  border: none;
+  cursor: pointer;
+  text-decoration: none;
+  transition: background 0.15s, color 0.15s;
+}
+.sca-edit:hover { background: #eff6ff; color: #3b82f6; }
+/* Delete button */
+.sca-delete {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
+  border-radius: 6px;
+  background: transparent;
+  color: #94a3b8;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s, color 0.15s;
+}
+.sca-delete:hover { background: #fff1f2; color: #ef4444; }
 
 /* Show cards on mobile, table on desktop */
 .shift-mobile-cards  { display: none !important; }
