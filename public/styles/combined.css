@@ -8499,3 +8499,47 @@ img, video {
 .icon-btn-undo { background: #fee2e2; color: #991b1b; }
 .icon-btn-undo:hover { background: #fecaca; }
 
+/* ---- MOBILE STICKY HEADER FIX ----
+ * The hamburger button is position:fixed and covers scrolled page content.
+ * Making the app-header sticky on mobile keeps it always at the top,
+ * so content scrolls below the header, never under the hamburger button.
+ * -------------------------------------------------------------------- */
+@media (max-width: 768px) {
+  .app-header {
+    position: sticky !important;
+    top: 0 !important;
+    z-index: 9998 !important;
+    background: #ffffff !important;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08) !important;
+    /* 68px left = 16px button-left + 44px button-width + 8px gap */
+    padding: 10px 16px 10px 68px !important;
+  }
+
+  .header-content {
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    text-align: left !important;
+    gap: 10px !important;
+  }
+
+  .header-title {
+    font-size: 1.1rem !important;
+    text-align: left !important;
+    margin: 0 !important;
+  }
+
+  /* Hide subtitle to keep header compact */
+  .header-subtitle {
+    display: none !important;
+  }
+
+  /* Keep action button inline, not full-width */
+  .header-actions .btn-new,
+  .header-actions .btn-primary-new {
+    width: auto !important;
+    padding: 8px 14px !important;
+    font-size: 13px !important;
+  }
+}
+
