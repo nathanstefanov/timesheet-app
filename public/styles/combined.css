@@ -8064,53 +8064,43 @@ img, video {
   display: none !important;
 }
 
-/* Close button — flex item pushed to the right of the sidebar header */
+/* Close button — fixed at viewport top-right, visible only when sidebar is open.
+   position:fixed escapes the sidebar's overflow:hidden so nothing clips it.
+   z-index: 10003 puts it above the sidebar (10001) and overlay (10000).        */
 .sidebar-close-btn {
-  display: none;
-  flex-shrink: 0;
-  background: rgba(255, 255, 255, 0.2);
-  border: 2px solid rgba(255, 255, 255, 0.55);
-  color: #ffffff;
-  border-radius: 50%;
-  width: 44px;
-  height: 44px;
-  font-size: 22px;
-  font-weight: 700;
-  line-height: 1;
-  cursor: pointer;
-  align-items: center;
-  justify-content: center;
-  transition: background 0.2s, border-color 0.2s, transform 0.15s;
-  -webkit-tap-highlight-color: transparent;
+  display: none !important;
+  position: fixed !important;
+  top: 14px !important;
+  right: 14px !important;
+  z-index: 10003 !important;
+  background: #ffffff !important;
+  border: none !important;
+  color: #1e293b !important;
+  border-radius: 12px !important;
+  width: 48px !important;
+  height: 48px !important;
+  font-size: 24px !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
+  cursor: pointer !important;
+  align-items: center !important;
+  justify-content: center !important;
+  box-shadow: 0 4px 16px rgba(0, 0, 0, 0.35) !important;
+  transition: background 0.15s, transform 0.15s !important;
+  -webkit-tap-highlight-color: transparent !important;
 }
 
 .sidebar-close-btn:hover {
-  background: rgba(255, 255, 255, 0.35);
-  border-color: rgba(255, 255, 255, 0.8);
+  background: #f1f5f9 !important;
 }
 
 .sidebar-close-btn:active {
-  transform: scale(0.88);
+  transform: scale(0.88) !important;
 }
 
-@media (max-width: 768px) {
-  .sidebar-close-btn {
-    display: flex;
-  }
-
-  /* Flex row so logo sits left and close button sits right */
-  .sidebar-header {
-    display: flex !important;
-    flex-direction: row !important;
-    align-items: center !important;
-    justify-content: space-between !important;
-    padding-right: 16px !important;
-  }
-
-  .sidebar-logo {
-    flex: 1 !important;
-    min-width: 0 !important;
-  }
+/* Show ONLY when the sidebar is open */
+.app-sidebar.mobile-open .sidebar-close-btn {
+  display: flex !important;
 }
 
 /* ---- GENERAL CARD IMPROVEMENTS ON MOBILE ---- */
