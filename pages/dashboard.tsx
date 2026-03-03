@@ -465,13 +465,6 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* MOBILE LOG SHIFT BUTTON */}
-            <div className="mobile-action-row">
-              <button type="button" className="btn-new btn-primary-new" onClick={() => router.push('/new-shift')}>
-                + Log New Shift
-              </button>
-            </div>
-
             {/* STATS */}
             <div className="stat-mini-grid">
               <div className="stat-mini">
@@ -641,6 +634,15 @@ export default function Dashboard() {
               )}
             </div>
           </div>
+          {/* MOBILE FAB */}
+          <button
+            type="button"
+            className="fab-log-shift"
+            onClick={() => router.push('/new-shift')}
+            aria-label="Log new shift"
+          >
+            <Plus size={24} />
+          </button>
         </main>
       </div>
     </>
