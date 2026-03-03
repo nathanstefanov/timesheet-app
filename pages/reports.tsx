@@ -328,20 +328,6 @@ export default function Reports() {
                   {isAdmin ? 'Team performance and labor cost insights' : 'Your earnings and work history'}
                 </p>
               </div>
-              <div className="header-actions">
-                <select
-                  aria-label="Select date range"
-                  value={dateRange}
-                  onChange={(e) => setDateRange(e.target.value as any)}
-                  className="reports-date-select"
-                >
-                  <option value="week">Last 7 Days</option>
-                  <option value="month">Last Month</option>
-                  <option value="quarter">Last 3 Months</option>
-                  <option value="year">Last Year</option>
-                  <option value="all">All Time</option>
-                </select>
-              </div>
             </div>
                       <button
               className={`mobile-menu-toggle${mobileMenuOpen ? ' menu-open' : ''}`}
@@ -351,6 +337,23 @@ export default function Reports() {
 </header>
 
           <div className="app-content">
+            {/* DATE FILTER */}
+            <div className="reports-filter-bar">
+              <label className="reports-filter-label" htmlFor="date-range-select">Date Range</label>
+              <select
+                id="date-range-select"
+                value={dateRange}
+                onChange={(e) => setDateRange(e.target.value as any)}
+                className="reports-date-select"
+              >
+                <option value="week">Last 7 Days</option>
+                <option value="month">Last Month</option>
+                <option value="quarter">Last 3 Months</option>
+                <option value="year">Last Year</option>
+                <option value="all">All Time</option>
+              </select>
+            </div>
+
             {!isAdmin ? (
               // EMPLOYEE VIEW
               <>
@@ -366,7 +369,7 @@ export default function Reports() {
                       <DollarSign size={24} />
                       <div style={{ fontSize: '14px', opacity: 0.9 }}>Total Earnings</div>
                     </div>
-                    <div style={{ fontSize: '32px', fontWeight: 700 }}>${personalStats.totalPay.toFixed(2)}</div>
+                    <div className="reports-card-value" style={{ fontSize: '32px', fontWeight: 700 }}>${personalStats.totalPay.toFixed(2)}</div>
                     <div style={{ fontSize: '13px', opacity: 0.8, marginTop: '8px' }}>
                       ${personalStats.avgPayPerShift.toFixed(2)} avg per shift
                     </div>
@@ -382,7 +385,7 @@ export default function Reports() {
                       <Clock size={24} style={{ color: '#667eea' }} />
                       <div style={{ fontSize: '14px', color: '#64748b' }}>Total Hours</div>
                     </div>
-                    <div style={{ fontSize: '32px', fontWeight: 700, color: '#1e293b' }}>{personalStats.totalHours.toFixed(1)}</div>
+                    <div className="reports-card-value" style={{ fontSize: '32px', fontWeight: 700, color: '#1e293b' }}>{personalStats.totalHours.toFixed(1)}</div>
                     <div style={{ fontSize: '13px', color: '#64748b', marginTop: '8px' }}>
                       {personalStats.avgHoursPerShift.toFixed(1)} avg per shift
                     </div>
@@ -398,7 +401,7 @@ export default function Reports() {
                       <TrendingUp size={24} style={{ color: '#10b981' }} />
                       <div style={{ fontSize: '14px', color: '#64748b' }}>Paid</div>
                     </div>
-                    <div style={{ fontSize: '32px', fontWeight: 700, color: '#10b981' }}>${personalStats.paidAmount.toFixed(2)}</div>
+                    <div className="reports-card-value" style={{ fontSize: '32px', fontWeight: 700, color: '#10b981' }}>${personalStats.paidAmount.toFixed(2)}</div>
                     <div style={{ fontSize: '13px', color: '#64748b', marginTop: '8px' }}>
                       {personalStats.paidCount} shifts
                     </div>
@@ -414,7 +417,7 @@ export default function Reports() {
                       <Clock size={24} style={{ color: '#f59e0b' }} />
                       <div style={{ fontSize: '14px', color: '#64748b' }}>Pending</div>
                     </div>
-                    <div style={{ fontSize: '32px', fontWeight: 700, color: '#f59e0b' }}>${personalStats.unpaidAmount.toFixed(2)}</div>
+                    <div className="reports-card-value" style={{ fontSize: '32px', fontWeight: 700, color: '#f59e0b' }}>${personalStats.unpaidAmount.toFixed(2)}</div>
                     <div style={{ fontSize: '13px', color: '#64748b', marginTop: '8px' }}>
                       {personalStats.unpaidCount} shifts
                     </div>
@@ -473,7 +476,7 @@ export default function Reports() {
                       <DollarSign size={24} />
                       <div style={{ fontSize: '14px', opacity: 0.9 }}>Total Labor Cost</div>
                     </div>
-                    <div style={{ fontSize: '32px', fontWeight: 700 }}>${adminStats!.totalLaborCost.toFixed(2)}</div>
+                    <div className="reports-card-value" style={{ fontSize: '32px', fontWeight: 700 }}>${adminStats!.totalLaborCost.toFixed(2)}</div>
                     <div style={{ fontSize: '13px', opacity: 0.8, marginTop: '8px' }}>
                       {adminStats!.totalShifts} shifts
                     </div>
@@ -489,7 +492,7 @@ export default function Reports() {
                       <Users size={24} style={{ color: '#667eea' }} />
                       <div style={{ fontSize: '14px', color: '#64748b' }}>Active Employees</div>
                     </div>
-                    <div style={{ fontSize: '32px', fontWeight: 700, color: '#1e293b' }}>{adminStats!.activeEmployees}</div>
+                    <div className="reports-card-value" style={{ fontSize: '32px', fontWeight: 700, color: '#1e293b' }}>{adminStats!.activeEmployees}</div>
                     <div style={{ fontSize: '13px', color: '#64748b', marginTop: '8px' }}>
                       ${adminStats!.averagePayPerEmployee.toFixed(2)} avg per employee
                     </div>
@@ -505,7 +508,7 @@ export default function Reports() {
                       <Clock size={24} style={{ color: '#10b981' }} />
                       <div style={{ fontSize: '14px', color: '#64748b' }}>Total Hours</div>
                     </div>
-                    <div style={{ fontSize: '32px', fontWeight: 700, color: '#1e293b' }}>{adminStats!.totalHours.toFixed(1)}</div>
+                    <div className="reports-card-value" style={{ fontSize: '32px', fontWeight: 700, color: '#1e293b' }}>{adminStats!.totalHours.toFixed(1)}</div>
                     <div style={{ fontSize: '13px', color: '#64748b', marginTop: '8px' }}>
                       {adminStats!.averageHoursPerEmployee.toFixed(1)} avg per employee
                     </div>
@@ -521,7 +524,7 @@ export default function Reports() {
                       <TrendingUp size={24} style={{ color: '#f59e0b' }} />
                       <div style={{ fontSize: '14px', color: '#64748b' }}>Avg Cost/Shift</div>
                     </div>
-                    <div style={{ fontSize: '32px', fontWeight: 700, color: '#1e293b' }}>
+                    <div className="reports-card-value" style={{ fontSize: '32px', fontWeight: 700, color: '#1e293b' }}>
                       ${adminStats!.totalShifts > 0 ? (adminStats!.totalLaborCost / adminStats!.totalShifts).toFixed(2) : '0.00'}
                     </div>
                     <div style={{ fontSize: '13px', color: '#64748b', marginTop: '8px' }}>
@@ -550,8 +553,8 @@ export default function Reports() {
                           <th style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 600, color: '#475569', fontSize: '14px' }}>SHIFTS</th>
                           <th style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 600, color: '#475569', fontSize: '14px' }}>HOURS</th>
                           <th style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 600, color: '#475569', fontSize: '14px' }}>TOTAL PAY</th>
-                          <th style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 600, color: '#475569', fontSize: '14px' }}>PAID</th>
-                          <th style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 600, color: '#475569', fontSize: '14px' }}>PENDING</th>
+                          <th className="col-hide-mobile" style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 600, color: '#475569', fontSize: '14px' }}>PAID</th>
+                          <th className="col-hide-mobile" style={{ padding: '12px 16px', textAlign: 'right', fontWeight: 600, color: '#475569', fontSize: '14px' }}>PENDING</th>
                         </tr>
                       </thead>
                       <tbody>
@@ -569,10 +572,10 @@ export default function Reports() {
                             <td style={{ padding: '12px 16px', fontSize: '14px', color: '#334155', textAlign: 'right', fontWeight: 600 }}>
                               ${emp.totalPay.toFixed(2)}
                             </td>
-                            <td style={{ padding: '12px 16px', fontSize: '14px', color: '#10b981', textAlign: 'right', fontWeight: 500 }}>
+                            <td className="col-hide-mobile" style={{ padding: '12px 16px', fontSize: '14px', color: '#10b981', textAlign: 'right', fontWeight: 500 }}>
                               ${emp.paidAmount.toFixed(2)}
                             </td>
-                            <td style={{ padding: '12px 16px', fontSize: '14px', color: '#f59e0b', textAlign: 'right', fontWeight: 500 }}>
+                            <td className="col-hide-mobile" style={{ padding: '12px 16px', fontSize: '14px', color: '#f59e0b', textAlign: 'right', fontWeight: 500 }}>
                               ${emp.unpaidAmount.toFixed(2)}
                             </td>
                           </tr>

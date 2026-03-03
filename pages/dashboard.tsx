@@ -237,7 +237,7 @@ export default function Dashboard() {
             {s.time_in && s.time_out && (
               <span>{formatForDisplay(s.time_in, 'h:mm a')} – {formatForDisplay(s.time_out, 'h:mm a')}</span>
             )}
-            {s.time_in && s.hours_worked ? <span className="shift-card-meta-dot" /> : null}
+            {s.time_in && s.hours_worked ? <span className="shift-card-meta-sep"> · </span> : null}
             {s.hours_worked ? <span>{Number(s.hours_worked).toFixed(1)}h</span> : null}
           </div>
         )}
@@ -464,6 +464,13 @@ export default function Dashboard() {
                 </button>
               </div>
             )}
+
+            {/* MOBILE LOG SHIFT BUTTON */}
+            <div className="mobile-action-row">
+              <button type="button" className="btn-new btn-primary-new" onClick={() => router.push('/new-shift')}>
+                + Log New Shift
+              </button>
+            </div>
 
             {/* STATS */}
             <div className="stat-mini-grid">
