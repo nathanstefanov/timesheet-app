@@ -121,8 +121,6 @@ export default function Admin() {
   const [sortBy, setSortBy] = useState<SortBy>('name');
   const [sortDir, setSortDir] = useState<SortDir>('asc');
   const [userSorted, setUserSorted] = useState(false);
-  const [filtersExpanded, setFiltersExpanded] = useState(false);
-  const [allTimeStatsExpanded, setAllTimeStatsExpanded] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [err, setErr] = useState<string | undefined>();
@@ -628,180 +626,78 @@ export default function Admin() {
               </div>
             )}
 
-            {/* STATS CARDS */}
-            <div className="dashboard-stats">
-              {/* UNPAID STATS - Top Row */}
-              <div className="stat-card-new">
-                <div className="stat-card-header">
-                  <div>
-                    <div className="stat-card-label">Total Unpaid</div>
-                  </div>
-                  <div className="stat-card-icon"><DollarSign size={20} /></div>
-                </div>
-                <div className="stat-card-value gradient-text">${stats.unpaidPay}</div>
-                <div className="stat-card-change">
-                  {stats.unpaidCount} unpaid shifts
+            {/* STATS */}
+            <div className="stat-mini-grid stat-mini-grid-6">
+              <div className="stat-mini">
+                <div className="stat-mini-icon yellow"><DollarSign size={20} /></div>
+                <div>
+                  <div className="stat-mini-value">${stats.unpaidPay}</div>
+                  <div className="stat-mini-label">Total Unpaid</div>
                 </div>
               </div>
-
-              <div className="stat-card-new">
-                <div className="stat-card-header">
-                  <div>
-                    <div className="stat-card-label">Unpaid Shifts</div>
-                  </div>
-                  <div className="stat-card-icon"><BarChart3 size={20} /></div>
+              <div className="stat-mini">
+                <div className="stat-mini-icon red"><BarChart3 size={20} /></div>
+                <div>
+                  <div className="stat-mini-value">{stats.unpaidCount}</div>
+                  <div className="stat-mini-label">Unpaid Shifts</div>
                 </div>
-                <div className="stat-card-value">{stats.unpaidCount}</div>
-                <div className="stat-card-change">Not yet paid</div>
               </div>
-
-              <div className="stat-card-new">
-                <div className="stat-card-header">
-                  <div>
-                    <div className="stat-card-label">Unpaid Hours</div>
-                  </div>
-                  <div className="stat-card-icon"><Clock size={20} /></div>
+              <div className="stat-mini">
+                <div className="stat-mini-icon blue"><Clock size={20} /></div>
+                <div>
+                  <div className="stat-mini-value">{stats.unpaidHours}h</div>
+                  <div className="stat-mini-label">Unpaid Hours</div>
                 </div>
-                <div className="stat-card-value">{stats.unpaidHours}</div>
-                <div className="stat-card-change">Hours unpaid</div>
               </div>
-
-              {/* ALL TIME STATS - Collapsible on mobile */}
-              <div
-                className="all-time-stats-toggle"
-                onClick={() => setAllTimeStatsExpanded(!allTimeStatsExpanded)}
-              >
-                <span>All Time Stats {allTimeStatsExpanded ? '▼' : '▶'}</span>
+              <div className="stat-mini">
+                <div className="stat-mini-icon green"><CheckCircle size={20} /></div>
+                <div>
+                  <div className="stat-mini-value">${Number(stats.paidPay).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                  <div className="stat-mini-label">Total Paid</div>
+                </div>
               </div>
-
-              <div className={`all-time-stats-container ${allTimeStatsExpanded ? 'expanded' : ''}`}>
-                <div className="stat-card-new">
-                  <div className="stat-card-header">
-                    <div>
-                      <div className="stat-card-label">Total Paid</div>
-                    </div>
-                    <div className="stat-card-icon"><CheckCircle size={20} /></div>
-                  </div>
-                  <div className="stat-card-value">${Number(stats.paidPay).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-                  <div className="stat-card-change">All time</div>
+              <div className="stat-mini">
+                <div className="stat-mini-icon purple"><BarChart3 size={20} /></div>
+                <div>
+                  <div className="stat-mini-value">{Number(stats.totalShifts).toLocaleString('en-US')}</div>
+                  <div className="stat-mini-label">Total Shifts</div>
                 </div>
-
-                <div className="stat-card-new">
-                  <div className="stat-card-header">
-                    <div>
-                      <div className="stat-card-label">Total Shifts</div>
-                    </div>
-                    <div className="stat-card-icon"><BarChart3 size={20} /></div>
-                  </div>
-                  <div className="stat-card-value">{Number(stats.totalShifts).toLocaleString('en-US')}</div>
-                  <div className="stat-card-change">All time</div>
-                </div>
-
-                <div className="stat-card-new">
-                  <div className="stat-card-header">
-                    <div>
-                      <div className="stat-card-label">Total Hours</div>
-                    </div>
-                    <div className="stat-card-icon"><Clock size={20} /></div>
-                  </div>
-                  <div className="stat-card-value">{Number(stats.totalHours).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}</div>
-                  <div className="stat-card-change">All time</div>
+              </div>
+              <div className="stat-mini">
+                <div className="stat-mini-icon blue"><Clock size={20} /></div>
+                <div>
+                  <div className="stat-mini-value">{Number(stats.totalHours).toLocaleString('en-US', { minimumFractionDigits: 1, maximumFractionDigits: 1 })}h</div>
+                  <div className="stat-mini-label">Total Hours</div>
                 </div>
               </div>
             </div>
 
-            {/* FILTERS - Enhanced Design */}
-            <div className="view-options-section">
-              <div
-                className="view-options-header"
-                onClick={() => setFiltersExpanded(!filtersExpanded)}
-                style={{ cursor: 'pointer' }}
-              >
-                <div>
-                  <h3 className="view-options-title">
-                    Date Range Filters {filtersExpanded ? '▼' : '▶'}
-                  </h3>
-                  <p className="view-options-subtitle">Filter shifts by time period</p>
-                </div>
+            {/* FILTERS */}
+            <div className="filter-bar">
+              <span className="filter-bar-label">RANGE</span>
+              <div className="filter-bar-nav">
+                <button type="button" className={useWeek ? 'current-btn' : ''} onClick={() => setUseWeek(true)}>Week</button>
+                <button type="button" className={!useWeek ? 'current-btn' : ''} onClick={() => setUseWeek(false)}>Custom</button>
               </div>
-              {filtersExpanded && (
-                <div className="view-options-content">
-                <div className="admin-filter-mode">
-                  <label className="admin-filter-mode-option">
-                    <input
-                      type="radio"
-                      name="range-mode"
-                      checked={useWeek}
-                      onChange={() => setUseWeek(true)}
-                      className="admin-filter-radio"
-                    />
-                    <span className="admin-filter-mode-label">Week View</span>
-                  </label>
-                  {useWeek && (
-                    <div className="admin-week-controls">
-                      <button
-                        className="time-nav-btn"
-                        onClick={() => setWeekAnchor(addDays(weekAnchor, -7))}
-                      >
-                        ◀ Prev
-                      </button>
-                      <button
-                        className="time-nav-btn time-nav-current"
-                        onClick={() => setWeekAnchor(startOfWeek(today))}
-                      >
-                        This Week
-                      </button>
-                      <button
-                        className="time-nav-btn"
-                        onClick={() => setWeekAnchor(nextWeekAnchor)}
-                        disabled={disableNextWeek}
-                      >
-                        Next ▶
-                      </button>
-                      <span className="time-range-display">{weekFrom} → {weekTo}</span>
-                    </div>
+              <div className="filter-bar-divider" />
+              {useWeek ? (
+                <>
+                  <div className="filter-bar-nav">
+                    <button type="button" onClick={() => setWeekAnchor(addDays(weekAnchor, -7))}>◀ Prev</button>
+                    <button type="button" className="current-btn" onClick={() => setWeekAnchor(startOfWeek(today))}>This Week</button>
+                    <button type="button" onClick={() => setWeekAnchor(nextWeekAnchor)} disabled={disableNextWeek}>Next ▶</button>
+                  </div>
+                  <span className="filter-bar-range-label">{weekFrom} → {weekTo}</span>
+                </>
+              ) : (
+                <>
+                  <input type="date" value={rangeFrom ?? ''} onChange={e => setRangeFrom(e.target.value || null)} aria-label="Start date" title="Start date" />
+                  <span className="filter-bar-label">to</span>
+                  <input type="date" value={rangeTo ?? ''} onChange={e => setRangeTo(e.target.value || null)} aria-label="End date" title="End date" />
+                  {(rangeFrom || rangeTo) && (
+                    <button type="button" className="filter-bar-clear" onClick={() => { setRangeFrom(null); setRangeTo(null); }} aria-label="Clear date range">✕ Clear</button>
                   )}
-                </div>
-
-                <div className="admin-filter-mode">
-                  <label className="admin-filter-mode-option">
-                    <input
-                      type="radio"
-                      name="range-mode"
-                      checked={!useWeek}
-                      onChange={() => setUseWeek(false)}
-                      className="admin-filter-radio"
-                    />
-                    <span className="admin-filter-mode-label">Custom Range</span>
-                  </label>
-                  {!useWeek && (
-                    <div className="admin-custom-controls">
-                      <input
-                        type="date"
-                        className="admin-date-input"
-                        value={rangeFrom ?? ''}
-                        onChange={e => setRangeFrom(e.target.value || null)}
-                      />
-                      <span className="admin-range-separator">to</span>
-                      <input
-                        type="date"
-                        className="admin-date-input"
-                        value={rangeTo ?? ''}
-                        onChange={e => setRangeTo(e.target.value || null)}
-                      />
-                      <button
-                        className="time-nav-btn"
-                        onClick={() => {
-                          setRangeFrom(null);
-                          setRangeTo(null);
-                        }}
-                      >
-                        Clear
-                      </button>
-                    </div>
-                  )}
-                </div>
-              </div>
+                </>
               )}
             </div>
 
@@ -860,7 +756,7 @@ export default function Admin() {
                       return (
                         <>
                           <tr key={t.id}>
-                            <td className="shift-date" style={{ fontWeight: 600 }}>
+                            <td className="shift-date cell-primary">
                               <div className="employee-name">{t.name}</div>
                               {(displayMinCount > 0 || displayFlaggedCount > 0) && (
                                 <div className="employee-badges">
@@ -1071,7 +967,7 @@ export default function Admin() {
                                       : '—'}
                                   </td>
                                   <td>{(s.hours_worked || 0).toFixed(1)} hrs</td>
-                                  <td style={{ fontWeight: 600 }}>
+                                  <td className="cell-primary">
                                     ${pay.toFixed(2)}
                                     {minApplied && (
                                       <span className="badge-new badge-info-new ml-sm" title="$50 minimum applied">

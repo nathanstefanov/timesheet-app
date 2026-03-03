@@ -48,7 +48,6 @@ export default function Dashboard() {
 
   const [unpaidAllTime, setUnpaidAllTime] = useState(0);
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [viewOptionsExpanded, setViewOptionsExpanded] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showProfilePrompt, setShowProfilePrompt] = useState(false);
 
@@ -399,169 +398,105 @@ export default function Dashboard() {
               </div>
             )}
 
-            {/* STATS CARDS */}
-            <div className="dashboard-stats">
-              <div className="stat-card-new">
-                <div className="stat-card-header">
-                  <div>
-                    <div className="stat-card-label">Total Unpaid</div>
-                  </div>
-                  <div className="stat-card-icon"><DollarSign size={20} /></div>
+            {/* STATS */}
+            <div className="stat-mini-grid">
+              <div className="stat-mini">
+                <div className="stat-mini-icon yellow"><DollarSign size={20} /></div>
+                <div>
+                  <div className="stat-mini-value">${unpaidAllTime.toFixed(2)}</div>
+                  <div className="stat-mini-label">Total Unpaid</div>
                 </div>
-                <div className="stat-card-value gradient-text">${unpaidAllTime.toFixed(2)}</div>
-                <div className="stat-card-change">All time balance</div>
               </div>
-
-              <div className="stat-card-new">
-                <div className="stat-card-header">
-                  <div>
-                    <div className="stat-card-label">Total Shifts</div>
-                  </div>
-                  <div className="stat-card-icon"><BarChart3 size={20} /></div>
+              <div className="stat-mini">
+                <div className="stat-mini-icon purple"><BarChart3 size={20} /></div>
+                <div>
+                  <div className="stat-mini-value">{totals.count}</div>
+                  <div className="stat-mini-label">Total Shifts</div>
                 </div>
-                <div className="stat-card-value">{totals.count}</div>
-                <div className="stat-card-change">All time</div>
               </div>
-
-              <div className="stat-card-new">
-                <div className="stat-card-header">
-                  <div>
-                    <div className="stat-card-label">Total Hours</div>
-                  </div>
-                  <div className="stat-card-icon"><Clock size={20} /></div>
+              <div className="stat-mini">
+                <div className="stat-mini-icon blue"><Clock size={20} /></div>
+                <div>
+                  <div className="stat-mini-value">{totals.hours.toFixed(1)}h</div>
+                  <div className="stat-mini-label">Total Hours</div>
                 </div>
-                <div className="stat-card-value">{totals.hours.toFixed(1)}</div>
-                <div className="stat-card-change">All time</div>
               </div>
-
-              <div className="stat-card-new">
-                <div className="stat-card-header">
-                  <div>
-                    <div className="stat-card-label">Total Pay</div>
-                  </div>
-                  <div className="stat-card-icon"><DollarSign size={20} /></div>
+              <div className="stat-mini">
+                <div className="stat-mini-icon green"><DollarSign size={20} /></div>
+                <div>
+                  <div className="stat-mini-value">${totals.pay.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
+                  <div className="stat-mini-label">Total Pay</div>
                 </div>
-                <div className="stat-card-value">${totals.pay.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}</div>
-                <div className="stat-card-change">All time</div>
               </div>
             </div>
 
-            {/* FILTERS - Enhanced Design */}
-            <div className="view-options-section">
-              <div
-                className="view-options-header"
-                onClick={() => setViewOptionsExpanded(!viewOptionsExpanded)}
+            {/* FILTERS */}
+            <div className="filter-bar">
+              <input
+                type="text"
+                className="filter-bar-search"
+                placeholder="Search by date, type, or status..."
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                aria-label="Search shifts"
+              />
+              <div className="filter-bar-divider" />
+              <select
+                value={mode}
+                onChange={e => { setMode(e.target.value as Mode); setOffset(0); }}
+                aria-label="Select time range"
               >
-                <div>
-                  <h3 className="view-options-title">
-                    View Options <span className="mobile-toggle-arrow">{viewOptionsExpanded ? '▼' : '▶'}</span>
-                  </h3>
-                  <p className="view-options-subtitle">Search and filter your shift history</p>
+                <option value="week">This Week</option>
+                <option value="month">This Month</option>
+                <option value="all">All Time</option>
+              </select>
+              {mode !== 'all' && (
+                <div className="filter-bar-nav">
+                  <button type="button" onClick={() => setOffset(n => n - 1)}>◀ Prev</button>
+                  <button type="button" className="current-btn" onClick={() => setOffset(0)}>Current</button>
+                  <button type="button" onClick={() => setOffset(n => n + 1)} disabled={offset >= 0}>Next ▶</button>
+                  <span className="filter-bar-range-label">{range.label}</span>
                 </div>
-              </div>
-              {viewOptionsExpanded && (
-                <div className="view-options-content">
-                {/* SEARCH FILTER */}
-                <div className="search-filter-controls">
-                  <label className="time-range-label">Search Shifts</label>
-                  <input
-                    type="text"
-                    className="search-filter-input"
-                    placeholder="Search by date, type, or status..."
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                  />
-                  {searchQuery && (
-                    <button
-                      className="search-clear-btn"
-                      onClick={() => setSearchQuery('')}
-                      aria-label="Clear search"
-                    >
-                      ✕
-                    </button>
-                  )}
-                </div>
-
-                <div className="time-range-controls">
-                  <label className="time-range-label">Time Range</label>
-                  <div className="time-range-buttons">
-                    <select
-                      className="time-range-select"
-                      aria-label="Select time range"
-                      value={mode}
-                      onChange={e => {
-                        setMode(e.target.value as Mode);
-                        setOffset(0);
-                      }}
-                    >
-                      <option value="week">This Week</option>
-                      <option value="month">This Month</option>
-                      <option value="all">All Time</option>
-                    </select>
-
-                    {mode !== 'all' && (
-                      <>
-                        <button
-                          className="time-nav-btn"
-                          onClick={() => setOffset(n => n - 1)}
-                        >
-                          ◀ Prev
-                        </button>
-                        <button className="time-nav-btn time-nav-current" onClick={() => setOffset(0)}>
-                          Current
-                        </button>
-                        <button
-                          className="time-nav-btn"
-                          onClick={() => setOffset(n => n + 1)}
-                          disabled={offset >= 0}
-                        >
-                          Next ▶
-                        </button>
-                        <span className="time-range-display">{range.label}</span>
-                      </>
-                    )}
-                  </div>
-                </div>
-              </div>
+              )}
+              {searchQuery && (
+                <button type="button" className="filter-bar-clear" onClick={() => setSearchQuery('')} aria-label="Clear search">✕</button>
               )}
             </div>
 
-            {/* SHIFTS TABLE - Enhanced Design */}
-            <div className="shift-history-section">
-              <div className="shift-history-header">
-                <div>
-                  <h2 className="shift-history-title">Shift History</h2>
-                  <p className="shift-history-subtitle">
-                    {loading ? 'Loading...' : `${shifts.length} ${shifts.length === 1 ? 'shift' : 'shifts'} found`}
-                  </p>
-                </div>
+            {/* SHIFTS TABLE */}
+            <div className="table-card">
+              <div className="table-card-header">
+                <span className="table-card-title">Shift History</span>
+                <span className="table-card-count">
+                  {loading ? '…' : `${shifts.length} ${shifts.length === 1 ? 'shift' : 'shifts'}`}
+                </span>
               </div>
 
               {loading ? (
-                <div className="shift-history-empty">
-                  <div className="empty-icon"><Clock size={48} /></div>
-                  <div className="empty-title">Loading shifts...</div>
-                  <div className="empty-subtitle">Please wait while we fetch your data</div>
+                <div className="table-empty">
+                  <div className="table-empty-icon"><Clock size={40} /></div>
+                  <div className="table-empty-title">Loading shifts...</div>
+                  <div className="table-empty-sub">Please wait while we fetch your data</div>
                 </div>
               ) : shifts.length === 0 ? (
-                <div className="shift-history-empty">
-                  <div className="empty-icon"><BarChart3 size={48} /></div>
-                  <div className="empty-title">No shifts in this range</div>
-                  <div className="empty-subtitle">Log your first shift to get started!</div>
+                <div className="table-empty">
+                  <div className="table-empty-icon"><BarChart3 size={40} /></div>
+                  <div className="table-empty-title">No shifts in this range</div>
+                  <div className="table-empty-sub">Log your first shift to get started!</div>
                 </div>
               ) : (
-                <div className="shift-history-table-wrapper">
-                  <table className="shift-history-table">
+                <div className="table-scroll">
+                  <table className="pro-table">
                     <thead>
                       <tr>
                         <th>Date</th>
                         <th>Type</th>
                         <th>Time In</th>
                         <th>Time Out</th>
-                        <th>Hours</th>
-                        <th>Pay</th>
+                        <th className="col-right">Hours</th>
+                        <th className="col-right">Pay</th>
                         <th>Status</th>
-                        <th>Actions</th>
+                        <th className="col-center">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
@@ -569,52 +504,26 @@ export default function Dashboard() {
                         const paid = Boolean(s.is_paid);
                         return (
                           <tr key={s.id}>
-                            <td className="shift-date">{s.shift_date}</td>
-                            <td>
-                              <span className="shift-type-badge">
-                                {s.shift_type}
-                              </span>
-                            </td>
-                            <td className="shift-time">
-                              {s.time_in
-                                ? formatForDisplay(s.time_in, 'h:mm a')
-                                : '—'}
-                            </td>
-                            <td className="shift-time">
-                              {s.time_out
-                                ? formatForDisplay(s.time_out, 'h:mm a')
-                                : '—'}
-                            </td>
-                            <td className="shift-hours">{Number(s.hours_worked ?? 0).toFixed(1)} hrs</td>
-                            <td className="shift-pay">
-                              ${Number(s.pay_due ?? 0).toFixed(2)}
-                            </td>
+                            <td className="cell-primary">{s.shift_date}</td>
+                            <td><span className="pill pill-type">{s.shift_type}</span></td>
+                            <td>{s.time_in ? formatForDisplay(s.time_in, 'h:mm a') : '—'}</td>
+                            <td>{s.time_out ? formatForDisplay(s.time_out, 'h:mm a') : '—'}</td>
+                            <td className="col-right">{Number(s.hours_worked ?? 0).toFixed(1)}h</td>
+                            <td className="col-right amount-green">${Number(s.pay_due ?? 0).toFixed(2)}</td>
                             <td>
                               {paid ? (
-                                <span className="shift-status-badge paid">✓ Paid</span>
+                                <span className="pill pill-paid">✓ Paid</span>
                               ) : (
-                                <span className="shift-status-badge unpaid">⏱ Unpaid</span>
+                                <span className="pill pill-unpaid">Unpaid</span>
                               )}
                               {s.paid_at && (
-                                <div className="shift-paid-date">
-                                  {formatForDisplay(s.paid_at, 'MMM d, yyyy')}
-                                </div>
+                                <div className="cell-secondary">{formatForDisplay(s.paid_at, 'MMM d, yyyy')}</div>
                               )}
                             </td>
-                            <td>
-                              <div className="shift-actions">
-                                <Link
-                                  href={`/shift/${s.id}`}
-                                  className="shift-action-btn edit"
-                                >
-                                  ✏️ Edit
-                                </Link>
-                                <button
-                                  className="shift-action-btn delete"
-                                  onClick={() => delShift(s.id)}
-                                >
-                                  🗑️ Delete
-                                </button>
+                            <td className="col-center">
+                              <div className="btn-group">
+                                <Link href={`/shift/${s.id}`} className="icon-btn icon-btn-edit" aria-label="Edit shift">✏️</Link>
+                                <button type="button" className="icon-btn icon-btn-delete" onClick={() => delShift(s.id)} aria-label="Delete shift">🗑️</button>
                               </div>
                             </td>
                           </tr>

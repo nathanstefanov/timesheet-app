@@ -3,7 +3,7 @@ import { useEffect, useState, useMemo } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
 import Head from 'next/head';
-import { User, Calendar, BarChart3, LogOut, Settings, DollarSign, Download, Search, X, RotateCcw, Filter, Shield } from 'lucide-react';
+import { User, Calendar, BarChart3, LogOut, Settings, DollarSign, Download, RotateCcw, Shield } from 'lucide-react';
 import { useToast } from '../hooks/useToast';
 import { logUndoPayment } from '../lib/auditLog';
 
@@ -405,256 +405,120 @@ export default function PaymentHistory() {
           </header>
 
           <div className="app-content">
-            {/* STATS CARDS */}
-            <div className="inline-stats-grid">
-              <div style={{
-                background: 'white',
-                border: '1px solid #e2e8f0',
-                borderRadius: '12px',
-                padding: '20px',
-              }}>
-                <div style={{ fontSize: '14px', fontWeight: 500, color: '#64748b', marginBottom: '8px' }}>
-                  Total Payments
-                </div>
-                <div style={{ fontSize: '28px', fontWeight: 700, color: '#1e293b' }}>
-                  {filteredShifts.length}
+            {/* STATS */}
+            <div className="stat-mini-grid">
+              <div className="stat-mini">
+                <div className="stat-mini-icon purple"><DollarSign size={20} /></div>
+                <div>
+                  <div className="stat-mini-value">{filteredShifts.length}</div>
+                  <div className="stat-mini-label">Total Payments</div>
                 </div>
               </div>
-              <div style={{
-                background: 'white',
-                border: '1px solid #e2e8f0',
-                borderRadius: '12px',
-                padding: '20px',
-              }}>
-                <div style={{ fontSize: '14px', fontWeight: 500, color: '#64748b', marginBottom: '8px' }}>
-                  Total Amount Paid
-                </div>
-                <div style={{ fontSize: '28px', fontWeight: 700, color: '#10b981' }}>
-                  ${totalPaid.toFixed(2)}
+              <div className="stat-mini">
+                <div className="stat-mini-icon green"><DollarSign size={20} /></div>
+                <div>
+                  <div className="stat-mini-value">${totalPaid.toFixed(2)}</div>
+                  <div className="stat-mini-label">Total Amount Paid</div>
                 </div>
               </div>
             </div>
 
             {/* FILTERS */}
-            <div style={{
-              background: 'white',
-              border: '1px solid #e2e8f0',
-              borderRadius: '12px',
-              padding: '20px',
-              marginBottom: '24px',
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '16px' }}>
-                <Filter size={18} style={{ color: '#64748b' }} />
-                <h2 style={{ fontSize: '16px', fontWeight: 600, color: '#1e293b', margin: 0 }}>Filters</h2>
-              </div>
-
-              <div className="inline-filter-grid">
-                {/* Search */}
-                <div>
-                  <label style={{ fontSize: '14px', fontWeight: 500, color: '#475569', display: 'block', marginBottom: '6px' }}>
-                    Search
-                  </label>
-                  <div style={{ position: 'relative' }}>
-                    <input
-                      type="text"
-                      value={searchQuery}
-                      onChange={(e) => setSearchQuery(e.target.value)}
-                      placeholder="Name, email, or shift type..."
-                      style={{
-                        width: '100%',
-                        padding: '10px 14px 10px 38px',
-                        border: '1px solid #e2e8f0',
-                        borderRadius: '8px',
-                        fontSize: '14px',
-                      }}
-                    />
-                    <Search size={16} style={{ position: 'absolute', left: '12px', top: '12px', color: '#94a3b8' }} />
-                    {searchQuery && (
-                      <button
-                        onClick={() => setSearchQuery('')}
-                        style={{
-                          position: 'absolute',
-                          right: '8px',
-                          top: '8px',
-                          background: 'transparent',
-                          border: 'none',
-                          cursor: 'pointer',
-                          padding: '4px',
-                          color: '#64748b',
-                        }}
-                      >
-                        <X size={16} />
-                      </button>
-                    )}
-                  </div>
-                </div>
-
-                {/* Employee Filter */}
-                <div>
-                  <label style={{ fontSize: '14px', fontWeight: 500, color: '#475569', display: 'block', marginBottom: '6px' }}>
-                    Employee
-                  </label>
-                  <select
-                    value={selectedEmployee}
-                    onChange={(e) => setSelectedEmployee(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '10px 14px',
-                      border: '1px solid #e2e8f0',
-                      borderRadius: '8px',
-                      fontSize: '14px',
-                    }}
-                  >
-                    <option value="">All Employees</option>
-                    {uniqueEmployees.map(emp => (
-                      <option key={emp.id} value={emp.id}>{emp.name}</option>
-                    ))}
-                  </select>
-                </div>
-
-                {/* Start Date */}
-                <div>
-                  <label style={{ fontSize: '14px', fontWeight: 500, color: '#475569', display: 'block', marginBottom: '6px' }}>
-                    Start Date
-                  </label>
-                  <input
-                    type="date"
-                    value={startDate}
-                    onChange={(e) => setStartDate(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '10px 14px',
-                      border: '1px solid #e2e8f0',
-                      borderRadius: '8px',
-                      fontSize: '14px',
-                    }}
-                  />
-                </div>
-
-                {/* End Date */}
-                <div>
-                  <label style={{ fontSize: '14px', fontWeight: 500, color: '#475569', display: 'block', marginBottom: '6px' }}>
-                    End Date
-                  </label>
-                  <input
-                    type="date"
-                    value={endDate}
-                    onChange={(e) => setEndDate(e.target.value)}
-                    style={{
-                      width: '100%',
-                      padding: '10px 14px',
-                      border: '1px solid #e2e8f0',
-                      borderRadius: '8px',
-                      fontSize: '14px',
-                    }}
-                  />
-                </div>
-              </div>
-
+            <div className="filter-bar">
+              <input
+                type="text"
+                className="filter-bar-search"
+                value={searchQuery}
+                onChange={(e) => setSearchQuery(e.target.value)}
+                placeholder="Name, email, or shift type..."
+                aria-label="Search payments"
+              />
+              <div className="filter-bar-divider" />
+              <select
+                value={selectedEmployee}
+                onChange={(e) => setSelectedEmployee(e.target.value)}
+                aria-label="Filter by employee"
+              >
+                <option value="">All Employees</option>
+                {uniqueEmployees.map(emp => (
+                  <option key={emp.id} value={emp.id}>{emp.name}</option>
+                ))}
+              </select>
+              <input
+                type="date"
+                value={startDate}
+                onChange={(e) => setStartDate(e.target.value)}
+                aria-label="Start date"
+                title="Start date"
+              />
+              <span className="filter-bar-label">to</span>
+              <input
+                type="date"
+                value={endDate}
+                onChange={(e) => setEndDate(e.target.value)}
+                aria-label="End date"
+                title="End date"
+              />
               {(searchQuery || selectedEmployee || startDate || endDate) && (
                 <button
-                  onClick={() => {
-                    setSearchQuery('');
-                    setSelectedEmployee('');
-                    setStartDate('');
-                    setEndDate('');
-                  }}
-                  style={{
-                    marginTop: '16px',
-                    padding: '8px 16px',
-                    background: '#f1f5f9',
-                    border: 'none',
-                    borderRadius: '6px',
-                    cursor: 'pointer',
-                    fontSize: '14px',
-                    fontWeight: 500,
-                    color: '#475569',
-                  }}
+                  type="button"
+                  className="filter-bar-clear"
+                  onClick={() => { setSearchQuery(''); setSelectedEmployee(''); setStartDate(''); setEndDate(''); }}
+                  aria-label="Clear all filters"
                 >
-                  Clear All Filters
+                  ✕ Clear
                 </button>
               )}
             </div>
 
             {/* PAYMENTS TABLE */}
-            <div style={{
-              background: 'white',
-              border: '1px solid #e2e8f0',
-              borderRadius: '12px',
-              overflow: 'hidden',
-            }}>
+            <div className="table-card">
+              <div className="table-card-header">
+                <span className="table-card-title">Payment Records</span>
+                <span className="table-card-count">{filteredShifts.length} records</span>
+              </div>
+
               {filteredShifts.length === 0 ? (
-                <div style={{ padding: '60px 20px', textAlign: 'center' }}>
-                  <DollarSign size={48} style={{ color: '#94a3b8', margin: '0 auto 16px' }} />
-                  <h3 style={{ fontSize: '18px', fontWeight: 600, color: '#1e293b', marginBottom: '8px' }}>
-                    No payment records found
-                  </h3>
-                  <p style={{ color: '#64748b', fontSize: '14px' }}>
-                    {shifts.length === 0 ? 'No payments have been made yet' : 'Try adjusting your filters'}
-                  </p>
+                <div className="table-empty">
+                  <div className="table-empty-icon"><DollarSign size={40} /></div>
+                  <div className="table-empty-title">No payment records found</div>
+                  <div className="table-empty-sub">{shifts.length === 0 ? 'No payments have been made yet' : 'Try adjusting your filters'}</div>
                 </div>
               ) : (
-                <div style={{ overflowX: 'auto' }}>
-                  <table style={{ width: '100%', borderCollapse: 'collapse' }}>
+                <div className="table-scroll">
+                  <table className="pro-table">
                     <thead>
-                      <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>
-                        <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>Employee</th>
-                        <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>Date</th>
-                        <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>Shift Type</th>
-                        <th style={{ padding: '12px 16px', textAlign: 'right', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>Hours</th>
-                        <th style={{ padding: '12px 16px', textAlign: 'right', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>Amount</th>
-                        <th style={{ padding: '12px 16px', textAlign: 'left', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>Paid At</th>
-                        <th style={{ padding: '12px 16px', textAlign: 'center', fontSize: '12px', fontWeight: 600, color: '#64748b', textTransform: 'uppercase' }}>Actions</th>
+                      <tr>
+                        <th>Employee</th>
+                        <th>Date</th>
+                        <th>Shift Type</th>
+                        <th className="col-right">Hours</th>
+                        <th className="col-right">Amount</th>
+                        <th>Paid At</th>
+                        <th className="col-center">Actions</th>
                       </tr>
                     </thead>
                     <tbody>
                       {filteredShifts.map((shift) => (
-                        <tr key={shift.id} style={{ borderBottom: '1px solid #e2e8f0' }}>
-                          <td style={{ padding: '16px' }}>
-                            <div style={{ fontWeight: 500, color: '#1e293b' }}>{shift.employee_name}</div>
+                        <tr key={shift.id}>
+                          <td>
+                            <div className="cell-primary">{shift.employee_name}</div>
                             {shift.employee_email && (
-                              <div style={{ fontSize: '12px', color: '#64748b' }}>{shift.employee_email}</div>
+                              <div className="cell-secondary">{shift.employee_email}</div>
                             )}
                           </td>
-                          <td style={{ padding: '16px', color: '#475569' }}>
-                            {new Date(shift.shift_date).toLocaleDateString()}
-                          </td>
-                          <td style={{ padding: '16px' }}>
-                            <span style={{
-                              padding: '4px 8px',
-                              borderRadius: '6px',
-                              fontSize: '12px',
-                              fontWeight: 500,
-                              background: '#f1f5f9',
-                              color: '#475569',
-                            }}>
-                              {shift.shift_type}
-                            </span>
-                          </td>
-                          <td style={{ padding: '16px', textAlign: 'right', color: '#475569' }}>
-                            {shift.hours_worked?.toFixed(2) || '0.00'}
-                          </td>
-                          <td style={{ padding: '16px', textAlign: 'right', fontWeight: 600, color: '#10b981' }}>
-                            ${(shift.pay_due || 0).toFixed(2)}
-                          </td>
-                          <td style={{ padding: '16px', fontSize: '14px', color: '#64748b' }}>
-                            {shift.paid_at ? new Date(shift.paid_at).toLocaleString() : 'Not recorded'}
-                          </td>
-                          <td style={{ padding: '16px', textAlign: 'center' }}>
+                          <td>{new Date(shift.shift_date).toLocaleDateString()}</td>
+                          <td><span className="pill pill-type">{shift.shift_type}</span></td>
+                          <td className="col-right">{shift.hours_worked?.toFixed(2) || '0.00'}h</td>
+                          <td className="col-right amount-green">${(shift.pay_due || 0).toFixed(2)}</td>
+                          <td>{shift.paid_at ? new Date(shift.paid_at).toLocaleString() : 'Not recorded'}</td>
+                          <td className="col-center">
                             <button
+                              type="button"
+                              className="icon-btn icon-btn-undo"
                               onClick={() => handleUndoPayment(shift.id, shift.employee_name)}
-                              style={{
-                                padding: '8px',
-                                background: '#fee2e2',
-                                border: 'none',
-                                borderRadius: '6px',
-                                cursor: 'pointer',
-                                color: '#991b1b',
-                                display: 'inline-flex',
-                                alignItems: 'center',
-                                gap: '4px',
-                              }}
                               title="Undo Payment"
+                              aria-label="Undo payment"
                             >
                               <RotateCcw size={14} />
                             </button>
