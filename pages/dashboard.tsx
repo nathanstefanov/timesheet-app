@@ -10,7 +10,7 @@ import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
 import { logShiftDeleted } from '../lib/auditLog';
 import Head from 'next/head';
-import { User, Plus, Calendar, BarChart3, DollarSign, Clock, LogOut, Settings, AlertCircle, X, Shield } from 'lucide-react';
+import { User, Plus, Calendar, BarChart3, DollarSign, Clock, LogOut, Settings, AlertCircle, X, Shield, ChevronDown } from 'lucide-react';
 import {
   startOfWeek,
   endOfWeek,
@@ -19,6 +19,7 @@ import {
   endOfMonth,
   addMonths,
   format,
+  parseISO,
 } from 'date-fns';
 import { formatForDisplay } from '../lib/timezone';
 
@@ -50,6 +51,7 @@ export default function Dashboard() {
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
   const [showProfilePrompt, setShowProfilePrompt] = useState(false);
+  const [paidOpen, setPaidOpen] = useState(false);
 
   useEffect(() => {
     (async () => {
@@ -177,6 +179,11 @@ export default function Dashboard() {
     return { hours, pay, unpaidInRange, count: shifts.length };
   }, [shifts]);
 
+  // Format date string nicely: "2026-02-22" → "Sat, Feb 22"
+  function fmtDate(d: string) {
+    try { return format(parseISO(d), 'EEE, MMM d'); } catch { return d; }
+  }
+
   // Sort and filter shifts
   const sortedShifts = useMemo(() => {
     let filtered = [...shifts];
@@ -205,6 +212,69 @@ export default function Dashboard() {
       return b.shift_date.localeCompare(a.shift_date);
     });
   }, [shifts, searchQuery]);
+
+  const unpaidShifts = useMemo(() => sortedShifts.filter(s => !s.is_paid), [sortedShifts]);
+  const paidShifts   = useMemo(() => sortedShifts.filter(s =>  s.is_paid), [sortedShifts]);
+
+  // Render a single shift as a card (mobile)
+  function renderShiftCard(s: Shift) {
+    const paid = Boolean(s.is_paid);
+    return (
+      <div key={s.id} className={`shift-card-item ${paid ? 'paid-card' : 'unpaid-card'}`}>
+        <div className="shift-card-row">
+          <span className="pill pill-type">{s.shift_type}</span>
+          <span className="shift-card-pay">${Number(s.pay_due ?? 0).toFixed(2)}</span>
+        </div>
+        <div className="shift-card-row">
+          <span className="shift-card-date">{fmtDate(s.shift_date)}</span>
+          {paid
+            ? <span className="pill pill-paid">✓ Paid</span>
+            : <span className="pill pill-unpaid">Unpaid</span>
+          }
+        </div>
+        {(s.time_in || s.hours_worked) && (
+          <div className="shift-card-meta">
+            {s.time_in && s.time_out && (
+              <span>{formatForDisplay(s.time_in, 'h:mm a')} – {formatForDisplay(s.time_out, 'h:mm a')}</span>
+            )}
+            {s.time_in && s.hours_worked ? <span className="shift-card-meta-dot" /> : null}
+            {s.hours_worked ? <span>{Number(s.hours_worked).toFixed(1)}h</span> : null}
+          </div>
+        )}
+        <div className="shift-card-actions">
+          <Link href={`/shift/${s.id}`} className="icon-btn icon-btn-edit" aria-label="Edit shift">✏️</Link>
+          <button type="button" className="icon-btn icon-btn-delete" onClick={() => delShift(s.id)} aria-label="Delete shift">🗑️</button>
+        </div>
+      </div>
+    );
+  }
+
+  // Render a single shift as a table row (desktop)
+  function renderShiftRow(s: Shift) {
+    const paid = Boolean(s.is_paid);
+    return (
+      <tr key={s.id}>
+        <td className="cell-primary">{fmtDate(s.shift_date)}</td>
+        <td><span className="pill pill-type">{s.shift_type}</span></td>
+        <td className="col-hide-mobile">{s.time_in ? formatForDisplay(s.time_in, 'h:mm a') : '—'}</td>
+        <td className="col-hide-mobile">{s.time_out ? formatForDisplay(s.time_out, 'h:mm a') : '—'}</td>
+        <td className="col-right">{Number(s.hours_worked ?? 0).toFixed(1)}h</td>
+        <td className="col-right amount-green">${Number(s.pay_due ?? 0).toFixed(2)}</td>
+        <td>
+          {paid
+            ? <span className="pill pill-paid">✓ Paid</span>
+            : <span className="pill pill-unpaid">Unpaid</span>
+          }
+        </td>
+        <td className="col-center">
+          <div className="btn-group">
+            <Link href={`/shift/${s.id}`} className="icon-btn icon-btn-edit" aria-label="Edit shift">✏️</Link>
+            <button type="button" className="icon-btn icon-btn-delete" onClick={() => delShift(s.id)} aria-label="Delete shift">🗑️</button>
+          </div>
+        </td>
+      </tr>
+    );
+  }
 
   async function delShift(id: string) {
     if (!confirm('Delete this shift?')) return;
@@ -460,7 +530,7 @@ export default function Dashboard() {
               )}
             </div>
 
-            {/* SHIFTS TABLE */}
+            {/* SHIFTS — paid/unpaid split */}
             <div className="table-card">
               <div className="table-card-header">
                 <span className="table-card-title">Shift History</span>
@@ -473,62 +543,94 @@ export default function Dashboard() {
                 <div className="table-empty">
                   <div className="table-empty-icon"><Clock size={40} /></div>
                   <div className="table-empty-title">Loading shifts...</div>
-                  <div className="table-empty-sub">Please wait while we fetch your data</div>
+                  <div className="table-empty-sub">Please wait</div>
                 </div>
               ) : shifts.length === 0 ? (
                 <div className="table-empty">
                   <div className="table-empty-icon"><BarChart3 size={40} /></div>
-                  <div className="table-empty-title">No shifts in this range</div>
+                  <div className="table-empty-title">No shifts yet</div>
                   <div className="table-empty-sub">Log your first shift to get started!</div>
                 </div>
               ) : (
-                <div className="table-scroll">
-                  <table className="pro-table">
-                    <thead>
-                      <tr>
-                        <th>Date</th>
-                        <th>Type</th>
-                        <th className="col-hide-mobile">Time In</th>
-                        <th className="col-hide-mobile">Time Out</th>
-                        <th className="col-right">Hours</th>
-                        <th className="col-right">Pay</th>
-                        <th>Status</th>
-                        <th className="col-center">Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {sortedShifts.map(s => {
-                        const paid = Boolean(s.is_paid);
-                        return (
-                          <tr key={s.id}>
-                            <td className="cell-primary">{s.shift_date}</td>
-                            <td><span className="pill pill-type">{s.shift_type}</span></td>
-                            <td className="col-hide-mobile">{s.time_in ? formatForDisplay(s.time_in, 'h:mm a') : '—'}</td>
-                            <td className="col-hide-mobile">{s.time_out ? formatForDisplay(s.time_out, 'h:mm a') : '—'}</td>
-                            <td className="col-right">{Number(s.hours_worked ?? 0).toFixed(1)}h</td>
-                            <td className="col-right amount-green">${Number(s.pay_due ?? 0).toFixed(2)}</td>
-                            <td>
-                              {paid ? (
-                                <span className="pill pill-paid">✓ Paid</span>
-                              ) : (
-                                <span className="pill pill-unpaid">Unpaid</span>
-                              )}
-                              {s.paid_at && (
-                                <div className="cell-secondary">{formatForDisplay(s.paid_at, 'MMM d, yyyy')}</div>
-                              )}
-                            </td>
-                            <td className="col-center">
-                              <div className="btn-group">
-                                <Link href={`/shift/${s.id}`} className="icon-btn icon-btn-edit" aria-label="Edit shift">✏️</Link>
-                                <button type="button" className="icon-btn icon-btn-delete" onClick={() => delShift(s.id)} aria-label="Delete shift">🗑️</button>
-                              </div>
-                            </td>
-                          </tr>
-                        );
-                      })}
-                    </tbody>
-                  </table>
-                </div>
+                <>
+                  {/* ── UNPAID SECTION ── */}
+                  {unpaidShifts.length > 0 ? (
+                    <>
+                      <div className="shifts-section-header">
+                        <span>Unpaid</span>
+                        <span className="shifts-section-count unpaid-count">{unpaidShifts.length}</span>
+                      </div>
+
+                      {/* Mobile: cards */}
+                      <div className="shift-mobile-cards">
+                        {unpaidShifts.map(s => renderShiftCard(s))}
+                      </div>
+
+                      {/* Desktop: table */}
+                      <div className="shift-desktop-table">
+                        <div className="table-scroll">
+                          <table className="pro-table">
+                            <thead><tr>
+                              <th>Date</th><th>Type</th>
+                              <th className="col-hide-mobile">Time In</th>
+                              <th className="col-hide-mobile">Time Out</th>
+                              <th className="col-right">Hours</th>
+                              <th className="col-right">Pay</th>
+                              <th>Status</th>
+                              <th className="col-center">Actions</th>
+                            </tr></thead>
+                            <tbody>{unpaidShifts.map(s => renderShiftRow(s))}</tbody>
+                          </table>
+                        </div>
+                      </div>
+                    </>
+                  ) : (
+                    <div className="all-paid-banner">🎉 All shifts are paid up!</div>
+                  )}
+
+                  {/* ── PAID SECTION (collapsible) ── */}
+                  {paidShifts.length > 0 && (
+                    <>
+                      <button
+                        type="button"
+                        className={`shifts-section-header shifts-section-toggle ${paidOpen ? 'open' : ''}`}
+                        onClick={() => setPaidOpen(p => !p)}
+                        aria-expanded={paidOpen ? 'true' : 'false'}
+                      >
+                        <span>Paid Shifts</span>
+                        <span className="shifts-section-count">{paidShifts.length}</span>
+                        <span className="shifts-section-chevron"><ChevronDown size={14} /></span>
+                      </button>
+
+                      {paidOpen && (
+                        <>
+                          {/* Mobile: cards */}
+                          <div className="shift-mobile-cards">
+                            {paidShifts.map(s => renderShiftCard(s))}
+                          </div>
+
+                          {/* Desktop: table */}
+                          <div className="shift-desktop-table">
+                            <div className="table-scroll">
+                              <table className="pro-table">
+                                <thead><tr>
+                                  <th>Date</th><th>Type</th>
+                                  <th className="col-hide-mobile">Time In</th>
+                                  <th className="col-hide-mobile">Time Out</th>
+                                  <th className="col-right">Hours</th>
+                                  <th className="col-right">Pay</th>
+                                  <th>Status</th>
+                                  <th className="col-center">Actions</th>
+                                </tr></thead>
+                                <tbody>{paidShifts.map(s => renderShiftRow(s))}</tbody>
+                              </table>
+                            </div>
+                          </div>
+                        </>
+                      )}
+                    </>
+                  )}
+                </>
               )}
             </div>
           </div>

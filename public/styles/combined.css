@@ -8775,3 +8775,161 @@ img, video {
     flex-shrink: 0 !important;
   }
 }
+
+/* ================================================================
+   SHIFT CARDS & PAID/UNPAID SECTIONS
+   ================================================================ */
+
+/* Section dividers inside table-card */
+.shifts-section-header {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 9px 20px;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+.shifts-section-header:first-child { border-top: none; }
+
+.shifts-section-count {
+  background: #e2e8f0;
+  color: #475569;
+  border-radius: 999px;
+  padding: 1px 8px;
+  font-size: 11px;
+  font-weight: 700;
+}
+
+.shifts-section-count.unpaid-count {
+  background: #fef3c7;
+  color: #b45309;
+}
+
+/* Collapsible paid section toggle */
+.shifts-section-toggle {
+  width: 100%;
+  cursor: pointer;
+  border: none;
+  text-align: left;
+  appearance: none;
+  -webkit-appearance: none;
+  background: #f8fafc;
+  transition: background 0.15s;
+}
+
+.shifts-section-toggle:hover { background: #f1f5f9; }
+
+.shifts-section-chevron {
+  margin-left: auto;
+  font-size: 11px;
+  color: #94a3b8;
+  transition: transform 0.2s;
+  display: inline-block;
+}
+
+.shifts-section-toggle.open .shifts-section-chevron {
+  transform: rotate(180deg);
+}
+
+/* All-paid celebration row */
+.all-paid-banner {
+  padding: 20px;
+  text-align: center;
+  color: #16a34a;
+  font-size: 14px;
+  font-weight: 600;
+  background: #f0fdf4;
+  border-radius: 0 0 12px 12px;
+}
+
+/* ---- SHIFT CARDS (mobile view) ---- */
+.shift-card-item {
+  display: flex;
+  flex-direction: column;
+  gap: 5px;
+  padding: 13px 16px;
+  border-bottom: 1px solid #f1f5f9;
+  border-left: 3px solid transparent;
+  transition: background 0.12s;
+}
+
+.shift-card-item:last-child { border-bottom: none; }
+.shift-card-item:active { background: #fafbff; }
+.shift-card-item.unpaid-card { border-left-color: #f59e0b; }
+.shift-card-item.paid-card   { border-left-color: #22c55e; opacity: 0.85; }
+
+.shift-card-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.shift-card-pay {
+  font-size: 17px;
+  font-weight: 700;
+  color: #16a34a;
+  letter-spacing: -0.02em;
+}
+
+.shift-card-date {
+  font-size: 13px;
+  font-weight: 600;
+  color: #1e293b;
+}
+
+.shift-card-meta {
+  font-size: 12px;
+  color: #94a3b8;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.shift-card-meta-dot {
+  width: 3px;
+  height: 3px;
+  background: #cbd5e1;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.shift-card-actions {
+  display: flex;
+  gap: 6px;
+  justify-content: flex-end;
+  margin-top: 2px;
+}
+
+/* Show cards on mobile, table on desktop */
+.shift-mobile-cards  { display: none; }
+.shift-desktop-table { display: block; }
+
+@media (max-width: 768px) {
+  .shift-mobile-cards  { display: block; }
+  .shift-desktop-table { display: none; }
+  .shifts-section-header { padding: 8px 16px; }
+}
+
+/* Desktop section divider inside table tbody */
+tr.section-divider-row td {
+  padding: 8px 16px !important;
+  background: #f8fafc;
+  border-top: 1px solid #e2e8f0;
+  border-bottom: 1px solid #e2e8f0;
+  font-size: 11px;
+  font-weight: 700;
+  color: #64748b;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+}
+
+tr.section-divider-row.clickable { cursor: pointer; }
+tr.section-divider-row.clickable:hover td { background: #f1f5f9; }
