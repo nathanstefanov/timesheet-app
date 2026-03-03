@@ -241,15 +241,6 @@ export default function Dashboard() {
       </Head>
 
       <div className="app-container">
-        {/* MOBILE MENU BUTTON */}
-        <button
-          className={`mobile-menu-toggle${mobileMenuOpen ? ' menu-open' : ''}`}
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          aria-label="Toggle menu"
-        >
-          <span></span>
-        </button>
-
         {/* MOBILE OVERLAY */}
         <div
           className={`mobile-menu-overlay ${mobileMenuOpen ? 'active' : ''}`}
@@ -360,7 +351,12 @@ export default function Dashboard() {
                 </button>
               </div>
             </div>
-          </header>
+                      <button
+              className={`mobile-menu-toggle${mobileMenuOpen ? ' menu-open' : ''}`}
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label="Toggle menu"
+            ><span></span></button>
+</header>
 
           <div className="app-content">
             {err && (

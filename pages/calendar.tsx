@@ -502,15 +502,6 @@ export default function Calendar() {
       </Head>
 
       <div className="app-container">
-        {/* MOBILE MENU BUTTON */}
-        <button
-          className={`mobile-menu-toggle${mobileMenuOpen ? ' menu-open' : ''}`}
-          onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
-          aria-label="Toggle menu"
-        >
-          ☰
-        </button>
-
         {/* MOBILE OVERLAY */}
         <div
           className={`mobile-menu-overlay ${mobileMenuOpen ? 'active' : ''}`}
@@ -646,7 +637,12 @@ export default function Calendar() {
                 Add Event
               </button>
             )}
-          </header>
+                      <button
+              className={`mobile-menu-toggle${mobileMenuOpen ? ' menu-open' : ''}`}
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label="Toggle menu"
+            ><span></span></button>
+</header>
 
           <div className="app-content">
             {upcomingDates.length === 0 && pastDates.length === 0 ? (

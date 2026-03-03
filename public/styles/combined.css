@@ -8543,20 +8543,30 @@ img, video {
 .icon-btn-undo { background: #fee2e2; color: #991b1b; }
 .icon-btn-undo:hover { background: #fecaca; }
 
-/* ---- MOBILE STICKY HEADER FIX ----
- * The hamburger button is position:fixed and covers scrolled page content.
- * Making the app-header sticky on mobile keeps it always at the top,
- * so content scrolls below the header, never under the hamburger button.
+/* ---- MOBILE HEADER + HAMBURGER (in-header) ----
+ * The hamburger button is now a child of .app-header so it flows
+ * naturally on the right side of the sticky header bar.
  * -------------------------------------------------------------------- */
 @media (max-width: 768px) {
+  /* Sticky header bar */
   .app-header {
     position: sticky !important;
     top: 0 !important;
     z-index: 9998 !important;
     background: #ffffff !important;
     box-shadow: 0 2px 6px rgba(0, 0, 0, 0.08) !important;
-    /* 68px right = 16px button-right + 44px button-width + 8px gap */
-    padding: 10px 68px 10px 16px !important;
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    padding: 8px 8px 8px 16px !important;
+    gap: 8px !important;
+  }
+
+  /* The header-content (title + optional actions) fills remaining space */
+  .app-header .header-content,
+  .app-header > div:first-child {
+    flex: 1 !important;
+    min-width: 0 !important;
   }
 
   .header-content {
@@ -8564,13 +8574,16 @@ img, video {
     align-items: center !important;
     justify-content: space-between !important;
     text-align: left !important;
-    gap: 10px !important;
+    gap: 8px !important;
   }
 
   .header-title {
     font-size: 1.1rem !important;
     text-align: left !important;
     margin: 0 !important;
+    white-space: nowrap !important;
+    overflow: hidden !important;
+    text-overflow: ellipsis !important;
   }
 
   /* Hide subtitle to keep header compact */
@@ -8582,8 +8595,18 @@ img, video {
   .header-actions .btn-new,
   .header-actions .btn-primary-new {
     width: auto !important;
-    padding: 8px 14px !important;
-    font-size: 13px !important;
+    padding: 8px 12px !important;
+    font-size: 12px !important;
+  }
+
+  /* Hamburger is now inside the header — override fixed positioning */
+  .app-header .mobile-menu-toggle {
+    position: static !important;
+    flex-shrink: 0 !important;
+    margin-left: auto !important;
+    width: 40px !important;
+    height: 40px !important;
+    border-radius: 8px !important;
   }
 }
 
