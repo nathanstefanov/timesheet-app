@@ -466,19 +466,11 @@ export default function Settings() {
                   <button
                     onClick={handleSaveProfile}
                     disabled={saving}
+                    className="settings-save-btn"
                     style={{
-                      padding: '10px 24px',
                       background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '8px',
-                      fontSize: '14px',
-                      fontWeight: 600,
                       cursor: saving ? 'not-allowed' : 'pointer',
                       opacity: saving ? 0.6 : 1,
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '8px'
                     }}
                   >
                     <Save size={16} />
@@ -565,19 +557,11 @@ export default function Settings() {
                   <button
                     onClick={handleChangePassword}
                     disabled={saving || !newPassword || !confirmPassword}
+                    className="settings-save-btn"
                     style={{
-                      padding: '10px 24px',
                       background: !newPassword || !confirmPassword ? '#e2e8f0' : '#3b82f6',
-                      color: 'white',
-                      border: 'none',
-                      borderRadius: '8px',
-                      fontSize: '14px',
-                      fontWeight: 600,
                       cursor: (saving || !newPassword || !confirmPassword) ? 'not-allowed' : 'pointer',
                       opacity: saving ? 0.6 : 1,
-                      display: 'inline-flex',
-                      alignItems: 'center',
-                      gap: '8px'
                     }}
                   >
                     <Key size={16} />

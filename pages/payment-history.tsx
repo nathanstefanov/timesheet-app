@@ -371,35 +371,42 @@ export default function PaymentHistory() {
         {/* MAIN CONTENT */}
         <main className="app-main">
           <header className="app-header">
-            <div>
-              <h1 className="header-title">Payment History</h1>
-              <p className="header-subtitle">View all completed payments and export records</p>
+            <div className="header-content">
+              <div>
+                <h1 className="header-title">Payment History</h1>
+                <p className="header-subtitle">View all completed payments and export records</p>
+              </div>
+              <div className="header-actions">
+                <button
+                  onClick={exportToCSV}
+                  disabled={filteredShifts.length === 0}
+                  style={{
+                    padding: '10px 20px',
+                    background: filteredShifts.length === 0 ? '#94a3b8' : '#6366f1',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    cursor: filteredShifts.length === 0 ? 'not-allowed' : 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '8px',
+                    fontSize: '14px',
+                    fontWeight: 600,
+                    minHeight: '44px',
+                    width: '100%',
+                  }}
+                >
+                  <Download size={18} />
+                  Export to CSV
+                </button>
+              </div>
             </div>
-            <button
-              onClick={exportToCSV}
-              disabled={filteredShifts.length === 0}
-              style={{
-                padding: '10px 20px',
-                background: filteredShifts.length === 0 ? '#94a3b8' : '#6366f1',
-                color: 'white',
-                border: 'none',
-                borderRadius: '8px',
-                cursor: filteredShifts.length === 0 ? 'not-allowed' : 'pointer',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px',
-                fontSize: '14px',
-                fontWeight: 600,
-              }}
-            >
-              <Download size={18} />
-              Export to CSV
-            </button>
           </header>
 
           <div className="app-content">
             {/* STATS CARDS */}
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '20px', marginBottom: '24px' }}>
+            <div className="inline-stats-grid">
               <div style={{
                 background: 'white',
                 border: '1px solid #e2e8f0',
@@ -441,7 +448,7 @@ export default function PaymentHistory() {
                 <h2 style={{ fontSize: '16px', fontWeight: 600, color: '#1e293b', margin: 0 }}>Filters</h2>
               </div>
 
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+              <div className="inline-filter-grid">
                 {/* Search */}
                 <div>
                   <label style={{ fontSize: '14px', fontWeight: 500, color: '#475569', display: 'block', marginBottom: '6px' }}>

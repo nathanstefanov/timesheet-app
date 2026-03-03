@@ -339,15 +339,17 @@ export default function AuditLogs() {
                 <h1 className="header-title">Audit Logs</h1>
                 <p className="header-subtitle">Track all admin actions and employee logins for compliance</p>
               </div>
-              <button
-                onClick={exportToCSV}
-                className="btn-primary"
-                disabled={filteredLogs.length === 0}
-                style={{ display: 'flex', alignItems: 'center', gap: '8px' }}
-              >
-                <Download size={18} />
-                Export to CSV
-              </button>
+              <div className="header-actions">
+                <button
+                  onClick={exportToCSV}
+                  className="btn-primary"
+                  disabled={filteredLogs.length === 0}
+                  style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '8px', minHeight: '44px', width: '100%' }}
+                >
+                  <Download size={18} />
+                  Export to CSV
+                </button>
+              </div>
             </div>
           </header>
 
@@ -366,7 +368,7 @@ export default function AuditLogs() {
               <h2 style={{ fontSize: '16px', fontWeight: 600, color: '#1e293b', margin: 0 }}>Filters</h2>
             </div>
 
-            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+            <div className="inline-filter-grid">
               <div>
                 <label style={{ fontSize: '14px', fontWeight: 500, color: '#475569', display: 'block', marginBottom: '6px' }}>
                   Search
@@ -390,10 +392,12 @@ export default function AuditLogs() {
               </div>
 
               <div>
-                <label style={{ fontSize: '14px', fontWeight: 500, color: '#475569', display: 'block', marginBottom: '6px' }}>
+                <label htmlFor="audit-action-type" style={{ fontSize: '14px', fontWeight: 500, color: '#475569', display: 'block', marginBottom: '6px' }}>
                   Action Type
                 </label>
                 <select
+                  id="audit-action-type"
+                  aria-label="Filter by action type"
                   value={actionTypeFilter}
                   onChange={(e) => setActionTypeFilter(e.target.value)}
                   style={{
@@ -412,10 +416,12 @@ export default function AuditLogs() {
               </div>
 
               <div>
-                <label style={{ fontSize: '14px', fontWeight: 500, color: '#475569', display: 'block', marginBottom: '6px' }}>
+                <label htmlFor="audit-user-filter" style={{ fontSize: '14px', fontWeight: 500, color: '#475569', display: 'block', marginBottom: '6px' }}>
                   User
                 </label>
                 <select
+                  id="audit-user-filter"
+                  aria-label="Filter by user"
                   value={userFilter}
                   onChange={(e) => setUserFilter(e.target.value)}
                   style={{
@@ -434,11 +440,13 @@ export default function AuditLogs() {
               </div>
 
               <div>
-                <label style={{ fontSize: '14px', fontWeight: 500, color: '#475569', display: 'block', marginBottom: '6px' }}>
+                <label htmlFor="audit-start-date" style={{ fontSize: '14px', fontWeight: 500, color: '#475569', display: 'block', marginBottom: '6px' }}>
                   Start Date
                 </label>
                 <input
+                  id="audit-start-date"
                   type="date"
+                  aria-label="Filter start date"
                   value={startDate}
                   onChange={(e) => setStartDate(e.target.value)}
                   style={{
@@ -452,11 +460,13 @@ export default function AuditLogs() {
               </div>
 
               <div>
-                <label style={{ fontSize: '14px', fontWeight: 500, color: '#475569', display: 'block', marginBottom: '6px' }}>
+                <label htmlFor="audit-end-date" style={{ fontSize: '14px', fontWeight: 500, color: '#475569', display: 'block', marginBottom: '6px' }}>
                   End Date
                 </label>
                 <input
+                  id="audit-end-date"
                   type="date"
+                  aria-label="Filter end date"
                   value={endDate}
                   onChange={(e) => setEndDate(e.target.value)}
                   style={{
@@ -472,7 +482,7 @@ export default function AuditLogs() {
           </div>
 
           {/* STATS */}
-          <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px', marginBottom: '24px' }}>
+          <div className="inline-stats-grid">
             <div style={{
               background: 'white',
               padding: '24px',

@@ -487,7 +487,7 @@ export default function Payroll() {
               padding: '20px',
               marginBottom: '20px'
             }}>
-              <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '16px' }}>
+              <div className="inline-filter-grid">
                 <div>
                   <label style={{ fontSize: '14px', fontWeight: 500, color: '#475569', display: 'block', marginBottom: '6px' }}>
                     Start Date
@@ -545,19 +545,8 @@ export default function Payroll() {
 
             {/* SUMMARY BAR */}
             {selectedShifts.size > 0 && (
-              <div style={{
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                borderRadius: '12px',
-                padding: '20px',
-                marginBottom: '20px',
-                color: 'white',
-                display: 'flex',
-                justifyContent: 'space-between',
-                alignItems: 'center',
-                flexWrap: 'wrap',
-                gap: '16px'
-              }}>
-                <div style={{ display: 'flex', gap: '32px', flexWrap: 'wrap' }}>
+              <div className="payroll-selection-bar">
+                <div className="payroll-selection-stats">
                   <div>
                     <div style={{ fontSize: '12px', opacity: 0.9, marginBottom: '4px' }}>Selected Shifts</div>
                     <div style={{ fontSize: '24px', fontWeight: 600 }}>{selectedShifts.size}</div>
@@ -571,7 +560,7 @@ export default function Payroll() {
                     <div style={{ fontSize: '24px', fontWeight: 600 }}>${selectedTotal.toFixed(2)}</div>
                   </div>
                 </div>
-                <div style={{ display: 'flex', gap: '12px' }}>
+                <div className="payroll-selection-actions">
                   <button
                     onClick={deselectAll}
                     style={{
@@ -581,7 +570,8 @@ export default function Payroll() {
                       borderRadius: '8px',
                       color: 'white',
                       cursor: 'pointer',
-                      fontWeight: 500
+                      fontWeight: 500,
+                      minHeight: '44px',
                     }}
                   >
                     Deselect All
@@ -599,7 +589,9 @@ export default function Payroll() {
                       fontWeight: 600,
                       display: 'flex',
                       alignItems: 'center',
-                      gap: '8px'
+                      justifyContent: 'center',
+                      gap: '8px',
+                      minHeight: '44px',
                     }}
                   >
                     <CheckCircle size={18} />
@@ -667,22 +659,15 @@ export default function Payroll() {
                 >
                   {/* Employee Header */}
                   <div
-                    style={{
-                      padding: '16px 20px',
-                      background: isSelected ? '#f0f4ff' : '#f8fafc',
-                      borderBottom: '1px solid #e2e8f0',
-                      display: 'flex',
-                      justifyContent: 'space-between',
-                      alignItems: 'center',
-                      flexWrap: 'wrap',
-                      gap: '12px'
-                    }}
+                    className="payroll-emp-header"
+                    style={{ background: isSelected ? '#f0f4ff' : '#f8fafc' }}
                   >
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                    <div className="payroll-emp-info">
                       <input
                         type="checkbox"
                         checked={isSelected}
                         onChange={() => toggleEmployee(emp.userId)}
+                        aria-label={`Select all shifts for ${emp.name}`}
                         style={{ width: '18px', height: '18px', cursor: 'pointer' }}
                       />
                       <div>
@@ -695,7 +680,7 @@ export default function Payroll() {
                         </div>
                       </div>
                     </div>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '20px' }}>
+                    <div className="payroll-emp-actions">
                       <div style={{ textAlign: 'right' }}>
                         <div style={{ fontSize: '12px', color: '#64748b', marginBottom: '2px' }}>
                           {emp.shifts.length} shift{emp.shifts.length > 1 ? 's' : ''} • {emp.totalHours.toFixed(1)} hrs
@@ -754,6 +739,7 @@ export default function Payroll() {
                                   type="checkbox"
                                   checked={isShiftSelected}
                                   onChange={() => toggleShift(shift.id, emp.userId)}
+                                  aria-label={`Select shift on ${shift.shift_date}`}
                                   style={{ width: '16px', height: '16px', cursor: 'pointer' }}
                                 />
                               </td>

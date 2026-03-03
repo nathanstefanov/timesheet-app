@@ -336,19 +336,12 @@ export default function Reports() {
                   {isAdmin ? 'Team performance and labor cost insights' : 'Your earnings and work history'}
                 </p>
               </div>
-              <div>
+              <div className="header-actions">
                 <select
+                  aria-label="Select date range"
                   value={dateRange}
                   onChange={(e) => setDateRange(e.target.value as any)}
-                  style={{
-                    padding: '10px 16px',
-                    background: 'white',
-                    border: '1px solid #e2e8f0',
-                    borderRadius: '8px',
-                    fontSize: '14px',
-                    fontWeight: 500,
-                    cursor: 'pointer',
-                  }}
+                  className="reports-date-select"
                 >
                   <option value="week">Last 7 Days</option>
                   <option value="month">Last Month</option>
@@ -365,7 +358,7 @@ export default function Reports() {
               // EMPLOYEE VIEW
               <>
                 {/* Summary Cards */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', marginBottom: '24px' }}>
+                <div className="reports-summary-grid">
                   <div style={{
                     background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                     padding: '24px',
@@ -472,7 +465,7 @@ export default function Reports() {
               // ADMIN VIEW
               <>
                 {/* Admin Summary Cards */}
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', gap: '20px', marginBottom: '24px' }}>
+                <div className="reports-summary-grid">
                   <div style={{
                     background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                     padding: '24px',
@@ -552,7 +545,7 @@ export default function Reports() {
                       Employee Performance
                     </h2>
                   </div>
-                  <div style={{ overflowX: 'auto' }}>
+                  <div className="reports-employee-table-wrapper">
                     <table style={{ width: '100%', borderCollapse: 'collapse' }}>
                       <thead>
                         <tr style={{ background: '#f8fafc', borderBottom: '1px solid #e2e8f0' }}>

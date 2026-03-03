@@ -371,20 +371,9 @@ export default function Dashboard() {
 
             {/* PROFILE COMPLETION PROMPT */}
             {showProfilePrompt && (!user?.phone || !user?.venmo_url) && (
-              <div style={{
-                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                border: '1px solid rgba(255, 255, 255, 0.2)',
-                borderRadius: '12px',
-                padding: '16px 20px',
-                marginBottom: '24px',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '12px',
-                color: 'white',
-                boxShadow: '0 4px 6px rgba(0, 0, 0, 0.1)',
-              }}>
+              <div className="profile-completion-prompt">
                 <AlertCircle size={24} style={{ flexShrink: 0 }} />
-                <div style={{ flex: 1 }}>
+                <div className="profile-prompt-text">
                   <div style={{ fontWeight: 600, fontSize: '15px', marginBottom: '4px' }}>
                     Complete Your Profile
                   </div>
@@ -396,31 +385,13 @@ export default function Dashboard() {
                 </div>
                 <button
                   onClick={() => router.push('/settings')}
-                  style={{
-                    background: 'white',
-                    color: '#667eea',
-                    border: 'none',
-                    borderRadius: '8px',
-                    padding: '10px 20px',
-                    fontSize: '14px',
-                    fontWeight: 600,
-                    cursor: 'pointer',
-                    flexShrink: 0,
-                  }}
+                  className="profile-prompt-settings-btn"
                 >
                   Go to Settings
                 </button>
                 <button
                   onClick={() => setShowProfilePrompt(false)}
-                  style={{
-                    background: 'transparent',
-                    border: 'none',
-                    cursor: 'pointer',
-                    padding: '4px',
-                    color: 'white',
-                    opacity: 0.8,
-                    flexShrink: 0,
-                  }}
+                  className="profile-prompt-dismiss-btn"
                   aria-label="Dismiss"
                 >
                   <X size={20} />
@@ -516,6 +487,7 @@ export default function Dashboard() {
                   <div className="time-range-buttons">
                     <select
                       className="time-range-select"
+                      aria-label="Select time range"
                       value={mode}
                       onChange={e => {
                         setMode(e.target.value as Mode);

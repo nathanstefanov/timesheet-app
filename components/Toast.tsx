@@ -76,28 +76,29 @@ const ToastItem = ({ toast, onClose }: ToastProps) => {
 
   return (
     <div
+      className="toast-item-inner"
       style={{
         display: 'flex',
         alignItems: 'center',
         gap: '12px',
         background: colors.bg,
         color: 'white',
-        padding: '16px',
-        borderRadius: '8px',
+        padding: '14px 16px',
+        borderRadius: '10px',
         border: `1px solid ${colors.border}`,
-        boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06)',
-        minWidth: '300px',
-        maxWidth: '500px',
-        animation: isExiting ? 'slideOut 0.3s ease-out' : 'slideIn 0.3s ease-out',
-        transform: isExiting ? 'translateX(100%)' : 'translateX(0)',
+        boxShadow: '0 4px 12px rgba(0, 0, 0, 0.15)',
+        minWidth: 'min(300px, calc(100vw - 32px))',
+        maxWidth: '480px',
         opacity: isExiting ? 0 : 1,
-        transition: 'all 0.3s ease-out',
+        transform: isExiting ? 'translateX(110%)' : 'translateX(0)',
+        transition: 'opacity 0.3s ease-out, transform 0.3s ease-out',
+        boxSizing: 'border-box' as const,
       }}
     >
       <div style={{ flexShrink: 0 }}>
         {getIcon()}
       </div>
-      <div style={{ flex: 1, fontSize: '14px', fontWeight: 500 }}>
+      <div style={{ flex: 1, fontSize: '14px', fontWeight: 500, minWidth: 0, wordBreak: 'break-word' }}>
         {toast.message}
       </div>
       <button
@@ -107,15 +108,19 @@ const ToastItem = ({ toast, onClose }: ToastProps) => {
           border: 'none',
           color: 'white',
           cursor: 'pointer',
-          padding: '4px',
+          padding: '8px',
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
           opacity: 0.8,
           transition: 'opacity 0.2s',
+          flexShrink: 0,
+          minWidth: '32px',
+          minHeight: '32px',
         }}
         onMouseEnter={(e) => e.currentTarget.style.opacity = '1'}
         onMouseLeave={(e) => e.currentTarget.style.opacity = '0.8'}
+        aria-label="Dismiss"
       >
         <X size={16} />
       </button>
@@ -155,6 +160,7 @@ interface ToastContainerProps {
 export const ToastContainer = ({ toasts, onClose }: ToastContainerProps) => {
   return (
     <div
+      className="toast-container-outer"
       style={{
         position: 'fixed',
         top: '20px',
@@ -162,15 +168,15 @@ export const ToastContainer = ({ toasts, onClose }: ToastContainerProps) => {
         zIndex: 9999,
         display: 'flex',
         flexDirection: 'column',
-        gap: '12px',
+        gap: '8px',
         pointerEvents: 'none',
+        maxWidth: '480px',
+        width: 'max-content',
       }}
     >
-      <div style={{ pointerEvents: 'auto' }}>
+      <div style={{ pointerEvents: 'auto', display: 'flex', flexDirection: 'column', gap: '8px' }}>
         {toasts.map((toast) => (
-          <div key={toast.id} style={{ marginBottom: '12px' }}>
-            <ToastItem toast={toast} onClose={onClose} />
-          </div>
+          <ToastItem key={toast.id} toast={toast} onClose={onClose} />
         ))}
       </div>
     </div>
