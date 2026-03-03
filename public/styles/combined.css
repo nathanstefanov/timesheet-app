@@ -8059,6 +8059,50 @@ img, video {
   }
 }
 
+/* Hide hamburger when sidebar is open */
+.mobile-menu-toggle.menu-open {
+  display: none !important;
+}
+
+/* Close button inside sidebar header */
+.sidebar-close-btn {
+  display: none;
+  background: rgba(255, 255, 255, 0.15);
+  border: none;
+  color: white;
+  border-radius: 8px;
+  width: 36px;
+  height: 36px;
+  font-size: 20px;
+  line-height: 1;
+  cursor: pointer;
+  align-items: center;
+  justify-content: center;
+  flex-shrink: 0;
+  transition: background 0.2s;
+}
+
+.sidebar-close-btn:hover {
+  background: rgba(255, 255, 255, 0.28);
+}
+
+.sidebar-close-btn:active {
+  transform: scale(0.93);
+}
+
+@media (max-width: 768px) {
+  .sidebar-close-btn {
+    display: flex;
+  }
+
+  /* Make sidebar-header a row so logo and X sit side by side */
+  .sidebar-header {
+    display: flex !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+  }
+}
+
 /* ---- GENERAL CARD IMPROVEMENTS ON MOBILE ---- */
 @media (max-width: 640px) {
   /* Reduce font sizes on value displays */

@@ -214,7 +214,7 @@ export default function AuditLogs() {
       <div className="app-container">
         {/* MOBILE MENU BUTTON */}
         <button
-          className="mobile-menu-toggle"
+          className={`mobile-menu-toggle${mobileMenuOpen ? ' menu-open' : ''}`}
           onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
           aria-label="Toggle menu"
         >
@@ -234,6 +234,7 @@ export default function AuditLogs() {
               <div className="sidebar-logo-icon">T</div>
               <div className="sidebar-logo-text">Timesheet</div>
             </div>
+            <button className="sidebar-close-btn" onClick={() => setMobileMenuOpen(false)} aria-label="Close menu">✕</button>
           </div>
 
           <nav className="sidebar-nav">
