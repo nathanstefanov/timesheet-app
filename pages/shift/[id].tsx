@@ -7,6 +7,8 @@ import { useEffect, useState } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../../lib/supabaseClient';
 import { logShiftUpdated, logShiftDeleted } from '../../lib/auditLog';
+import Head from 'next/head';
+import { User, Plus, Calendar, BarChart3, LogOut, Settings, DollarSign, Shield } from 'lucide-react';
 
 type ShiftType = 'Setup' | 'Breakdown' | 'Shop';
 
@@ -17,7 +19,6 @@ function fmtTimeLocal(iso: string) {
   return `${hh}:${mm}`;
 }
 function buildLocal(date: string, time: string) {
-  // Let the browser build a local Date; we only convert to ISO when persisting
   return new Date(`${date}T${time}:00`);
 }
 
@@ -27,34 +28,40 @@ export default function EditShift() {
 
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
+  const [deleting, setDeleting] = useState(false);
+  const [confirmDelete, setConfirmDelete] = useState(false);
   const [err, setErr] = useState<string | undefined>();
+  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
+
   const [userId, setUserId] = useState<string | null>(null);
+  const [userName, setUserName] = useState('');
+  const [userRole, setUserRole] = useState('employee');
 
   const [date, setDate] = useState('');
   const [type, setType] = useState<ShiftType>('Setup');
   const [tin, setTin] = useState('');
   const [tout, setTout] = useState('');
   const [notes, setNotes] = useState('');
-
-  // derived for UI: does out fall on the following calendar day?
   const [endsNextDay, setEndsNextDay] = useState(false);
 
   useEffect(() => {
     (async () => {
       if (!id) return;
-      setLoading(true);
-
-      // Get current user
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) {
-        r.replace('/');
-        return;
-      }
+      if (!user) { r.replace('/'); return; }
+
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('id, full_name, role')
+        .eq('id', user.id)
+        .single();
+
       setUserId(user.id);
+      setUserName(profile?.full_name || 'User');
+      setUserRole(profile?.role || 'employee');
 
       const { data, error } = await supabase.from('shifts').select('*').eq('id', id).single();
-      if (error) { setErr(error.message); setLoading(false); return; }
-      if (!data) { setErr('Shift not found'); setLoading(false); return; }
+      if (error || !data) { setErr(error?.message || 'Shift not found'); setLoading(false); return; }
 
       setDate(data.shift_date);
       setType(data.shift_type);
@@ -68,7 +75,7 @@ export default function EditShift() {
 
       setLoading(false);
     })();
-  }, [id]);
+  }, [id, r]);
 
   async function save() {
     setErr(undefined);
@@ -81,9 +88,7 @@ export default function EditShift() {
       let outDt = buildLocal(date, tout);
       if (endsNextDay || outDt <= inDt) outDt.setDate(outDt.getDate() + 1);
 
-      if (outDt.getTime() - inDt.getTime() < 60_000) {
-        throw new Error('Time Out must be after Time In.');
-      }
+      if (outDt.getTime() - inDt.getTime() < 60_000) throw new Error('Time Out must be after Time In.');
 
       const patch = {
         shift_date: date,
@@ -96,7 +101,6 @@ export default function EditShift() {
       const { error } = await supabase.from('shifts').update(patch).eq('id', id!);
       if (error) throw error;
 
-      // Log the shift update
       const changes = Object.keys(patch)
         .map(key => `${key}: ${patch[key as keyof typeof patch]}`)
         .join(', ');
@@ -111,118 +115,310 @@ export default function EditShift() {
   }
 
   async function del() {
-    if (!confirm('Delete this shift?')) return;
-    if (!userId) return alert('User not authenticated');
-
+    if (!userId) return;
+    setDeleting(true);
     const { error } = await supabase.from('shifts').delete().eq('id', id!);
-    if (error) return alert(error.message);
-
-    // Log the shift deletion
+    if (error) { setErr(error.message); setDeleting(false); return; }
     await logShiftDeleted(userId, id!, type);
-
     r.push('/dashboard');
+  }
+
+  async function handleLogout() {
+    await supabase.auth.signOut();
+    r.push('/login');
   }
 
   if (loading) {
     return (
-      <main className="page">
-        <p>Loading…</p>
-      </main>
+      <div className="page-loading">
+        <div className="page-loading-text">Loading…</div>
+      </div>
     );
   }
 
   return (
-    <main className="page">
-      {err && (
-        <div className="toast toast--error" role="alert">
-          <span>{err}</span>
-          <button className="toast__dismiss" onClick={() => setErr(undefined)} aria-label="Dismiss">✕</button>
-        </div>
-      )}
+    <>
+      <Head>
+        <title>Edit Shift - Timesheet</title>
+      </Head>
 
-      <div className="card narrow mx-auto">
-        <div className="card__header">
-          <h1 style={{ margin: 0, fontSize: 22 }}>Edit Shift</h1>
-        </div>
+      <div className="app-container">
+        {/* MOBILE OVERLAY */}
+        <div
+          className={`mobile-menu-overlay ${mobileMenuOpen ? 'active' : ''}`}
+          onClick={() => setMobileMenuOpen(false)}
+        />
 
-        <div style={{ padding: 14 }}>
-          <div className="form-field">
-            <label htmlFor="date">Date</label>
-            <input
-              id="date"
-              type="date"
-              value={date}
-              onChange={e => setDate(e.target.value)}
-              required
-            />
-          </div>
-
-          <div className="form-field">
-            <label htmlFor="type">Shift Type</label>
-            <select
-              id="type"
-              value={type}
-              onChange={e => setType(e.target.value as ShiftType)}
-            >
-              <option>Setup</option>
-              <option>Breakdown</option>
-              <option>Shop</option>
-            </select>
-          </div>
-
-          <div className="grid-2 gap-md">
-            <div className="form-field">
-              <label htmlFor="time-in">Time In</label>
-              <input
-                id="time-in"
-                type="time"
-                value={tin}
-                onChange={e => setTin(e.target.value)}
-                required
-              />
+        {/* SIDEBAR */}
+        <aside className={`app-sidebar ${mobileMenuOpen ? 'mobile-open' : ''}`}>
+          <div className="sidebar-header">
+            <div className="sidebar-logo">
+              <div className="sidebar-logo-icon">T</div>
+              <div className="sidebar-logo-text">Timesheet</div>
             </div>
-            <div className="form-field">
-              <label htmlFor="time-out">Time Out</label>
-              <input
-                id="time-out"
-                type="time"
-                value={tout}
-                onChange={e => setTout(e.target.value)}
-                required
-              />
+            <button className="sidebar-close-btn" onClick={() => setMobileMenuOpen(false)} aria-label="Close menu">✕</button>
+          </div>
+
+          <nav className="sidebar-nav">
+            <div className="sidebar-nav-section">
+              <div className="sidebar-nav-label">Main</div>
+              <a href="/dashboard" className="sidebar-nav-item active" onClick={() => setMobileMenuOpen(false)}>
+                <span className="sidebar-nav-icon"><User size={18} /></span>
+                <span>My Shifts</span>
+              </a>
+              <a href="/new-shift" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
+                <span className="sidebar-nav-icon"><Plus size={18} /></span>
+                <span>Log Shift</span>
+              </a>
+              <a href="/me/schedule" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
+                <span className="sidebar-nav-icon"><Calendar size={18} /></span>
+                <span>My Schedule</span>
+              </a>
+              <a href="/calendar" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
+                <span className="sidebar-nav-icon"><Calendar size={18} /></span>
+                <span>Calendar</span>
+              </a>
+              <a href="/reports" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
+                <span className="sidebar-nav-icon"><BarChart3 size={18} /></span>
+                <span>Reports</span>
+              </a>
+              <a href="/settings" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
+                <span className="sidebar-nav-icon"><Settings size={18} /></span>
+                <span>Settings</span>
+              </a>
+            </div>
+
+            {userRole === 'admin' && (
+              <div className="sidebar-nav-section">
+                <div className="sidebar-nav-label">Admin</div>
+                <a href="/admin" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
+                  <span className="sidebar-nav-icon"><BarChart3 size={18} /></span>
+                  <span>Admin Dashboard</span>
+                </a>
+                <a href="/admin-schedule" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
+                  <span className="sidebar-nav-icon"><Calendar size={18} /></span>
+                  <span>Schedule</span>
+                </a>
+                <a href="/admin-schedule-past" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
+                  <span className="sidebar-nav-icon"><Calendar size={18} /></span>
+                  <span>Past Schedule</span>
+                </a>
+                <a href="/payroll" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
+                  <span className="sidebar-nav-icon"><DollarSign size={18} /></span>
+                  <span>Payroll</span>
+                </a>
+                <a href="/payment-history" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
+                  <span className="sidebar-nav-icon"><DollarSign size={18} /></span>
+                  <span>Payment History</span>
+                </a>
+                <a href="/employees" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
+                  <span className="sidebar-nav-icon"><User size={18} /></span>
+                  <span>Employees</span>
+                </a>
+                <a href="/audit-logs" className="sidebar-nav-item" onClick={() => setMobileMenuOpen(false)}>
+                  <span className="sidebar-nav-icon"><Shield size={18} /></span>
+                  <span>Audit Logs</span>
+                </a>
+              </div>
+            )}
+          </nav>
+
+          <div className="sidebar-footer">
+            <div className="sidebar-user">
+              <div className="sidebar-user-avatar">{userName.charAt(0) || 'U'}</div>
+              <div className="sidebar-user-info">
+                <div className="sidebar-user-name">{userName}</div>
+                <div className="sidebar-user-role">{userRole === 'admin' ? 'Administrator' : 'Employee'}</div>
+              </div>
+            </div>
+            <button className="sidebar-logout" onClick={handleLogout}>
+              <LogOut size={16} /> Logout
+            </button>
+          </div>
+        </aside>
+
+        {/* MAIN CONTENT */}
+        <main className="app-main">
+          <header className="app-header">
+            <div className="header-content">
+              <div>
+                <h1 className="header-title">Edit Shift</h1>
+                <p className="header-subtitle">Update your shift details</p>
+              </div>
+            </div>
+            <button
+              className={`mobile-menu-toggle${mobileMenuOpen ? ' menu-open' : ''}`}
+              onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+              aria-label="Toggle menu"
+            ><span></span></button>
+          </header>
+
+          <div className="app-content">
+            <div className="log-shift-layout">
+              <div className="log-shift-form-section">
+                <div className="log-shift-form-card">
+                  <div className="log-shift-form-header">
+                    <h2 className="log-shift-form-title">Shift Details</h2>
+                    <p className="log-shift-form-subtitle">Update the fields below and save</p>
+                  </div>
+
+                  {err && (
+                    <div className="log-shift-alert error">
+                      <span className="log-shift-alert-icon">⚠️</span>
+                      <span className="log-shift-alert-text">{err}</span>
+                    </div>
+                  )}
+
+                  <div className="log-shift-form-body">
+                    <div className="log-shift-form-row">
+                      <div className="log-shift-form-group">
+                        <label className="log-shift-label">
+                          <span className="log-shift-label-text">Shift Date</span>
+                          <span className="log-shift-label-required">*</span>
+                        </label>
+                        <div className="log-shift-input-wrapper">
+                          <input
+                            className="log-shift-input"
+                            type="date"
+                            title="Shift date"
+                            value={date}
+                            onChange={e => setDate(e.target.value)}
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      <div className="log-shift-form-group">
+                        <label className="log-shift-label">
+                          <span className="log-shift-label-text">Shift Type</span>
+                          <span className="log-shift-label-required">*</span>
+                        </label>
+                        <div className="log-shift-input-wrapper">
+                          <select
+                            className="log-shift-select"
+                            title="Shift type"
+                            value={type}
+                            onChange={e => setType(e.target.value as ShiftType)}
+                          >
+                            <option value="Setup">Setup</option>
+                            <option value="Breakdown">Breakdown</option>
+                            <option value="Shop">Shop</option>
+                          </select>
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="log-shift-form-row">
+                      <div className="log-shift-form-group">
+                        <label className="log-shift-label">
+                          <span className="log-shift-label-text">Time In</span>
+                          <span className="log-shift-label-required">*</span>
+                        </label>
+                        <div className="log-shift-input-wrapper">
+                          <input
+                            className="log-shift-input"
+                            type="time"
+                            title="Time in"
+                            value={tin}
+                            onChange={e => setTin(e.target.value)}
+                            required
+                          />
+                        </div>
+                      </div>
+
+                      <div className="log-shift-form-group">
+                        <label className="log-shift-label">
+                          <span className="log-shift-label-text">Time Out</span>
+                          <span className="log-shift-label-required">*</span>
+                        </label>
+                        <div className="log-shift-input-wrapper">
+                          <input
+                            className="log-shift-input"
+                            type="time"
+                            title="Time out"
+                            value={tout}
+                            onChange={e => setTout(e.target.value)}
+                            required
+                          />
+                        </div>
+                      </div>
+                    </div>
+
+                    <label className="log-shift-checkbox-row">
+                      <input
+                        type="checkbox"
+                        checked={endsNextDay}
+                        onChange={e => setEndsNextDay(e.target.checked)}
+                      />
+                      <span>Ends after midnight (next day)</span>
+                    </label>
+
+                    <div className="log-shift-form-group full-width">
+                      <label className="log-shift-label">
+                        <span className="log-shift-label-text">Notes</span>
+                        <span className="log-shift-label-optional">(Optional)</span>
+                      </label>
+                      <div className="log-shift-textarea-wrapper">
+                        <textarea
+                          className="log-shift-textarea"
+                          value={notes}
+                          onChange={e => setNotes(e.target.value)}
+                          placeholder="Add any additional details about this shift..."
+                          rows={3}
+                        />
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="log-shift-form-footer">
+                    <button
+                      type="button"
+                      className="log-shift-btn cancel"
+                      onClick={() => r.back()}
+                      disabled={saving}
+                    >
+                      Cancel
+                    </button>
+                    <button
+                      type="button"
+                      className="log-shift-btn submit"
+                      onClick={save}
+                      disabled={saving}
+                    >
+                      {saving ? 'Saving…' : '✓ Save Changes'}
+                    </button>
+                  </div>
+                </div>
+
+                {/* DELETE SECTION */}
+                <div className="edit-shift-danger-zone">
+                  {!confirmDelete ? (
+                    <button
+                      type="button"
+                      className="edit-shift-delete-btn"
+                      onClick={() => setConfirmDelete(true)}
+                    >
+                      Delete this shift
+                    </button>
+                  ) : (
+                    <div className="edit-shift-delete-confirm">
+                      <p>Are you sure? This cannot be undone.</p>
+                      <div className="edit-shift-delete-actions">
+                        <button type="button" className="log-shift-btn cancel" onClick={() => setConfirmDelete(false)}>
+                          Keep it
+                        </button>
+                        <button type="button" className="edit-shift-delete-confirm-btn" onClick={del} disabled={deleting}>
+                          {deleting ? 'Deleting…' : 'Yes, delete'}
+                        </button>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              </div>
             </div>
           </div>
-
-          <label className="inline-check" style={{ margin: '8px 0 12px' }}>
-            <input
-              type="checkbox"
-              checked={endsNextDay}
-              onChange={e => setEndsNextDay(e.target.checked)}
-            />
-            Ends after midnight (next day)
-          </label>
-
-          <div className="form-field">
-            <label htmlFor="notes">Notes</label>
-            <textarea
-              id="notes"
-              value={notes}
-              onChange={e => setNotes(e.target.value)}
-              placeholder="Optional"
-            />
-          </div>
-
-          <div className="actions">
-            <button className="btn-edit" onClick={save} disabled={saving}>
-              {saving ? 'Saving…' : 'Save'}
-            </button>
-            <button className="btn-delete" onClick={del}>Delete</button>
-            <button className="topbar-btn" style={{ marginLeft: 'auto' }} onClick={() => history.back()}>
-              Cancel
-            </button>
-          </div>
-        </div>
+        </main>
       </div>
-    </main>
+    </>
   );
 }

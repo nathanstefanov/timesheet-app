@@ -9077,3 +9077,73 @@ tr.section-divider-row.clickable:hover td { background: #f1f5f9; }
     box-shadow: 0 2px 10px rgba(102, 126, 234, 0.4);
   }
 }
+
+/* ---- EDIT SHIFT PAGE ---- */
+.page-loading {
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  height: 100vh;
+}
+.page-loading-text {
+  color: #64748b;
+  font-size: 15px;
+}
+.log-shift-checkbox-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 14px;
+  color: #475569;
+  cursor: pointer;
+  margin: 4px 0 8px;
+}
+.log-shift-checkbox-row input[type="checkbox"] {
+  width: 16px;
+  height: 16px;
+  accent-color: #667eea;
+  cursor: pointer;
+  flex-shrink: 0;
+}
+.edit-shift-danger-zone {
+  margin-top: 12px;
+  padding: 16px;
+  border-radius: 10px;
+  border: 1px solid #fee2e2;
+  background: #fff8f8;
+}
+.edit-shift-delete-btn {
+  background: none;
+  border: none;
+  color: #ef4444;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
+}
+.edit-shift-delete-btn:hover { color: #dc2626; }
+.edit-shift-delete-confirm p {
+  font-size: 14px;
+  font-weight: 500;
+  color: #dc2626;
+  margin: 0 0 12px;
+}
+.edit-shift-delete-actions {
+  display: flex;
+  gap: 8px;
+}
+.edit-shift-delete-confirm-btn {
+  padding: 8px 16px;
+  background: #ef4444;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 500;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+.edit-shift-delete-confirm-btn:hover { background: #dc2626; }
+.edit-shift-delete-confirm-btn:disabled { opacity: 0.6; cursor: not-allowed; }
