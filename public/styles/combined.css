@@ -8064,15 +8064,12 @@ img, video {
   display: none !important;
 }
 
-/* Close button — pinned to top-right corner of the sidebar */
+/* Close button — flex item pushed to the right of the sidebar header */
 .sidebar-close-btn {
   display: none;
-  position: absolute;
-  top: 14px;
-  right: 14px;
-  z-index: 1;
-  background: rgba(255, 255, 255, 0.18);
-  border: 2px solid rgba(255, 255, 255, 0.5);
+  flex-shrink: 0;
+  background: rgba(255, 255, 255, 0.2);
+  border: 2px solid rgba(255, 255, 255, 0.55);
   color: #ffffff;
   border-radius: 50%;
   width: 44px;
@@ -8084,11 +8081,12 @@ img, video {
   align-items: center;
   justify-content: center;
   transition: background 0.2s, border-color 0.2s, transform 0.15s;
+  -webkit-tap-highlight-color: transparent;
 }
 
 .sidebar-close-btn:hover {
-  background: rgba(255, 255, 255, 0.32);
-  border-color: rgba(255, 255, 255, 0.75);
+  background: rgba(255, 255, 255, 0.35);
+  border-color: rgba(255, 255, 255, 0.8);
 }
 
 .sidebar-close-btn:active {
@@ -8098,6 +8096,20 @@ img, video {
 @media (max-width: 768px) {
   .sidebar-close-btn {
     display: flex;
+  }
+
+  /* Flex row so logo sits left and close button sits right */
+  .sidebar-header {
+    display: flex !important;
+    flex-direction: row !important;
+    align-items: center !important;
+    justify-content: space-between !important;
+    padding-right: 16px !important;
+  }
+
+  .sidebar-logo {
+    flex: 1 !important;
+    min-width: 0 !important;
   }
 }
 
