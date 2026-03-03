@@ -3,7 +3,7 @@ import { useEffect, useState, useRef } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
 import Head from 'next/head';
-import { Calendar as CalendarIcon, Plus, Edit2, Trash2, X, MapPin, Clock, FileText, User, LogOut, Settings, BarChart3, DollarSign, Shield } from 'lucide-react';
+import { Calendar as CalendarIcon, Plus, Edit2, Trash2, X, MapPin, Clock, FileText, User, LogOut, Settings, BarChart3, DollarSign, Shield, Archive, ChevronDown, ChevronUp } from 'lucide-react';
 import { useToast } from '../hooks/useToast';
 
 declare global {
@@ -125,6 +125,7 @@ export default function Calendar() {
 
   // View state
   const [currentMonth, setCurrentMonth] = useState(new Date());
+  const [showPastEvents, setShowPastEvents] = useState(false);
 
   // Cache for enriched locations
   const [locationCache, setLocationCache] = useState<Record<string, string>>({});
@@ -477,8 +478,11 @@ export default function Calendar() {
     return acc;
   }, {} as Record<string, CalendarEvent[]>);
 
-  // Get unique dates sorted
-  const uniqueDates = Object.keys(eventsByDate).sort();
+  // Split dates into upcoming (today+) and past (before today)
+  const todayStr = new Date().toISOString().split('T')[0];
+  const allDates = Object.keys(eventsByDate).sort();
+  const upcomingDates = allDates.filter(d => d >= todayStr);
+  const pastDates = allDates.filter(d => d < todayStr).reverse(); // newest past first
 
   if (loading || !profile) {
     return <div style={{ padding: '40px', textAlign: 'center' }}>Loading...</div>;
@@ -644,7 +648,7 @@ export default function Calendar() {
           </header>
 
           <div className="app-content">
-            {uniqueDates.length === 0 ? (
+            {upcomingDates.length === 0 && pastDates.length === 0 ? (
               <div style={{
                 padding: '60px 20px',
                 textAlign: 'center',
@@ -662,137 +666,249 @@ export default function Calendar() {
               </div>
             ) : (
               <div style={{ display: 'flex', flexDirection: 'column', gap: '24px' }}>
-                {uniqueDates.map((date) => {
-                  const dateEvents = eventsByDate[date];
-                  const dateObj = new Date(date + 'T00:00:00');
-                  const formattedDate = dateObj.toLocaleDateString('en-US', {
-                    weekday: 'long',
-                    year: 'numeric',
-                    month: 'long',
-                    day: 'numeric',
-                  });
 
-                  return (
-                    <div key={date}>
-                      <h2 style={{
-                        fontSize: '16px',
-                        fontWeight: 600,
-                        color: '#475569',
-                        marginBottom: '12px',
-                        paddingBottom: '8px',
-                        borderBottom: '2px solid #e2e8f0',
+                {/* UPCOMING EVENTS */}
+                {upcomingDates.length === 0 ? (
+                  <div style={{
+                    padding: '40px 20px',
+                    textAlign: 'center',
+                    background: 'white',
+                    borderRadius: '12px',
+                    border: '1px solid #e2e8f0',
+                    color: '#64748b',
+                  }}>
+                    <CalendarIcon size={36} style={{ color: '#94a3b8', margin: '0 auto 12px' }} />
+                    <p style={{ fontSize: '15px' }}>No upcoming events</p>
+                  </div>
+                ) : (
+                  upcomingDates.map((date) => {
+                    const dateEvents = eventsByDate[date];
+                    const dateObj = new Date(date + 'T00:00:00');
+                    const isToday = date === todayStr;
+                    const formattedDate = dateObj.toLocaleDateString('en-US', {
+                      weekday: 'long',
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric',
+                    });
+
+                    return (
+                      <div key={date}>
+                        <h2 style={{
+                          fontSize: '16px',
+                          fontWeight: 600,
+                          color: isToday ? '#6366f1' : '#475569',
+                          marginBottom: '12px',
+                          paddingBottom: '8px',
+                          borderBottom: `2px solid ${isToday ? '#6366f1' : '#e2e8f0'}`,
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '8px',
+                        }}>
+                          {isToday && (
+                            <span style={{
+                              background: '#6366f1',
+                              color: 'white',
+                              fontSize: '11px',
+                              fontWeight: 700,
+                              padding: '2px 8px',
+                              borderRadius: '999px',
+                              letterSpacing: '0.05em',
+                            }}>TODAY</span>
+                          )}
+                          {formattedDate}
+                          <span style={{ fontSize: '16px', fontWeight: 700, color: '#000' }}>
+                            ({dateEvents.length})
+                          </span>
+                        </h2>
+
+                        <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                          {dateEvents.map((event) => (
+                            <div
+                              key={event.id}
+                              style={{
+                                background: 'white',
+                                border: '1px solid #e2e8f0',
+                                borderRadius: '12px',
+                                padding: '20px',
+                                display: 'flex',
+                                justifyContent: 'space-between',
+                                alignItems: 'flex-start',
+                                gap: '16px',
+                              }}
+                            >
+                              <div style={{ flex: 1 }}>
+                                <h3 style={{ fontSize: '18px', fontWeight: 600, color: '#1e293b', marginBottom: '8px' }}>
+                                  {event.title}
+                                </h3>
+                                {event.description && (
+                                  <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '8px', color: '#475569', fontSize: '14px' }}>
+                                    <FileText size={16} style={{ marginTop: '2px', flexShrink: 0 }} />
+                                    <span>{event.description}</span>
+                                  </div>
+                                )}
+                                {(event.start_time || event.end_time) && (
+                                  <div style={{ display: 'flex', alignItems: 'center', gap: '8px', marginBottom: '8px', color: '#64748b', fontSize: '14px' }}>
+                                    <Clock size={16} />
+                                    <span>
+                                      {event.start_time && new Date(`2000-01-01T${event.start_time}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                                      {event.start_time && event.end_time && ' - '}
+                                      {event.end_time && new Date(`2000-01-01T${event.end_time}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                                    </span>
+                                  </div>
+                                )}
+                                {event.location && (
+                                  <LocationDisplay location={event.location} enrichLocation={enrichLocation} />
+                                )}
+                              </div>
+                              {isAdmin && (
+                                <div style={{ display: 'flex', gap: '8px' }}>
+                                  <button
+                                    onClick={() => openEditModal(event)}
+                                    aria-label="Edit event"
+                                    style={{ padding: '8px', background: '#f1f5f9', border: 'none', borderRadius: '6px', cursor: 'pointer', color: '#475569' }}
+                                  >
+                                    <Edit2 size={16} />
+                                  </button>
+                                  <button
+                                    onClick={() => handleDeleteEvent(event.id)}
+                                    aria-label="Delete event"
+                                    style={{ padding: '8px', background: '#fee2e2', border: 'none', borderRadius: '6px', cursor: 'pointer', color: '#991b1b' }}
+                                  >
+                                    <Trash2 size={16} />
+                                  </button>
+                                </div>
+                              )}
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+                    );
+                  })
+                )}
+
+                {/* PAST EVENTS TOGGLE */}
+                {pastDates.length > 0 && (
+                  <div>
+                    <button
+                      onClick={() => setShowPastEvents(v => !v)}
+                      style={{
                         display: 'flex',
                         alignItems: 'center',
                         gap: '8px',
-                      }}>
-                        {formattedDate}
-                        <span style={{
-                          fontSize: '16px',
-                          fontWeight: 700,
-                          color: '#000000ff',
-                        }}>
-                          ({dateEvents.length})
-                        </span>
-                      </h2>
+                        width: '100%',
+                        padding: '12px 16px',
+                        background: showPastEvents ? '#f1f5f9' : 'white',
+                        border: '1px solid #e2e8f0',
+                        borderRadius: '10px',
+                        cursor: 'pointer',
+                        fontSize: '14px',
+                        fontWeight: 600,
+                        color: '#64748b',
+                      }}
+                    >
+                      <Archive size={16} />
+                      {showPastEvents ? 'Hide' : 'Show'} Past Events ({pastDates.reduce((n, d) => n + eventsByDate[d].length, 0)})
+                      {showPastEvents ? <ChevronUp size={16} style={{ marginLeft: 'auto' }} /> : <ChevronDown size={16} style={{ marginLeft: 'auto' }} />}
+                    </button>
 
-                      <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
-                        {dateEvents.map((event) => (
-                          <div
-                            key={event.id}
-                            style={{
-                              background: 'white',
-                              border: '1px solid #e2e8f0',
-                              borderRadius: '12px',
-                              padding: '20px',
-                              display: 'flex',
-                              justifyContent: 'space-between',
-                              alignItems: 'flex-start',
-                              gap: '16px',
-                            }}
-                          >
-                            <div style={{ flex: 1 }}>
-                              <h3 style={{
-                                fontSize: '18px',
+                    {showPastEvents && (
+                      <div style={{ marginTop: '16px', display: 'flex', flexDirection: 'column', gap: '24px', opacity: 0.75 }}>
+                        {pastDates.map((date) => {
+                          const dateEvents = eventsByDate[date];
+                          const dateObj = new Date(date + 'T00:00:00');
+                          const formattedDate = dateObj.toLocaleDateString('en-US', {
+                            weekday: 'long',
+                            year: 'numeric',
+                            month: 'long',
+                            day: 'numeric',
+                          });
+
+                          return (
+                            <div key={date}>
+                              <h2 style={{
+                                fontSize: '15px',
                                 fontWeight: 600,
-                                color: '#1e293b',
-                                marginBottom: '8px',
+                                color: '#94a3b8',
+                                marginBottom: '12px',
+                                paddingBottom: '8px',
+                                borderBottom: '2px solid #f1f5f9',
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
                               }}>
-                                {event.title}
-                              </h3>
+                                <Archive size={14} style={{ color: '#94a3b8' }} />
+                                {formattedDate}
+                                <span style={{ fontSize: '14px', fontWeight: 700, color: '#94a3b8' }}>
+                                  ({dateEvents.length})
+                                </span>
+                              </h2>
 
-                              {event.description && (
-                                <div style={{
-                                  display: 'flex',
-                                  alignItems: 'flex-start',
-                                  gap: '8px',
-                                  marginBottom: '8px',
-                                  color: '#475569',
-                                  fontSize: '14px',
-                                }}>
-                                  <FileText size={16} style={{ marginTop: '2px', flexShrink: 0 }} />
-                                  <span>{event.description}</span>
-                                </div>
-                              )}
-
-                              {(event.start_time || event.end_time) && (
-                                <div style={{
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '8px',
-                                  marginBottom: '8px',
-                                  color: '#64748b',
-                                  fontSize: '14px',
-                                }}>
-                                  <Clock size={16} />
-                                  <span>
-                                    {event.start_time && new Date(`2000-01-01T${event.start_time}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
-                                    {event.start_time && event.end_time && ' - '}
-                                    {event.end_time && new Date(`2000-01-01T${event.end_time}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
-                                  </span>
-                                </div>
-                              )}
-
-                              {event.location && (
-                                <LocationDisplay location={event.location} enrichLocation={enrichLocation} />
-                              )}
-                            </div>
-
-                            {isAdmin && (
-                              <div style={{ display: 'flex', gap: '8px' }}>
-                                <button
-                                  onClick={() => openEditModal(event)}
-                                  style={{
-                                    padding: '8px',
-                                    background: '#f1f5f9',
-                                    border: 'none',
-                                    borderRadius: '6px',
-                                    cursor: 'pointer',
-                                    color: '#475569',
-                                  }}
-                                >
-                                  <Edit2 size={16} />
-                                </button>
-                                <button
-                                  onClick={() => handleDeleteEvent(event.id)}
-                                  style={{
-                                    padding: '8px',
-                                    background: '#fee2e2',
-                                    border: 'none',
-                                    borderRadius: '6px',
-                                    cursor: 'pointer',
-                                    color: '#991b1b',
-                                  }}
-                                >
-                                  <Trash2 size={16} />
-                                </button>
+                              <div style={{ display: 'flex', flexDirection: 'column', gap: '12px' }}>
+                                {dateEvents.map((event) => (
+                                  <div
+                                    key={event.id}
+                                    style={{
+                                      background: '#f8fafc',
+                                      border: '1px solid #e2e8f0',
+                                      borderRadius: '12px',
+                                      padding: '16px 20px',
+                                      display: 'flex',
+                                      justifyContent: 'space-between',
+                                      alignItems: 'flex-start',
+                                      gap: '16px',
+                                    }}
+                                  >
+                                    <div style={{ flex: 1 }}>
+                                      <h3 style={{ fontSize: '16px', fontWeight: 600, color: '#64748b', marginBottom: '6px' }}>
+                                        {event.title}
+                                      </h3>
+                                      {event.description && (
+                                        <div style={{ display: 'flex', alignItems: 'flex-start', gap: '8px', marginBottom: '6px', color: '#94a3b8', fontSize: '13px' }}>
+                                          <FileText size={14} style={{ marginTop: '2px', flexShrink: 0 }} />
+                                          <span>{event.description}</span>
+                                        </div>
+                                      )}
+                                      {(event.start_time || event.end_time) && (
+                                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', color: '#94a3b8', fontSize: '13px' }}>
+                                          <Clock size={14} />
+                                          <span>
+                                            {event.start_time && new Date(`2000-01-01T${event.start_time}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                                            {event.start_time && event.end_time && ' - '}
+                                            {event.end_time && new Date(`2000-01-01T${event.end_time}`).toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' })}
+                                          </span>
+                                        </div>
+                                      )}
+                                    </div>
+                                    {isAdmin && (
+                                      <div style={{ display: 'flex', gap: '8px' }}>
+                                        <button
+                                          onClick={() => openEditModal(event)}
+                                          aria-label="Edit event"
+                                          style={{ padding: '6px', background: '#f1f5f9', border: 'none', borderRadius: '6px', cursor: 'pointer', color: '#94a3b8' }}
+                                        >
+                                          <Edit2 size={14} />
+                                        </button>
+                                        <button
+                                          onClick={() => handleDeleteEvent(event.id)}
+                                          aria-label="Delete event"
+                                          style={{ padding: '6px', background: '#fee2e2', border: 'none', borderRadius: '6px', cursor: 'pointer', color: '#fca5a5' }}
+                                        >
+                                          <Trash2 size={14} />
+                                        </button>
+                                      </div>
+                                    )}
+                                  </div>
+                                ))}
                               </div>
-                            )}
-                          </div>
-                        ))}
+                            </div>
+                          );
+                        })}
                       </div>
-                    </div>
-                  );
-                })}
+                    )}
+                  </div>
+                )}
+
               </div>
             )}
           </div>
