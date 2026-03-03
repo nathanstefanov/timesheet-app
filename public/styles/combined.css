@@ -8064,42 +8064,40 @@ img, video {
   display: none !important;
 }
 
-/* Close button inside sidebar header */
+/* Close button — pinned to top-right corner of the sidebar */
 .sidebar-close-btn {
   display: none;
-  background: rgba(255, 255, 255, 0.15);
-  border: none;
-  color: white;
-  border-radius: 8px;
-  width: 36px;
-  height: 36px;
-  font-size: 20px;
+  position: absolute;
+  top: 14px;
+  right: 14px;
+  z-index: 1;
+  background: rgba(255, 255, 255, 0.18);
+  border: 2px solid rgba(255, 255, 255, 0.5);
+  color: #ffffff;
+  border-radius: 50%;
+  width: 44px;
+  height: 44px;
+  font-size: 22px;
+  font-weight: 700;
   line-height: 1;
   cursor: pointer;
   align-items: center;
   justify-content: center;
-  flex-shrink: 0;
-  transition: background 0.2s;
+  transition: background 0.2s, border-color 0.2s, transform 0.15s;
 }
 
 .sidebar-close-btn:hover {
-  background: rgba(255, 255, 255, 0.28);
+  background: rgba(255, 255, 255, 0.32);
+  border-color: rgba(255, 255, 255, 0.75);
 }
 
 .sidebar-close-btn:active {
-  transform: scale(0.93);
+  transform: scale(0.88);
 }
 
 @media (max-width: 768px) {
   .sidebar-close-btn {
     display: flex;
-  }
-
-  /* Make sidebar-header a row so logo and X sit side by side */
-  .sidebar-header {
-    display: flex !important;
-    align-items: center !important;
-    justify-content: space-between !important;
   }
 }
 
