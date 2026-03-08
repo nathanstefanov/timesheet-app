@@ -3,6 +3,7 @@ import type { NextApiResponse } from 'next';
 import { z } from 'zod';
 import { supabaseAdmin } from '../../../lib/supabaseAdmin';
 import { requireAdmin, type AuthenticatedRequest, handleApiError } from '../../../lib/middleware';
+import { logEmployeeCreatedServer } from '../../../lib/auditLogServer';
 
 // Generate a secure random password
 function generateSecurePassword(): string {
@@ -185,6 +186,9 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse) {
           // Continue even if email fails
         }
       }
+
+      // Audit log
+      await logEmployeeCreatedServer(req, req.user.id, authData.user.id, full_name, role);
 
       return res.status(201).json({
         ...profile,

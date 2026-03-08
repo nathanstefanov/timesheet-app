@@ -2,6 +2,7 @@ import type { NextApiResponse } from 'next';
 import { z } from 'zod';
 import { supabaseAdmin } from '../../../lib/supabaseAdmin';
 import { requireAdmin, type AuthenticatedRequest, handleApiError } from '../../../lib/middleware';
+import { logScheduleShiftCreatedServer } from '../../../lib/auditLogServer';
 
 const CreateSchema = z.object({
 	start_time: z.string().datetime(),
@@ -52,6 +53,10 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse) {
 				.single();
 
 			if (error) throw error;
+
+			// Audit log
+			await logScheduleShiftCreatedServer(req, req.user.id, data.id, data.job_type || 'setup', data.start_time);
+
 			return res.status(200).json(data);
 		}
 

@@ -93,3 +93,118 @@ export async function logEmployeeDeactivatedServer(
     resourceId: employeeId,
   });
 }
+
+/**
+ * Log employee creation from API route
+ */
+export async function logEmployeeCreatedServer(
+  req: NextApiRequest,
+  userId: string,
+  newEmployeeId: string,
+  employeeName: string,
+  role: string
+) {
+  await createAuditLogFromRequest(req, {
+    userId,
+    actionType: 'employee_created',
+    actionDescription: `Created employee: ${employeeName} (${role})`,
+    resourceType: 'employee',
+    resourceId: newEmployeeId,
+    metadata: { role },
+  });
+}
+
+/**
+ * Log schedule shift creation from API route
+ */
+export async function logScheduleShiftCreatedServer(
+  req: NextApiRequest,
+  userId: string,
+  shiftId: string,
+  jobType: string,
+  startTime: string
+) {
+  await createAuditLogFromRequest(req, {
+    userId,
+    actionType: 'schedule_shift_created',
+    actionDescription: `Created schedule shift: ${jobType} on ${startTime}`,
+    resourceType: 'schedule_shift',
+    resourceId: shiftId,
+    metadata: { jobType, startTime },
+  });
+}
+
+/**
+ * Log schedule shift update from API route
+ */
+export async function logScheduleShiftUpdatedServer(
+  req: NextApiRequest,
+  userId: string,
+  shiftId: string,
+  changes: string,
+  metadata?: Record<string, any>
+) {
+  await createAuditLogFromRequest(req, {
+    userId,
+    actionType: 'schedule_shift_updated',
+    actionDescription: `Updated schedule shift: ${changes}`,
+    resourceType: 'schedule_shift',
+    resourceId: shiftId,
+    metadata: metadata || {},
+  });
+}
+
+/**
+ * Log schedule shift deletion from API route
+ */
+export async function logScheduleShiftDeletedServer(
+  req: NextApiRequest,
+  userId: string,
+  shiftId: string
+) {
+  await createAuditLogFromRequest(req, {
+    userId,
+    actionType: 'schedule_shift_deleted',
+    actionDescription: `Deleted schedule shift`,
+    resourceType: 'schedule_shift',
+    resourceId: shiftId,
+  });
+}
+
+/**
+ * Log employees assigned to a schedule shift
+ */
+export async function logEmployeesAssignedServer(
+  req: NextApiRequest,
+  userId: string,
+  shiftId: string,
+  employeeIds: string[]
+) {
+  await createAuditLogFromRequest(req, {
+    userId,
+    actionType: 'employees_assigned',
+    actionDescription: `Assigned ${employeeIds.length} employee(s) to schedule shift`,
+    resourceType: 'schedule_shift',
+    resourceId: shiftId,
+    metadata: { employeeIds },
+  });
+}
+
+/**
+ * Log employees unassigned from a schedule shift
+ */
+export async function logEmployeesUnassignedServer(
+  req: NextApiRequest,
+  userId: string,
+  shiftId: string,
+  employeeIds: string[]
+) {
+  await createAuditLogFromRequest(req, {
+    userId,
+    actionType: 'employees_unassigned',
+    actionDescription: `Removed ${employeeIds.length} employee(s) from schedule shift`,
+    resourceType: 'schedule_shift',
+    resourceId: shiftId,
+    metadata: { employeeIds },
+  });
+}

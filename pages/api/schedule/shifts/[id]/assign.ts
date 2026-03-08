@@ -4,6 +4,7 @@ import twilio from 'twilio';
 import { supabaseAdmin } from '../../../../../lib/supabaseAdmin';
 import { requireAdmin, type AuthenticatedRequest, handleApiError } from '../../../../../lib/middleware';
 import { formatForDisplay } from '../../../../../lib/timezone';
+import { logEmployeesAssignedServer, logEmployeesUnassignedServer } from '../../../../../lib/auditLogServer';
 
 type ApiResponse = { ok: true } | { error: string };
 
@@ -101,8 +102,9 @@ async function handler(
         throw upsertErr;
       }
 
-    // 3) If nobody newly added, done (no SMS)
+    // 3) If nobody newly added, still log the assignment upsert and done (no SMS)
     if (newlyAddedIds.length === 0) {
+      await logEmployeesAssignedServer(req, req.user.id, id, uniqueIds);
       return res.status(200).json({ ok: true });
     }
 
@@ -191,6 +193,7 @@ async function handler(
 
       await Promise.allSettled(sendPromises);
 
+      await logEmployeesAssignedServer(req, req.user.id, id, newlyAddedIds);
       return res.status(200).json({ ok: true });
     }
 
@@ -213,6 +216,7 @@ async function handler(
         throw error;
       }
 
+      await logEmployeesUnassignedServer(req, req.user.id, id, employee_ids);
       return res.status(200).json({ ok: true });
     }
 

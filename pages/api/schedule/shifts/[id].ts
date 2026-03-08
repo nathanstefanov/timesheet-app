@@ -3,6 +3,7 @@ import { z } from 'zod';
 import { supabaseAdmin } from '../../../../lib/supabaseAdmin';
 import { requireAdmin, type AuthenticatedRequest, handleApiError } from '../../../../lib/middleware';
 import { formatForDisplay } from '../../../../lib/timezone';
+import { logScheduleShiftUpdatedServer, logScheduleShiftDeletedServer } from '../../../../lib/auditLogServer';
 
 // IMPORTANT: twilio must only run server-side
 import twilio from 'twilio';
@@ -20,7 +21,7 @@ const PatchSchema = z.object({
 // ---------- SMS helpers ----------
 const TWILIO_ACCOUNT_SID = process.env.TWILIO_ACCOUNT_SID || '';
 const TWILIO_AUTH_TOKEN = process.env.TWILIO_AUTH_TOKEN || '';
-const TWILIO_FROM = process.env.TWILIO_FROM || ''; // your verified TF or 10DLC number (E.164)
+const TWILIO_FROM = process.env.TWILIO_FROM_NUMBER || ''; // E.164 format
 
 function hasTwilioEnv() {
   return !!(TWILIO_ACCOUNT_SID && TWILIO_AUTH_TOKEN && TWILIO_FROM);
@@ -204,6 +205,14 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse) {
       }
     }
 
+      // Audit log
+      const changedFields = Object.keys(p).join(', ');
+      await logScheduleShiftUpdatedServer(req, req.user.id, id, changedFields, {
+        before: { start_time: before.start_time, end_time: before.end_time, location_name: before.location_name },
+        after: { start_time: after.start_time, end_time: after.end_time, location_name: after.location_name },
+        smsNotified: shouldNotify,
+      });
+
       // Return the updated shift
       return res.status(200).json(after);
     }
@@ -214,6 +223,7 @@ async function handler(req: AuthenticatedRequest, res: NextApiResponse) {
         console.error('[DELETE /api/schedule/shifts/[id]] Delete failed:', error);
         throw error;
       }
+      await logScheduleShiftDeletedServer(req, req.user.id, id);
       return res.status(200).json({ ok: true });
     }
 
