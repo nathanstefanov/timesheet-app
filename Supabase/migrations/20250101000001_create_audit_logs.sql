@@ -26,7 +26,7 @@ CREATE INDEX IF NOT EXISTS idx_audit_logs_action_type
 CREATE INDEX IF NOT EXISTS idx_audit_logs_created_at
   ON audit_logs(created_at DESC);
 
-CREATE INDEX IF coNOT EXISTS idx_audit_logs_resource
+CREATE INDEX IF NOT EXISTS idx_audit_logs_resource
   ON audit_logs(resource_type, resource_id);
 
 -- Enable Row Level Security

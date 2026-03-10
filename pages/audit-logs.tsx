@@ -104,20 +104,20 @@ export default function AuditLogs() {
 
       const { data: profiles, error: profilesError } = await supabase
         .from('profiles')
-        .select('id, full_name, Email')
+        .select('id, full_name')
         .in('id', userIds);
 
       if (profilesError) throw profilesError;
 
       const profileMap = (profiles || []).reduce((acc, p) => {
-        acc[p.id] = { name: p.full_name || 'Unknown', email: (p as any).Email };
+        acc[p.id] = { name: p.full_name || 'Unknown' };
         return acc;
-      }, {} as Record<string, { name: string; email: string | null }>);
+      }, {} as Record<string, { name: string }>);
 
       const enrichedLogs = logsData.map(log => ({
         ...log,
         user_name: profileMap[log.user_id]?.name || 'Unknown',
-        user_email: profileMap[log.user_id]?.email || null,
+        user_email: null,
       }));
 
       setLogs(enrichedLogs);

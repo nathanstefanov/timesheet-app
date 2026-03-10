@@ -7,7 +7,7 @@
 import React, { useEffect, useState, useMemo, useCallback } from 'react';
 import { useRouter } from 'next/router';
 import { supabase } from '../lib/supabaseClient';
-import { logShiftDeleted } from '../lib/auditLog';
+import { logShiftDeleted, logPayment, logUndoPayment } from '../lib/auditLog';
 import { calcPayRow } from '../lib/pay';
 import Head from 'next/head';
 import { User, Plus, Calendar, BarChart3, DollarSign, CheckCircle, Clock, LogOut, Settings, Shield } from 'lucide-react';
@@ -407,6 +407,13 @@ export default function Admin() {
             : s,
         ),
       );
+    } else if (me?.id) {
+      const employeeName = names[row.user_id] || 'employee';
+      if (next) {
+        await logPayment(me.id, [row.id], row.pay_due || 0);
+      } else {
+        await logUndoPayment(me.id, row.id, employeeName);
+      }
     }
   }
 
@@ -434,6 +441,15 @@ export default function Admin() {
     if (error) {
       alert(error.message);
       setShifts(prev);
+    } else if (me?.id) {
+      if (next) {
+        const totalAmount = rows.filter(s => toChange.includes(s.id)).reduce((sum, s) => sum + (s.pay_due || 0), 0);
+        await logPayment(me.id, toChange, totalAmount);
+      } else {
+        for (const shiftId of toChange) {
+          await logUndoPayment(me.id, shiftId, name);
+        }
+      }
     }
     setBulkBusy(b => ({ ...b, [userId]: false }));
   }
